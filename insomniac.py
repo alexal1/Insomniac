@@ -35,6 +35,8 @@ def main():
         print("bloggers = " + ", ".join(str(blogger) for blogger in args.bloggers))
 
     device = uiautomator.device
+    device.screen.on()
+
     storage = Storage()
     on_interaction = partial(_on_interaction,
                              interactions_limit=int(args.interactions),
