@@ -11,6 +11,7 @@ from socket import timeout
 import uiautomator
 
 from action_handle_blogger import handle_blogger
+from action_handle_hashtag import handle_hashtag
 from session_state import SessionState
 from storage import Storage
 from utils import *
@@ -28,27 +29,43 @@ def main():
     if not ok:
         return
 
-    if len(args.bloggers) == 0:
-        print(COLOR_FAIL + "Zero bloggers, no sense to proceed." + COLOR_ENDC)
+    mode = None
+
+    if len(args.bloggers) == 0 and len(args.hashtags) == 0:
+        print(COLOR_FAIL + "You have to provide bloggers or hashtags" + COLOR_ENDC)
         return
-    else:
+    elif len(args.bloggers) > 0 and len(args.hashtags) > 0:
+        print(COLOR_FAIL + "Running Insomniac with both bloggers and hashtags is not supported yet." + COLOR_ENDC)
+        return
+    elif len(args.bloggers) > 0 and len(args.hashtags) == 0:
         print("bloggers = " + ", ".join(str(blogger) for blogger in args.bloggers))
+        mode = Mode.blogger
+    else:
+        check_hashtags(args.hashtags)
+        print("hashtags = " + ", ".join(str(hashtag) for hashtag in args.hashtags))
+        mode = Mode.hashtag
 
     device = uiautomator.device
-    device.screen.on()
 
-    storage = Storage()
+    storage = None
+    if mode == Mode.blogger:
+        storage = Storage()
+
     on_interaction = partial(_on_interaction,
                              interactions_limit=int(args.interactions),
                              likes_limit=int(args.total_likes_limit))
 
+    print("Before while")
     while True:
         session_state = SessionState()
         sessions.append(session_state)
 
         print(COLOR_OKBLUE + "\n-------- START: " + str(session_state.startTime) + " --------" + COLOR_ENDC)
         open_instagram()
-        _job_handle_bloggers(device, args.bloggers, int(args.likes_count), storage, on_interaction)
+        if mode == Mode.blogger:
+            _job_handle_bloggers(device, args.bloggers, int(args.likes_count), storage, on_interaction)
+        else:
+            _job_handle_hashtags(device, args.hashtags, int(args.likes_count), on_interaction)
         close_instagram()
         session_state.finishTime = datetime.now()
         print(COLOR_OKBLUE + "-------- FINISH: " + str(session_state.finishTime) + " --------" + COLOR_ENDC)
@@ -105,6 +122,42 @@ def _job_handle_bloggers(device, bloggers, likes_count, storage, on_interaction)
                 open_instagram()
 
 
+def _job_handle_hashtags(device, hashtags, likes_count, on_interaction):
+    class State:
+        def __init__(self):
+            pass
+
+        is_job_completed = False
+
+    state = State()
+
+    def on_likes_limit_reached():
+        state.is_job_completed = True
+
+    on_interaction = partial(on_interaction, on_likes_limit_reached=on_likes_limit_reached)
+
+    for hashtag in hashtags:
+        print(COLOR_BOLD + "\nHandle " + hashtag + COLOR_ENDC)
+        is_handled = False
+        on_interaction = partial(on_interaction, hashtag=hashtag)
+        while not is_handled and not state.is_job_completed:
+            try:
+                handle_hashtag(device, hashtag, likes_count, _on_like, on_interaction)
+                is_handled = True
+            except KeyboardInterrupt:
+                print(COLOR_OKBLUE + "-------- FINISH: " + str(datetime.now().time()) + " --------" + COLOR_ENDC)
+                _print_report()
+                sys.exit(0)
+            except (uiautomator.JsonRPCError, IndexError, HTTPException, timeout):
+                is_handled = False
+                print(COLOR_FAIL + traceback.format_exc() + COLOR_ENDC)
+                print("Try again for " + hashtag + " from the beginning")
+                # Hack for the case when IGTV was accidentally opened
+                close_instagram()
+                random_sleep()
+                open_instagram()
+
+
 def _parse_arguments():
     parser = argparse.ArgumentParser(
         description='Instagram bot for automated Instagram interaction using Android device via ADB',
@@ -114,6 +167,11 @@ def _parse_arguments():
                         nargs='+',
                         help='list of usernames with whose followers you want to interact',
                         metavar=('username1', 'username2'),
+                        default=[])
+    parser.add_argument('--hashtags',
+                        nargs='+',
+                        help='list of usernames with whose followers you want to interact',
+                        metavar=('#hashtag1', '#hashtag2'),
                         default=[])
     parser.add_argument('--likes-count',
                         help='count of likes for each interacted user, 2 by default',
@@ -143,6 +201,18 @@ def _parse_arguments():
         return False, None
 
     return True, args
+
+
+def check_hashtags(hashtags):
+    print("Checking the hashtags")
+
+    for i in range(len(hashtags)):
+        hashtag = hashtags[i]
+        if hashtag != "#":
+            print("Found an incorrect hashtag = " + hashtag)
+            hashtag = "#" + hashtag
+            hashtags[i] = hashtag
+            print(hashtag)
 
 
 def _on_like():

@@ -2,6 +2,7 @@ import os
 import re
 from random import randint
 from time import sleep
+from enum import Enum
 
 COLOR_HEADER = '\033[95m'
 COLOR_OKBLUE = '\033[94m'
@@ -11,6 +12,11 @@ COLOR_FAIL = '\033[91m'
 COLOR_ENDC = '\033[0m'
 COLOR_BOLD = '\033[1m'
 COLOR_UNDERLINE = '\033[4m'
+
+
+class Mode(Enum):
+    blogger = 1
+    hashtag = 2
 
 
 def get_version():
