@@ -12,13 +12,13 @@ from socket import timeout
 import colorama
 import uiautomator
 
-from src.action_get_my_username import get_my_username
-from src.action_handle_blogger import handle_blogger
-from src.action_unfollow import unfollow
-from src.filter import Filter
-from src.session_state import SessionState
-from src.storage import Storage
-from src.utils import *
+from action_get_my_username import get_my_username
+from action_handle_blogger import handle_blogger
+from action_handle_hashtag import handle_hashtag
+from action_unfollow import unfollow
+from session_state import SessionState
+from storage import Storage
+from utils import *
 
 device_id = None
 sessions = []
@@ -41,11 +41,12 @@ def main():
 
     mode = None
     is_interact_enabled = len(args.interact) > 0
+    is_hashtag_enabled = len(args.hashtag) > 0
     is_unfollow_enabled = int(args.unfollow) > 0
     is_unfollow_non_followers_enabled = int(args.unfollow_non_followers) > 0
-    total_enabled = int(is_interact_enabled) + int(is_unfollow_enabled) + int(is_unfollow_non_followers_enabled)
+    total_enabled = int(is_interact_enabled) + int(is_hashtag_enabled) + int(is_unfollow_enabled) + int(is_unfollow_non_followers_enabled)
     if total_enabled == 0:
-        print_timeless(COLOR_FAIL + "You have to specify one of the actions: --interact, --unfollow, "
+        print_timeless(COLOR_FAIL + "You have to specify one of the actions: --interact, --hashtag, --unfollow, "
                                     "--unfollow-non-followers" + COLOR_ENDC)
         return
     elif total_enabled > 1:
@@ -55,6 +56,9 @@ def main():
         if is_interact_enabled:
             print("Action: interact with @" + ", @".join(str(blogger) for blogger in args.interact))
             mode = Mode.INTERACT
+        elif is_hashtag_enabled:            
+            print("Action: interact with #" + ", #".join(str(hashtag) for hashtag in args.hashtag))
+            mode = Mode.HASHTAG
         elif is_unfollow_enabled:
             print("Action: unfollow " + str(args.unfollow))
             mode = Mode.UNFOLLOW
@@ -62,7 +66,6 @@ def main():
             print("Action: unfollow " + str(args.unfollow_non_followers) + " non followers")
             mode = Mode.UNFOLLOW_NON_FOLLOWERS
 
-    profile_filter = Filter()
     on_interaction = partial(_on_interaction,
                              interactions_limit=int(args.interactions_count),
                              likes_limit=int(args.total_likes_limit))
@@ -83,7 +86,13 @@ def main():
                                  int(args.likes_count),
                                  int(args.follow_percentage),
                                  storage,
-                                 profile_filter,
+                                 on_interaction)
+        elif mode == Mode.HASHTAG:
+            _job_handle_hashtag(device,
+                                 args.hashtag,
+                                 int(args.likes_count),
+                                 int(args.follow_percentage),
+                                 storage,
                                  on_interaction)
         elif mode == Mode.UNFOLLOW:
             _job_unfollow(device, int(args.unfollow), storage, only_non_followers=False)
@@ -111,7 +120,7 @@ def main():
     _print_report()
 
 
-def _job_handle_bloggers(device, bloggers, likes_count, follow_percentage, storage, profile_filter, on_interaction):
+def _job_handle_bloggers(device, bloggers, likes_count, follow_percentage, storage, on_interaction):
     class State:
         def __init__(self):
             pass
@@ -137,14 +146,7 @@ def _job_handle_bloggers(device, bloggers, likes_count, follow_percentage, stora
                 username = None
                 if not is_myself:
                     username = blogger
-                handle_blogger(device,
-                               username,
-                               likes_count,
-                               follow_percentage,
-                               storage,
-                               profile_filter,
-                               _on_like,
-                               on_interaction)
+                handle_blogger(device, username, likes_count, follow_percentage, storage, _on_like, on_interaction)
                 completed = True
             except KeyboardInterrupt:
                 print_copyright(session_state.my_username)
@@ -166,6 +168,51 @@ def _job_handle_bloggers(device, bloggers, likes_count, follow_percentage, stora
                 _print_report()
                 raise e
 
+
+def _job_handle_hashtag(device, hashtags, likes_count, follow_percentage, storage, on_interaction):
+    class State:
+        def __init__(self):
+            pass
+
+        is_job_completed = False
+
+    state = State()
+    session_state = sessions[-1]
+
+    def on_likes_limit_reached():
+        state.is_job_completed = True
+
+    on_interaction = partial(on_interaction, on_likes_limit_reached=on_likes_limit_reached)
+
+    for hashtag in hashtags:
+        """is_myself = blogger == session_state.my_username
+        print_timeless("")
+        print(COLOR_BOLD + "Handle #" + hashtag + (is_myself and " (it\'s you)" or "") + COLOR_ENDC)"""
+        completed = False
+        on_interaction = partial(on_interaction, hashtag=hashtag)
+        while not completed and not state.is_job_completed:
+            try:
+                handle_hashtag(device, hashtag, likes_count, follow_percentage, storage, _on_like, on_interaction)
+                completed = True
+            except KeyboardInterrupt:
+                print_copyright(session_state.my_username)
+                print_timeless(COLOR_WARNING + "-------- FINISH: " + str(datetime.now().time()) + " --------"
+                               + COLOR_ENDC)
+                _print_report()
+                sys.exit(0)
+            except (uiautomator.JsonRPCError, IndexError, HTTPException, timeout):
+                print(COLOR_FAIL + traceback.format_exc() + COLOR_ENDC)
+                take_screenshot(device)
+                print("Try again for #" + hashtag + " from the beginning")
+                # Hack for the case when IGTV was accidentally opened
+                close_instagram()
+                random_sleep()
+                open_instagram(device_id)
+                get_my_username(device)
+            except Exception as e:
+                take_screenshot(device)
+                _print_report()
+                raise e
 
 def _job_unfollow(device, count, storage, only_non_followers):
     class State:
@@ -222,13 +269,18 @@ def _parse_arguments():
                         help='list of usernames with whose followers you want to interact',
                         metavar=('username1', 'username2'),
                         default=[])
+    parser.add_argument('--hashtag',
+                        nargs='+',
+                        help='list of hashtags you want to interact',
+                        metavar=('hashtag1', 'hashtag2'),
+                        default=[])
     parser.add_argument('--likes-count',
                         help='number of likes for each interacted user, 2 by default',
                         metavar='2',
                         default=2)
     parser.add_argument('--total-likes-limit',
-                        help='limit on total amount of likes during the session, 300 by default',
-                        metavar='300',
+                        help='limit on total amount of likes during the session, 1000 by default',
+                        metavar='1000',
                         default=1000)
     parser.add_argument('--interactions-count',
                         help='number of interactions per each blogger, 100 by default',
@@ -353,8 +405,9 @@ def _print_report():
 @unique
 class Mode(Enum):
     INTERACT = 0
-    UNFOLLOW = 1
-    UNFOLLOW_NON_FOLLOWERS = 2
+    HASHTAG = 1
+    UNFOLLOW = 2
+    UNFOLLOW_NON_FOLLOWERS = 3
 
 
 if __name__ == "__main__":
