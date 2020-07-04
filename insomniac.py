@@ -189,7 +189,7 @@ def _job_handle_hashtag(device, hashtags, likes_count, follow_percentage, storag
         print_timeless("")
         print(COLOR_BOLD + "Handle #" + hashtag + (is_myself and " (it\'s you)" or "") + COLOR_ENDC)"""
         completed = False
-        on_interaction = partial(on_interaction, hashtag=hashtag)
+        #on_interaction = partial(on_interaction, blogger = hashtag)
         while not completed and not state.is_job_completed:
             try:
                 handle_hashtag(device, hashtag, likes_count, follow_percentage, storage, _on_like, on_interaction)

@@ -108,10 +108,8 @@ def _iterate_over_posts(device, interaction, storage, on_interaction):
             interaction_succeed, followed = interaction(device, username=username, can_follow=can_follow)
             storage.add_interacted_user(username, followed=followed)
             interactions_count += 1
-            can_continue = on_interaction(succeed=interaction_succeed,
-                                            followed=followed,
-                                            count=interactions_count)
-
+            can_continue = on_interaction(blogger = username, succeed=interaction_succeed, followed=followed, count=interactions_count)
+            
             if not can_continue:
                 return
 
