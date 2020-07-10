@@ -106,10 +106,6 @@ def _iterate_over_posts(device, interaction, storage, on_interaction):
                 print("@" + username + ": already interacted. Skip.")
                 device.press.back()
                 device.press.back()
-            elif storage.check_user_was_interacted_recently(username):
-                print("@" + username + ": already interacted in the last week. Skip.")
-                device.press.back()
-                device.press.back()
             else:
                 print("@" + username + ": interact")
                 #user_name_view.click.wait()
