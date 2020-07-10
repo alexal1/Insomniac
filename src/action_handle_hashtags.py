@@ -66,9 +66,9 @@ def _open_post_hashtags(device, hashtag):
         hashtag_view.click.wait()
 
         print("Open #" + hashtag + " recent posts")
-        hashtag_type = device(resourceId='com.instagram.android:id/tab_layout',
+        hashtag_type_recent = device(resourceId='com.instagram.android:id/tab_layout',
                                   className='android.widget.LinearLayout').child(index=1)
-        hashtag_type.click.wait()
+        hashtag_type_recent.click.wait()
 
     return True
 
