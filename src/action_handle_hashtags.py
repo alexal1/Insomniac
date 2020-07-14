@@ -86,11 +86,19 @@ def _iterate_over_posts(device, interaction, storage, on_interaction):
     posts_per_screen = None
     interactions_count = 0
     iterations = randint(2,12)
+    just_scrolled = False
     while True:
         print("Iterate over visible hashtag posts")
         screen_iterated_posts = 0
+        imageview_index = 2
+        if just_scrolled:
+            print("Resetting imageview Index")
+            open_photo(device,4)
+            device.press.back()
+            imageview_index = 6
+            iterations = randint(6,18)
 
-        for x in range(2,iterations):
+        for x in range(imageview_index,iterations):
 
             open_photo(device,x) 
             profile_check = device(resourceId='com.instagram.android:id/row_feed_photo_profile_imageview',
@@ -133,7 +141,7 @@ def _iterate_over_posts(device, interaction, storage, on_interaction):
             list_view = device(resourceId='com.instagram.android:id/recycler_view',
                                className='androidx.recyclerview.widget.RecyclerView')
             list_view.scroll.toEnd(max_swipes=1)
-            iterations = randint(1,18)
+            just_scrolled = True
         else:
             print(COLOR_OKGREEN + "No followers were iterated, finish." + COLOR_ENDC)
             return    
