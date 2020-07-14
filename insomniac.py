@@ -198,7 +198,13 @@ def _job_handle_hashtags(device, hashtags, likes_count, follow_percentage, stora
     on_interaction = partial(on_interaction, on_likes_limit_reached=on_likes_limit_reached)
 
     for hashtag in hashtags:
+<<<<<<< HEAD
 
+=======
+        
+        print_timeless("")
+        print(COLOR_BOLD + "Handle #" + hashtag + (is_myself and " (it\'s you)" or "") + COLOR_ENDC)"""
+>>>>>>> 9820ce6b1cb3407b51ae4e5dc9110dce9307fd83
         completed = False
         
         while not completed and not state.is_job_completed:
