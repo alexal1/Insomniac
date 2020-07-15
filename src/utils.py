@@ -85,7 +85,9 @@ def stringify_interactions(interactions):
 
 
 def take_screenshot(device):
-    os.makedirs("screenshots/", exist_ok=True)
+    directory = "screenshots"
+    if not os.path.exists(directory):
+        os.mkdir(directory)
     filename = "Crash-" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".png"
     device.screenshot("screenshots/" + filename)
     print(COLOR_OKGREEN + "Screenshot taken and saved as " + filename + COLOR_ENDC)

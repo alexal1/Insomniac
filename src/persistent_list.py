@@ -13,7 +13,7 @@ class PersistentList(list):
 
     def persist(self, directory):
         if not os.path.exists(directory):
-            os.makedirs(directory)
+            os.mkdir(directory)
 
         path = directory + "/" + self.filename + ".json"
 
