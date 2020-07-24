@@ -52,15 +52,22 @@ def double_click(device, *args, **kwargs):
     device(*args, **kwargs).click()
     config['actionAcknowledgmentTimeout'] = 3000
     device.server.jsonrpc.setConfigurator(config)
-
-
+    
+    
 def random_sleep():
     delay = randint(1, 4)
     print("Sleep for " + str(delay) + (delay == 1 and " second" or " seconds"))
     sleep(delay)
 
-
+def turning_on_device_screen():
+    status=os.popen ("adb shell dumpsys input_method | grep mInteractive= | cut -f3 -d'='")
+    value = status.read()
+    if value[0:5] == "false":
+        print("Turning on the screen")
+        os.popen("adb shell input keyevent 26")
+    
 def open_instagram(device_id):
+    turning_on_device_screen()
     print("Open Instagram app")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              " shell am start -n com.instagram.android/com.instagram.mainactivity.MainActivity").close()
@@ -71,7 +78,8 @@ def close_instagram(device_id):
     print("Close Instagram app")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              " shell am force-stop com.instagram.android").close()
-
+    print("Turning off screen")
+    os.popen("adb shell input keyevent 26")
 
 def stringify_interactions(interactions):
     if len(interactions) == 0:
