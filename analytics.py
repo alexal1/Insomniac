@@ -3,6 +3,7 @@ from datetime import timedelta
 from enum import Enum, unique
 
 import matplotlib.pyplot as plt
+from matplotlib import ticker
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.dates import DateFormatter
 
@@ -21,12 +22,15 @@ def main():
 
     with PdfPages('statistics_' + username + '.pdf') as pdf:
         sessions_week = filter_sessions(sessions, Period.LAST_WEEK)
-        plot_followers_growth(sessions_week, pdf, username, Period.LAST_WEEK)
-
         sessions_month = filter_sessions(sessions, Period.LAST_MONTH)
-        plot_followers_growth(sessions_month, pdf, username, Period.LAST_MONTH)
 
+        plot_followers_growth(sessions_week, pdf, username, Period.LAST_WEEK)
+        plot_followers_growth(sessions_month, pdf, username, Period.LAST_MONTH)
         plot_followers_growth(sessions, pdf, username, Period.ALL_TIME)
+
+        plot_duration_statistics(sessions_week, pdf, username, Period.LAST_WEEK)
+        plot_duration_statistics(sessions_month, pdf, username, Period.LAST_MONTH)
+        plot_duration_statistics(sessions, pdf, username, Period.ALL_TIME)
 
 
 def _load_sessions(username):
@@ -99,6 +103,69 @@ def filter_sessions(sessions, period):
 
 def get_start_time(session):
     return datetime.strptime(session['start_time'], '%Y-%m-%d %H:%M:%S.%f')
+
+
+def get_finish_time(session):
+    finish_time = session['finish_time']
+    if finish_time == 'None':
+        return None
+    return datetime.strptime(finish_time, '%Y-%m-%d %H:%M:%S.%f')
+
+
+def plot_duration_statistics(sessions, pdf, username, period):
+    setups_map = {}
+
+    for session in sessions:
+        successful_interactions = session.get('successful_interactions')
+        if successful_interactions is None or successful_interactions == 0:
+            continue
+
+        args = session['args']
+
+        likes_count = args.get('likes_count')
+        if likes_count is None:
+            continue
+
+        follow_percentage = args.get('follow_percentage')
+        if follow_percentage is None:
+            continue
+
+        finish_time = get_finish_time(session)
+        if finish_time is None:
+            continue
+
+        setup = "--likes-count " + likes_count + "\n--follow-percentage " + follow_percentage
+        start_time = get_start_time(session)
+        time_per_interaction = (finish_time - start_time) / successful_interactions
+        setups_map[setup] = time_per_interaction.total_seconds()
+
+    def time_formatter(x, _):
+        minutes = int(x // 60)
+        seconds = int(x % 60)
+        return (str(minutes) + "m " if minutes > 0 else "") + str(seconds) + "s"
+
+    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(A4_WIDTH_INCHES, A4_HEIGHT_INCHES))
+    fig.subplots_adjust(top=0.8, hspace=0.05)
+    plt.yticks(rotation=45, fontsize=6)
+    ax.xaxis.set_major_formatter(ticker.FuncFormatter(time_formatter))
+    ax.xaxis.grid(True, linestyle='--')
+
+    setups_map_sorted = {key: value for key, value in sorted(setups_map.items(), key=lambda item: -item[1])}
+    setups_list = list(setups_map_sorted.keys())
+    times_list = list(setups_map_sorted.values())
+    ax.barh(setups_list, times_list)
+
+    ax.set_title('Sessions duration for account "@' + username + '".\nThis page shows average time of script working '
+                                                                 'per successful interaction.\nYou can obtain '
+                                                                 'approximate session length by multiplying one of the'
+                                                                 '\nfollowing times and your --interactions-count '
+                                                                 'value.\n\nPeriod: ' + period.value + '.\n',
+                 fontsize=12,
+                 x=0,
+                 horizontalalignment='left')
+
+    pdf.savefig(fig)
+    plt.close()
 
 
 @unique
