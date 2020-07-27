@@ -1,3 +1,4 @@
+import argparse
 import json
 from datetime import timedelta
 from enum import Enum, unique
@@ -14,13 +15,16 @@ A4_HEIGHT_INCHES = 11.69
 
 
 def main():
-    username = "admishchenko"
+    succeed, username = _parse_arguments()
+    if not succeed:
+        return
 
     sessions = _load_sessions(username)
     if not sessions:
         return
 
-    with PdfPages('statistics_' + username + '.pdf') as pdf:
+    filename = 'report_' + username + '_' + datetime.now().strftime("%Y-%m-%d") + '.pdf'
+    with PdfPages(filename) as pdf:
         sessions_week = filter_sessions(sessions, Period.LAST_WEEK)
         sessions_month = filter_sessions(sessions, Period.LAST_MONTH)
 
@@ -32,6 +36,32 @@ def main():
         plot_duration_statistics(sessions_month, pdf, username, Period.LAST_MONTH)
         plot_duration_statistics(sessions, pdf, username, Period.ALL_TIME)
 
+    print_timeless("Report saved as " + filename)
+
+
+def _parse_arguments():
+    parser = argparse.ArgumentParser(
+        description='Analytics tool for Insomniac bot',
+        add_help=False
+    )
+    parser.add_argument('--account',
+                        help='account to build report for',
+                        metavar='username',
+                        default='')
+
+    args, unknown_args = parser.parse_known_args()
+
+    if args.account == '':
+        parser.print_help()
+        return False, None
+
+    if unknown_args:
+        print_timeless(COLOR_FAIL + "Unknown arguments: " + ", ".join(str(arg) for arg in unknown_args) + COLOR_ENDC)
+        parser.print_help()
+        return False, None
+
+    return True, args.account
+
 
 def _load_sessions(username):
     path = username + "/sessions.json"
@@ -40,7 +70,7 @@ def _load_sessions(username):
             json_array = json.load(json_file)
         return json_array
     else:
-        print_timeless(COLOR_FAIL + "No sessions.json file found for @" + username)
+        print_timeless(COLOR_FAIL + "No sessions.json file found for @" + username + COLOR_ENDC)
         return None
 
 
