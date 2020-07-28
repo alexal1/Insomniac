@@ -175,7 +175,7 @@ def plot_duration_statistics(sessions, pdf, username, period):
         return (str(minutes) + "m " if minutes > 0 else "") + str(seconds) + "s"
 
     fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(A4_WIDTH_INCHES, A4_HEIGHT_INCHES))
-    fig.subplots_adjust(top=0.8, hspace=0.05)
+    fig.subplots_adjust(top=0.8, bottom=0.2)
     plt.yticks(rotation=45, fontsize=6)
     ax.xaxis.set_major_formatter(ticker.FuncFormatter(time_formatter))
     ax.xaxis.grid(True, linestyle='--')
