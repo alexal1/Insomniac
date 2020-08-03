@@ -4,6 +4,8 @@
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/alexal1/Insomniac?label=latest%20version)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)
 
+[español](https://github.com/alexal1/Insomniac/blob/master/res/README_es.md) | [português](https://github.com/alexal1/Insomniac/blob/master/res/README_pt_BR.md)
+
 Liking and following automatically on your Android phone/tablet. No root required: it works on [UI Automator](https://developer.android.com/training/testing/ui-automator), which is an official Android UI testing framework.
 
 <img src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/demo.gif">
@@ -16,7 +18,7 @@ Liking and following automatically on your Android phone/tablet. No root require
 mkdir -p ~/Library/Android/sdk
 mv <path-to-downloads>/platform-tools/ ~/Library/Android/sdk
 ```
-4. [Add platform-tools path to the PATH environment variable](https://github.com/alexal1/Insomniac/wiki/Adding-platform-tools-to-the-PATH-environment-variable). If you do it correctly, terminal / command line command `adb devices` will print `List of devices attached`
+4. [Add platform-tools path to the PATH environment variable](https://github.com/alexal1/Insomniac/wiki/Adding-platform-tools-to-the-PATH-environment-variable). If you do it correctly, terminal / command prompt command `adb devices` will print `List of devices attached`
 
 ### How to install on Raspberry Pi OS
 1. Update apt-get: `sudo apt-get update`
@@ -34,7 +36,7 @@ mv <path-to-downloads>/platform-tools/ ~/Library/Android/sdk
 > Android 8.0.0 (API level 26) and Android 8.1.0 (API level 26): Settings > System > About Phone > Build Number
 >
 > Android 7.1 (API level 25) and lower: Settings > About Phone > Build Number
-3. Switch on **USB debugging** (or **Install apps via USB** or similar) on the Developer options screen
+3. Switch on **USB debugging** (and **Install apps via USB** if there is such option) on the Developer options screen.
 4. Device will ask you to allow computer connection. Press "Connect"
 5. Type `adb devices` in terminal. It will display attached devices. There should be exactly one device. Then run the script (it works on Python 3):
 ```
@@ -81,8 +83,14 @@ Full list of command line arguments:
 - [How to connect Android phone via WiFi?](https://www.patreon.com/posts/connect-android-38655552)
 - [How to run on 2 or more devices at once?](https://www.patreon.com/posts/38683736)
 - [Script crashes with **OSError: RPC server not started!** or **ReadTimeoutError**](https://www.patreon.com/posts/problems-with-to-38702683)
-- [Private accounts are always skipped. How to follow them too?](https://www.patreon.com/posts/enable-private-39097751) **(at least $5 donation required)**
-- [Filter by followers/followings count, ratio, business/non-business](https://www.patreon.com/posts/38826184) **(at least $5 donation required)**
+- [Private accounts are always skipped. How to follow them too?](https://www.patreon.com/posts/enable-private-39097751) **(please join Patreon $10 tier)**
+- [Filter by followers/followings count, ratio, business/non-business](https://www.patreon.com/posts/38826184) **(please join Patreon $10 tier)**
+
+### Analytics
+There also is an analytics tool for this bot. It is a script that builds a report in PDF format. The report contains account's followers growth graphs for different periods. Liking, following and unfollowing actions' amounts are on the same axis to determine bot effectiveness. The report also contains stats of sessions length for different configurations that you've used. All data is taken from `sessions.json` file that's generated during bot's execution.
+<img src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/analytics_sample.png">
+
+To get access to the analytics tool you have to [join Patreon $10 tier](https://www.patreon.com/insomniac_bot).
 
 ### Features in progress
 - [x] Follow given percentage of interacted users by `--follow-percentage 50`
@@ -99,8 +107,16 @@ There already is [InstaPy](https://github.com/timgrossmann/InstaPy), which works
 That's why need arised in a solution for mobile devices. Instagram can't distinguish bot from a human when it comes to your phone. However, even a human can reach limits when using the app, so don't fail to be careful. Always set `--total-likes-limit` to 300 or less. Also it's better to use `--repeat` to act periodically for 2-3 hours, because Instagram keeps track of how long the app works.
 
 ### Community
-Join our Telegram group
+We have a [Discord server](https://discord.gg/59pUYCw) which is the most convenient place to discuss all bugs, new features, Instagram limits, etc. If you're not familiar with Discord, you can also join our [Telegram chat](https://t.me/insomniac_chat). And finally, all useful info is posted on our [Patreon page](https://www.patreon.com/insomniac_bot). Most posts are available for everyone, but some require joining $10 tier: this is our way to keep evolving and improving the bot.
 
-<a href="https://t.me/insomniac_chat">
-  <img hspace="3" alt="Telegram Group" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/telegram.png" width=214/>
-</a>
+<p>
+  <a href="https://discord.gg/59pUYCw">
+    <img hspace="3" alt="Discord Server" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/discord.png" height=84/>
+  </a>
+  <a href="https://t.me/insomniac_chat">
+    <img hspace="3" alt="Telegram Chat" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/telegram.png" height=84/>
+  </a>
+  <a href="https://www.patreon.com/insomniac_bot">
+    <img hspace="3" alt="Patreon Page" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/patreon.png" height=84/>
+  </a>
+</p>
