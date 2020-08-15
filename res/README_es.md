@@ -2,12 +2,13 @@
 
 # Insomniac
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/alexal1/Insomniac?label=latest%20version)
+![Python](https://img.shields.io/badge/built%20with-Python3-red.svg)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)
 
 
 [inglés](https://github.com/alexal1/Insomniac/blob/master/README.md) | [portugués](https://github.com/alexal1/Insomniac/blob/master/res/README_pt_BR.md)
 
-Dale like y sigue automáticamente en tu teléfono / tableta Android. No se requiere root: funciona con UI Automator, que es una estructura de prueba oficial UI de Android.
+Dale like y sigue automáticamente en tu teléfono / tableta Android. No se requiere root: funciona con [UI Automator](https://developer.android.com/training/testing/ui-automator?hl=es), que es una estructura de prueba oficial UI de Android.
 
 <img src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/demo.gif">
 
@@ -54,11 +55,11 @@ Lista completa de argumentos de línea de comando:
                         interactuar
   --likes-count 2       número de likes para cada usuario interactuado, 2 por defecto
   --total-likes-limit 300
-                        limit on total amount of likes during the session, 300
+                        límite en la cantidad total de likes durante la sesión, 300
                         por defecto
   --interactions-count 70
                         cantidad de interacciones por cada blogger, 70 por
-                        defecto. Only successful interactions count
+                        defecto. Solo cuentan las interacciones exitosas
   --repeat 180          repita la misma sesión nuevamente después de N minutos
                         completos, deshabilitada por defecto
   --follow-percentage 50
@@ -73,7 +74,11 @@ Lista completa de argumentos de línea de comando:
                         deja de seguir el numero maximo de usuarios, que no
                         te siguen de vuelta. Solo usuario que fue seguido por el script
                         será dejado de seguir. El orden es del más antiguo al
-                        más nuevo.
+                        más nuevo
+  --unfollow-any 100    deja de seguir el numero maximo de usuarios. El orden es
+                        del más antiguo al más nuevo
+  --min-following 100   cantidad mínima de seguidores, después de alcanzar
+                        esta cantidad, unfollow se detiene
   --device 2443de990e017ece
                         identificador de dispositivo. Debe usarse solo cuando hay varios
                         dispositivos conectados a la vez

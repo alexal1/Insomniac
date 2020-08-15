@@ -2,6 +2,7 @@
 
 # Insomniac
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/alexal1/Insomniac?label=latest%20version)
+![Python](https://img.shields.io/badge/built%20with-Python3-red.svg)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)
 
 [español](https://github.com/alexal1/Insomniac/blob/master/res/README_es.md) | [português](https://github.com/alexal1/Insomniac/blob/master/res/README_pt_BR.md)
@@ -73,6 +74,10 @@ Full list of command line arguments:
                         follow you back. Only users followed by this script
                         will be unfollowed. The order is from oldest to newest
                         followings
+  --unfollow-any 100    unfollow at most given number of users. The order is
+                        from oldest to newest followings
+  --min-following 100   minimum amount of followings, after reaching this
+                        amount unfollow stops
   --device 2443de990e017ece
                         device identifier. Should be used only when multiple
                         devices are connected at once
