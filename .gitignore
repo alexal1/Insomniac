@@ -6,3 +6,4 @@ sessions.json
 .DS_Store
 screenshots
 filter.json
+whitelist.txt
