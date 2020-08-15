@@ -48,10 +48,12 @@ def main():
     is_interact_enabled = len(args.interact) > 0
     is_unfollow_enabled = int(args.unfollow) > 0
     is_unfollow_non_followers_enabled = int(args.unfollow_non_followers) > 0
-    total_enabled = int(is_interact_enabled) + int(is_unfollow_enabled) + int(is_unfollow_non_followers_enabled)
+    is_remove_mass_followers_enabled = args.remove_mass_followers is not None and int(args.remove_mass_followers) > 0
+    total_enabled = int(is_interact_enabled) + int(is_unfollow_enabled) + int(is_unfollow_non_followers_enabled) + \
+        int(is_remove_mass_followers_enabled)
     if total_enabled == 0:
         print_timeless(COLOR_FAIL + "You have to specify one of the actions: --interact, --unfollow, "
-                                    "--unfollow-non-followers" + COLOR_ENDC)
+                                    "--unfollow-non-followers, --remove-mass-followers" + COLOR_ENDC)
         return
     elif total_enabled > 1:
         print_timeless(COLOR_FAIL + "Running Insomniac with two or more actions is not supported yet." + COLOR_ENDC)
@@ -66,6 +68,9 @@ def main():
         elif is_unfollow_non_followers_enabled:
             print("Action: unfollow " + str(args.unfollow_non_followers) + " non followers")
             mode = Mode.UNFOLLOW_NON_FOLLOWERS
+        elif is_remove_mass_followers_enabled:
+            print("Action: remove " + str(args.remove_mass_followers) + " mass followers")
+            mode = Mode.REMOVE_MASS_FOLLOWERS
 
     profile_filter = Filter()
     on_interaction = partial(_on_interaction,
@@ -79,7 +84,7 @@ def main():
 
         print_timeless(COLOR_WARNING + "\n-------- START: " + str(session_state.startTime) + " --------" + COLOR_ENDC)
         open_instagram(device_id)
-        session_state.my_username, session_state.my_followers_count = get_my_profile_info(device)
+        session_state.my_username, session_state.my_followers_count, _ = get_my_profile_info(device)
         storage = Storage(session_state.my_username)
 
         # IMPORTANT: in each job we assume being on the top of the Profile tab already
@@ -96,6 +101,8 @@ def main():
             _job_unfollow(device, int(args.unfollow), storage, only_non_followers=False)
         elif mode == Mode.UNFOLLOW_NON_FOLLOWERS:
             _job_unfollow(device, int(args.unfollow_non_followers), storage, only_non_followers=True)
+        elif mode == Mode.REMOVE_MASS_FOLLOWERS:
+            _job_remove_mass_followers(device, int(args.remove_mass_followers), int(args.max_following), storage)
 
         close_instagram(device_id)
         print_copyright(session_state.my_username)
@@ -201,6 +208,40 @@ def _job_unfollow(device, count, storage, only_non_followers):
         job()
 
 
+def _job_remove_mass_followers(device, count, max_followings, storage):
+    class State:
+        def __init__(self):
+            pass
+
+        removed_count = 0
+        is_job_completed = False
+
+    state = State()
+    session_state = sessions[-1]
+
+    try:
+        from src.action_remove_mass_followers import remove_mass_followers
+    except ImportError:
+        print_blocked_feature(session_state.my_username, "--remove-mass-followers")
+        return
+
+    def on_remove():
+        state.removed_count += 1
+        session_state.totalRemovedMassFollowers += 1
+        can_continue = state.removed_count < count
+        if not can_continue:
+            print(COLOR_OKGREEN + "Removed " + str(state.removed_count) + " mass followers, finish." + COLOR_ENDC)
+        return can_continue
+
+    @_run_safely(device=device)
+    def job():
+        remove_mass_followers(device, max_followings, on_remove, storage)
+        state.is_job_completed = True
+
+    while not state.is_job_completed and state.removed_count < count:
+        job()
+
+
 def _parse_arguments():
     parser = argparse.ArgumentParser(
         description='Instagram bot for automated Instagram interaction using Android device via ADB',
@@ -248,6 +289,13 @@ def _parse_arguments():
     parser.add_argument('--device',
                         help='device identifier. Should be used only when multiple devices are connected at once',
                         metavar='2443de990e017ece')
+    # Remove mass followers from the list of your followers. "Mass followers" are those who has more than N followings,
+    # where N can be set via --max-following. This is an extra feature, requires Patreon $10 tier.
+    parser.add_argument('--remove-mass-followers',
+                        help=argparse.SUPPRESS)
+    parser.add_argument('--max-following',
+                        help=argparse.SUPPRESS,
+                        default=1000)
 
     if not len(sys.argv) > 1:
         parser.print_help()
@@ -332,6 +380,7 @@ class Mode(Enum):
     INTERACT = 0
     UNFOLLOW = 1
     UNFOLLOW_NON_FOLLOWERS = 2
+    REMOVE_MASS_FOLLOWERS = 3
 
 
 if __name__ == "__main__":
