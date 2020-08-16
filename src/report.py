@@ -20,6 +20,8 @@ def print_full_report(sessions):
                            + stringify_interactions(session.totalFollowed) + COLOR_ENDC)
             print_timeless(COLOR_WARNING + "Total likes: " + str(session.totalLikes) + COLOR_ENDC)
             print_timeless(COLOR_WARNING + "Total unfollowed: " + str(session.totalUnfollowed) + COLOR_ENDC)
+            print_timeless(COLOR_WARNING + "Total removed mass followers: "
+                           + str(session.totalRemovedMassFollowers) + COLOR_ENDC)
 
     print_timeless("\n")
     print_timeless(COLOR_WARNING + "TOTAL" + COLOR_ENDC)
@@ -66,3 +68,15 @@ def print_full_report(sessions):
 
     total_unfollowed = sum(session.totalUnfollowed for session in sessions)
     print_timeless(COLOR_WARNING + "Total unfollowed: " + str(total_unfollowed) + COLOR_ENDC)
+
+    total_removed_mass_followers = sum(session.totalRemovedMassFollowers for session in sessions)
+    print_timeless(COLOR_WARNING + "Total removed mass followers: " + str(total_removed_mass_followers) + COLOR_ENDC)
+
+
+def print_short_report(blogger, session_state):
+    total_likes = session_state.totalLikes
+    total_followed = sum(session_state.totalFollowed.values())
+    interactions = session_state.successfulInteractions.get(blogger, 0)
+    print(COLOR_WARNING + "Session progress: " + str(total_likes) + " likes, " + str(total_followed) + " followed, " +
+          str(interactions) + " successful " + ("interaction" if interactions == 1 else "interactions") +
+          " for @" + blogger + COLOR_ENDC)
