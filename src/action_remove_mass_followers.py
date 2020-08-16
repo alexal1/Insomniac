@@ -12,6 +12,7 @@ def remove_mass_followers(device, max_followings, on_remove, storage):
 
 
 def _iterate_over_followers(device, max_followings, on_remove, storage):
+    need_to_restart = False  # after removing a user we need to start the screen from the beginning
     while True:
         print("Iterate over visible followers")
         screen_iterated_followers = 0
@@ -54,8 +55,15 @@ def _iterate_over_followers(device, max_followings, on_remove, storage):
 
                     if not can_continue:
                         return
+
+                    need_to_restart = True
+                    break
         except IndexError:
             print(COLOR_FAIL + "Cannot get next item: probably reached end of the screen." + COLOR_ENDC)
+
+        if need_to_restart:
+            need_to_restart = False
+            continue
 
         if screen_iterated_followers > 0:
             print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
