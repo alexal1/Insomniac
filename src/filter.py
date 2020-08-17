@@ -86,7 +86,7 @@ class Filter:
         followers_text_view = device(resourceId='com.instagram.android:id/row_profile_header_textview_followers_count',
                                      className='android.widget.TextView')
         if followers_text_view.exists:
-            followers_text = followers_text_view.text
+            followers_text = followers_text_view.info['text']
             if followers_text:
                 followers = parse(device, followers_text)
             else:
@@ -99,7 +99,7 @@ class Filter:
         followings_text_view = device(resourceId='com.instagram.android:id/row_profile_header_textview_following_count',
                                       className='android.widget.TextView')
         if followings_text_view.exists:
-            followings_text = followings_text_view.text
+            followings_text = followings_text_view.info['text']
             if followings_text:
                 followings = parse(device, followings_text)
             else:

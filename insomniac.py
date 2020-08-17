@@ -10,7 +10,7 @@ from http.client import HTTPException
 from socket import timeout
 
 import colorama
-import uiautomator
+import uiautomator2 as uiautomator
 
 from src.action_get_my_profile_info import get_my_profile_info
 from src.action_handle_blogger import handle_blogger
@@ -39,7 +39,7 @@ def main():
 
     global device_id
     device_id = args.device
-    device = uiautomator.device if device_id is None else uiautomator.Device(device_id)
+    device = uiautomator.connect()# if device_id is None else uiautomator.Device(device_id)
 
     if not check_adb_connection(is_device_id_provided=(device_id is not None)):
         return
@@ -385,7 +385,7 @@ def _run_safely(device):
                 print_full_report(sessions)
                 sessions.persist(directory=session_state.my_username)
                 sys.exit(0)
-            except (uiautomator.JsonRPCError, IndexError, HTTPException, timeout):
+            except (uiautomator.JSONRPCError, IndexError, HTTPException, timeout):
                 print(COLOR_FAIL + traceback.format_exc() + COLOR_ENDC)
                 take_screenshot(device)
                 print("No idea what it was. Let's try again.")

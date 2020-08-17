@@ -13,8 +13,8 @@ def navigate(device, tab):
             raise NavigationException()
 
         # Two clicks to reset tab content
-        profile_button.click.wait()
-        profile_button.click.wait()
+        profile_button.click()
+        profile_button.click()
 
         if not tab == Tabs.PROFILE:
             _do_navigate(device, tab)
@@ -32,8 +32,8 @@ def _do_navigate(device, tab):
     button = tab_bar.child(index=tab_index)
 
     # Two clicks to reset tab content
-    button.click.wait()
-    button.click.wait()
+    button.click()
+    button.click()
     return True
 
 

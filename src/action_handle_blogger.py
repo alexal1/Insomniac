@@ -43,7 +43,7 @@ def _open_user_followers(device, username):
         print("Open your followers")
         followers_button = device(resourceId='com.instagram.android:id/row_profile_header_followers_container',
                                   className='android.widget.LinearLayout')
-        followers_button.click.wait()
+        followers_button.click()
     else:
         navigate(device, Tabs.SEARCH)
 
@@ -51,7 +51,6 @@ def _open_user_followers(device, username):
         search_edit_text = device(resourceId='com.instagram.android:id/action_bar_search_edit_text',
                                   className='android.widget.EditText')
         search_edit_text.set_text(username)
-        device.wait.idle()
         username_view = device(resourceId='com.instagram.android:id/row_search_user_username',
                                className='android.widget.TextView',
                                text=username)
@@ -60,12 +59,12 @@ def _open_user_followers(device, username):
             print_timeless(COLOR_FAIL + "Cannot find user @" + username + ", abort." + COLOR_ENDC)
             return False
 
-        username_view.click.wait()
+        username_view.click()
 
         print("Open @" + username + " followers")
         followers_button = device(resourceId='com.instagram.android:id/row_profile_header_followers_container',
                                   className='android.widget.LinearLayout')
-        followers_button.click.wait()
+        followers_button.click()
 
     return True
 
@@ -113,7 +112,7 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
                     print(COLOR_OKGREEN + "Next item not found: probably reached end of the screen." + COLOR_ENDC)
                     break
 
-                username = user_name_view.text
+                username = user_name_view.info['text']
                 screen_iterated_followers += 1
 
                 if not is_myself and storage.check_user_was_interacted(username):
@@ -122,7 +121,7 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
                     print("@" + username + ": already interacted in the last week. Skip.")
                 else:
                     print("@" + username + ": interact")
-                    user_name_view.click.wait()
+                    user_name_view.click()
 
                     can_follow = not is_myself \
                         and not is_follow_limit_reached() \
@@ -235,7 +234,7 @@ def _open_photo_and_like(device, row, column, on_like):
         item_view = row_view.child(index=column)
         if not item_view.exists:
             return False
-        item_view.click.wait()
+        item_view.click()
         return True
 
     if not open_photo():
@@ -260,7 +259,7 @@ def _open_photo_and_like(device, row, column, on_like):
                 like_button.click()
                 random_sleep()
                 break
-    except uiautomator.JsonRPCError:
+    except uiautomator.JSONRPCError:
         print("Double click worked successfully.")
 
     on_like()
@@ -284,7 +283,7 @@ def _follow(device, username, follow_percentage):
     follow_button = profile_actions.child(index=0)
 
     if follow_button.exists:
-        follow_button.click.wait()
+        follow_button.click()
         bottom_sheet = device(resourceId='com.instagram.android:id/layout_container_bottom_sheet',
                               className='android.widget.FrameLayout')
         if bottom_sheet.exists:

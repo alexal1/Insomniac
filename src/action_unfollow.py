@@ -14,7 +14,7 @@ def _open_my_followings(device):
     print("Open my followings")
     followings_button = device(resourceId='com.instagram.android:id/row_profile_header_following_container',
                                className='android.widget.LinearLayout')
-    followings_button.click.wait()
+    followings_button.click()
 
 
 def _sort_followings_by_date(device):
@@ -26,9 +26,9 @@ def _sort_followings_by_date(device):
         print(COLOR_FAIL + "Cannot find button to sort followings. Continue without sorting.")
         return
 
-    sort_button.click.wait()
+    sort_button.click()
     sort_options_recycler_view = device(resourceId='com.instagram.android:id/follow_list_sorting_options_recycler_view')
-    sort_options_recycler_view.child(index=2).click.wait()
+    sort_options_recycler_view.child(index=2).click()
 
 
 def _iterate_over_followings(device, count, on_unfollow, storage, unfollow_restriction, my_username):
@@ -45,7 +45,7 @@ def _iterate_over_followings(device, count, on_unfollow, storage, unfollow_restr
                 print(COLOR_OKGREEN + "Next item not found: probably reached end of the screen." + COLOR_ENDC)
                 break
 
-            username = user_name_view.text
+            username = user_name_view.info['text']
             screen_iterated_followings += 1
 
             if unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT or \
@@ -67,7 +67,7 @@ def _iterate_over_followings(device, count, on_unfollow, storage, unfollow_restr
             if not unfollow_button.exists:
                 print(COLOR_FAIL + "Cannot find unfollow button" + COLOR_ENDC)
                 break
-            unfollow_button.click.wait()
+            unfollow_button.click()
             _close_dialog_if_shown(device)
             storage.add_interacted_user(username, unfollowed=True)
             on_unfollow()
@@ -98,7 +98,7 @@ def _close_dialog_if_shown(device):
     random_sleep()
     unfollow_button = dialog_root_view.child(index=0).child(resourceId='com.instagram.android:id/primary_button',
                                                             className='android.widget.TextView')
-    unfollow_button.click.wait()
+    unfollow_button.click()
 
 
 def _check_is_follower(device, username, my_username):
@@ -109,11 +109,11 @@ def _check_is_follower(device, username, my_username):
     if not username_view.exists:
         print(COLOR_FAIL + "Cannot find @" + username + ", skip." + COLOR_ENDC)
         return True
-    username_view.click.wait()
+    username_view.click()
 
     following_container = device(resourceId='com.instagram.android:id/row_profile_header_following_container',
                                  className='android.widget.LinearLayout')
-    following_container.click.wait()
+    following_container.click()
 
     my_username_view = device(resourceId='com.instagram.android:id/follow_list_username',
                               className='android.widget.TextView',

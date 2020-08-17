@@ -30,17 +30,17 @@ def _switch_to_english(device):
     action_bar = device(resourceId='com.instagram.android:id/action_bar',
                         className='android.widget.LinearLayout')
     options_view = action_bar.child(index=1)
-    options_view.click.wait()
+    options_view.click()
 
     settings_button = device(resourceId='com.instagram.android:id/menu_settings_row',
                              className='android.widget.TextView')
-    settings_button.click.wait()
+    settings_button.click()
 
     for account_item_index in range(6, 9):
         list_view = device(resourceId='android:id/list',
                            className='android.widget.ListView')
         account_item = list_view.child(index=account_item_index)
-        account_item.click.wait()
+        account_item.click()
 
         list_view = device(resourceId='android:id/list',
                            className='android.widget.ListView')
@@ -49,7 +49,7 @@ def _switch_to_english(device):
             print(COLOR_FAIL + "Oops, went the wrong way" + COLOR_ENDC)
             device.press.back()
             continue
-        language_item.click.wait()
+        language_item.click()
 
         search_edit_text = device(resourceId='com.instagram.android:id/search',
                                   className='android.widget.EditText')
@@ -64,7 +64,7 @@ def _switch_to_english(device):
         list_view = device(resourceId='com.instagram.android:id/language_locale_list',
                            className='android.widget.ListView')
         english_item = list_view.child(index=0)
-        english_item.click.wait()
+        english_item.click()
 
         break
 
