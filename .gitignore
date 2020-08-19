@@ -7,3 +7,4 @@ sessions.json
 screenshots
 filter.json
 whitelist.txt
+action_remove_mass_followers.py
