@@ -52,7 +52,8 @@ Full list of command line arguments:
   --interact username1 [username2 ...]
                         list of usernames with whose followers you want to
                         interact
-  --likes-count 2       number of likes for each interacted user, 2 by default
+  --likes-count 2       number of likes for each interacted user, 2 by default,
+                        also accepts range (e.g. 2-4)
   --total-likes-limit 300
                         limit on total amount of likes during the session, 300
                         by default

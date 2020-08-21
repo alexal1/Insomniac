@@ -1,5 +1,5 @@
 from functools import partial
-from random import shuffle
+from random import shuffle, randint
 
 import uiautomator
 
@@ -168,6 +168,20 @@ def _interact_with_user(device,
     """
     :return: (whether interaction succeed, whether @username was followed during the interaction)
     """
+    # Logic for handling min/max of likes to add more random
+    lc = likes_count.split("-")
+    if len(lc) <= 0:
+        print_timeless(COLOR_FAIL + f"Likes count must be a positive number or range of positive numbers. Using default of 2." + COLOR_ENDC)
+        likes_count = 2
+    elif len(lc) == 1:
+        likes_count = int(likes_count)
+    elif len(lc) == 2:
+        likes_count = randint(int(lc[0]),int(lc[1]))
+        print(f"Liking {likes_count} photos on this account.")
+    else:
+        print_timeless(COLOR_FAIL + f"Likes count must either have a value of one integer (e.g. 2) or a range (e.g. 2-4). Using default of 2." + COLOR_ENDC)
+        likes_count = 2
+
     if username == my_username:
         print("It's you, skip.")
         return False, False

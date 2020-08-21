@@ -97,7 +97,7 @@ def main():
         if mode == Mode.INTERACT:
             _job_handle_bloggers(device,
                                  args.interact,
-                                 int(args.likes_count),
+                                 args.likes_count,
                                  int(args.follow_percentage),
                                  int(args.follow_limit) if args.follow_limit else None,
                                  storage,
@@ -278,7 +278,7 @@ def _parse_arguments():
                         metavar=('username1', 'username2'),
                         default=[])
     parser.add_argument('--likes-count',
-                        help='number of likes for each interacted user, 2 by default',
+                        help='number of likes for each interacted user, 2 by default - also accepts range (e.g. 2-4)',
                         metavar='2',
                         default='2')
     parser.add_argument('--total-likes-limit',
