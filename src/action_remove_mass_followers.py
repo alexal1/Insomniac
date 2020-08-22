@@ -1,4 +1,5 @@
 from src.action_get_my_profile_info import get_following_count
+from src.globals import UI_TIMEOUT, UI_TIMEOUT_ITERATOR
 from src.utils import *
 
 
@@ -6,37 +7,42 @@ def remove_mass_followers(device, max_followings, on_remove, storage):
     print("Open your followers")
     followers_button = device(resourceId='com.instagram.android:id/row_profile_header_followers_container',
                               className='android.widget.LinearLayout')
-    followers_button.click.wait()
+    followers_button.click(timeout=UI_TIMEOUT)
     _scroll_to_bottom(device)
 
     _iterate_over_followers(device, max_followings, on_remove, storage)
 
 
 def _iterate_over_followers(device, max_followings, on_remove, storage):
+    # Wait until list is rendered
+    device(resourceId='com.instagram.android:id/follow_list_container',
+           className='android.widget.LinearLayout').wait(timeout=UI_TIMEOUT)
+
     def scrolled_to_top():
         row_search = device(resourceId='com.instagram.android:id/row_search_edit_text',
                             className='android.widget.EditText')
-        return row_search.exists
+        return row_search.exists(timeout=UI_TIMEOUT)
 
     need_to_restart = False  # after removing a user we need to start the screen from the beginning
     while True:
         print("Iterate over visible followers")
+        random_sleep()
         screen_iterated_followers = 0
 
         try:
             for item in device(resourceId='com.instagram.android:id/follow_list_container',
                                className='android.widget.LinearLayout'):
                 user_info_view = item.child(index=1)
-                if not user_info_view.exists:
+                if not user_info_view.exists(timeout=UI_TIMEOUT_ITERATOR):
                     print(COLOR_OKGREEN + "Next item not found: probably reached end of the screen." + COLOR_ENDC)
                     break
 
                 user_name_view = user_info_view.child(index=0).child()
-                if not user_name_view.exists:
+                if not user_name_view.exists(timeout=UI_TIMEOUT_ITERATOR):
                     print(COLOR_OKGREEN + "Next item not found: probably reached end of the screen." + COLOR_ENDC)
                     break
 
-                username = user_name_view.text
+                username = user_name_view.info['text']
                 screen_iterated_followers += 1
 
                 if storage.is_user_in_whitelist(username):
@@ -44,21 +50,22 @@ def _iterate_over_followers(device, max_followings, on_remove, storage):
                     continue
 
                 print("Open @" + username)
-                user_name_view.click.wait()
+                user_name_view.click(timeout=UI_TIMEOUT)
                 random_sleep()
                 is_mass_follower = _is_mass_follower(device, username, max_followings)
-                device.press.back()
+                device.press("back")
                 if is_mass_follower:
                     print(COLOR_OKGREEN + "@" + username + " is mass follower, remove." + COLOR_ENDC)
                     remove_button = user_info_view.right(resourceId='com.instagram.android:id/button',
                                                          className='android.widget.TextView')
-                    if not remove_button.exists:
+                    if not remove_button.exists(timeout=UI_TIMEOUT_ITERATOR):
                         print(COLOR_OKGREEN + "Next item not found: probably reached end of the screen." + COLOR_ENDC)
                         break
-                    remove_button.click.wait()
+                    remove_button.click(timeout=UI_TIMEOUT)
                     random_sleep()
                     _close_dialog_if_shown(device)
-                    can_continue = on_remove()
+                    _close_bottom_sheet_if_shown(device)
+                    can_continue = on_remove(username)
 
                     if not can_continue:
                         return
@@ -94,14 +101,31 @@ def _is_mass_follower(device, username, max_followings):
 def _close_dialog_if_shown(device):
     dialog_root_view = device(resourceId='com.instagram.android:id/dialog_root_view',
                               className='android.widget.FrameLayout')
-    if not dialog_root_view.exists:
+    if not dialog_root_view.exists(timeout=UI_TIMEOUT):
         return
 
-    print(COLOR_OKGREEN + "Dialog shown, confirm removing." + COLOR_ENDC)
+    print(COLOR_OKGREEN + "Dialog shown, confirm removing..." + COLOR_ENDC)
     random_sleep()
     remove_button = dialog_root_view.child(index=0).child(resourceId='com.instagram.android:id/primary_button',
                                                           className='android.widget.TextView')
-    remove_button.click.wait()
+    remove_button.click(timeout=UI_TIMEOUT)
+    print("Removing confirmed!")
+    random_sleep()
+
+
+def _close_bottom_sheet_if_shown(device):
+    bottom_sheet_view = device(resourceId='com.instagram.android:id/bottom_sheet_container',
+                               className='android.view.ViewGroup')
+    if not bottom_sheet_view.exists(timeout=UI_TIMEOUT):
+        return
+
+    print(COLOR_OKGREEN + "Bottom sheet shown, confirm removing..." + COLOR_ENDC)
+    random_sleep()
+    remove_button = bottom_sheet_view.child(resourceId='com.instagram.android:id/action_sheet_row_text_view',
+                                            className='android.widget.TextView')
+    remove_button.click(timeout=UI_TIMEOUT)
+    print("Removing confirmed!")
+    random_sleep()
 
 
 def _scroll_to_bottom(device):
@@ -110,19 +134,19 @@ def _scroll_to_bottom(device):
     def is_end_reached():
         see_all_button = device(resourceId='com.instagram.android:id/see_all_button',
                                 className='android.widget.TextView')
-        return see_all_button.exists
+        return see_all_button.exists(timeout=UI_TIMEOUT)
 
     list_view = device(resourceId='android:id/list',
                        className='android.widget.ListView')
     while not is_end_reached():
-        list_view.fling.toEnd(max_swipes=1)
+        list_view.fling.toEnd(max_swipes=5)
 
     print("Scroll back to the first follower")
 
     def is_at_least_one_follower():
         follower = device(resourceId='com.instagram.android:id/follow_list_container',
                           className='android.widget.LinearLayout')
-        return follower.exists
+        return follower.exists(timeout=UI_TIMEOUT)
 
     while not is_at_least_one_follower():
         list_view.scroll.toBeginning(max_swipes=1)
