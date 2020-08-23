@@ -13,7 +13,7 @@ import colorama
 import uiautomator2 as uiautomator
 
 from src.action_get_my_profile_info import get_my_profile_info
-from src.action_handle_blogger import handle_blogger
+from src.action_handle_blogger import handle_blogger, get_own_followers
 from src.action_unfollow import unfollow, UnfollowRestriction
 from src.counters_parser import LanguageChangedException
 from src.filter import Filter
@@ -43,18 +43,22 @@ def main():
         return
 
     device = uiautomator.connect() if device_id is None else uiautomator.connect(device_id)
+    device.screen_on()
+    random_sleep()
 
     mode = None
     is_interact_enabled = len(args.interact) > 0
+    is_interact_mutual_enabled = args.interact_mutual is not None and len(args.interact_mutual) > 0
     is_unfollow_enabled = int(args.unfollow) > 0
     is_unfollow_non_followers_enabled = int(args.unfollow_non_followers) > 0
     is_unfollow_any_enabled = int(args.unfollow_any) > 0
     is_remove_mass_followers_enabled = args.remove_mass_followers is not None and int(args.remove_mass_followers) > 0
-    total_enabled = int(is_interact_enabled) + int(is_unfollow_enabled) + int(is_unfollow_non_followers_enabled) \
+    total_enabled = int(is_interact_enabled) + int(is_interact_mutual_enabled) + int(is_unfollow_enabled) + int(
+        is_unfollow_non_followers_enabled) \
         + int(is_unfollow_any_enabled) + int(is_remove_mass_followers_enabled)
     if total_enabled == 0:
-        print_timeless(COLOR_FAIL + "You have to specify one of the actions: --interact, --unfollow, "
-                                    "--unfollow-non-followers, --unfollow-any, --remove-mass-followers" + COLOR_ENDC)
+        print_timeless(COLOR_FAIL + "You have to specify one of the actions: --interact, --interact-mutual, "
+                                    "--unfollow, --unfollow-non-followers, --unfollow-any, --remove-mass-followers" + COLOR_ENDC)
         return
     elif total_enabled > 1:
         print_timeless(COLOR_FAIL + "Running Insomniac with two or more actions is not supported yet." + COLOR_ENDC)
@@ -63,6 +67,9 @@ def main():
         if is_interact_enabled:
             print("Action: interact with @" + ", @".join(str(blogger) for blogger in args.interact))
             mode = Mode.INTERACT
+        elif is_interact_mutual_enabled:
+            print("Action: interact with " + str(args.interact_mutual) + " of your followers")
+            mode = Mode.INTERACT_MUTUAL
         elif is_unfollow_enabled:
             print("Action: unfollow " + str(args.unfollow))
             mode = Mode.UNFOLLOW
@@ -88,9 +95,9 @@ def main():
 
         print_timeless(COLOR_WARNING + "\n-------- START: " + str(session_state.startTime) + " --------" + COLOR_ENDC)
         open_instagram(device_id)
-        session_state.my_username,\
-            session_state.my_followers_count,\
-            session_state.my_following_count = get_my_profile_info(device)
+        session_state.my_username, \
+        session_state.my_followers_count, \
+        session_state.my_following_count = get_my_profile_info(device)
         storage = Storage(session_state.my_username)
 
         # IMPORTANT: in each job we assume being on the top of the Profile tab already
@@ -102,7 +109,18 @@ def main():
                                  int(args.follow_limit) if args.follow_limit else None,
                                  storage,
                                  profile_filter,
-                                 on_interaction)
+                                 on_interaction,
+                                 None)
+        elif mode == Mode.INTERACT_MUTUAL:
+            _job_handle_bloggers(device,
+                                 None,
+                                 int(args.likes_count),
+                                 int(args.follow_percentage),
+                                 int(args.follow_limit) if args.follow_limit else None,
+                                 storage,
+                                 profile_filter,
+                                 on_interaction,
+                                 int(args.interact_mutual))
         elif mode == Mode.UNFOLLOW:
             _job_unfollow(device,
                           int(args.unfollow),
@@ -154,7 +172,8 @@ def _job_handle_bloggers(device,
                          follow_limit,
                          storage,
                          profile_filter,
-                         on_interaction):
+                         on_interaction,
+                         bloggers_count):
     class State:
         def __init__(self):
             pass
@@ -169,6 +188,10 @@ def _job_handle_bloggers(device,
         state.is_likes_limit_reached = True
 
     on_interaction = partial(on_interaction, on_likes_limit_reached=on_likes_limit_reached)
+
+    # We are in interact-mutual mode so we need to get followers account from our profile
+    if bloggers is None:
+        bloggers = get_own_followers(device, bloggers_count)
 
     for blogger in bloggers:
         state = State()
@@ -277,6 +300,9 @@ def _parse_arguments():
                         help='list of usernames with whose followers you want to interact',
                         metavar=('username1', 'username2'),
                         default=[])
+    parser.add_argument('--interact-mutual',
+                        help='let you interact only with an amout of your followers, disabled by default.',
+                        metavar='10')
     parser.add_argument('--likes-count',
                         help='number of likes for each interacted user, 2 by default',
                         metavar='2',
@@ -404,17 +430,20 @@ def _run_safely(device):
                 print_full_report(sessions)
                 sessions.persist(directory=session_state.my_username)
                 raise e
+
         return wrapper
+
     return actual_decorator
 
 
 @unique
 class Mode(Enum):
     INTERACT = 0
-    UNFOLLOW = 1
-    UNFOLLOW_NON_FOLLOWERS = 2
-    UNFOLLOW_ANY = 3
-    REMOVE_MASS_FOLLOWERS = 4
+    INTERACT_MUTUAL = 1
+    UNFOLLOW = 2
+    UNFOLLOW_NON_FOLLOWERS = 3
+    UNFOLLOW_ANY = 4
+    REMOVE_MASS_FOLLOWERS = 5
 
 
 if __name__ == "__main__":

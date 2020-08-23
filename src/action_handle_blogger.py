@@ -1,5 +1,7 @@
+import random
 from functools import partial
 from random import shuffle
+from uiautomator2 import Device
 
 import uiautomator2 as uiautomator
 
@@ -37,6 +39,50 @@ def handle_blogger(device,
     if is_myself:
         _scroll_to_bottom(device)
     _iterate_over_followers(device, interaction, is_follow_limit_reached, storage, on_interaction, is_myself)
+
+
+def get_own_followers(device: Device, bloggers_count):
+    own_followers = []
+    _open_user_followers(device, None)  # Open our following list
+
+    # Wait until list is rendered
+    device(resourceId='com.instagram.android:id/follow_list_container',
+           className='android.widget.LinearLayout').wait(timeout=UI_TIMEOUT)
+
+    screen_iterated_followers = 0
+    while True:
+        print("Iterate over visible followings")
+        random_sleep()
+        screen_iterated_followings = 0
+
+        for item in device(resourceId='com.instagram.android:id/follow_list_container',
+                           className='android.widget.LinearLayout'):
+            user_info_view = item.child(index=1)
+            user_name_view = user_info_view.child(index=0).child()
+            if not user_name_view.exists(timeout=UI_TIMEOUT_ITERATOR):
+                print(COLOR_OKGREEN + "Next item not found: probably reached end of the screen." + COLOR_ENDC)
+                break
+
+            username = user_name_view.info['text']
+            screen_iterated_followings += 1
+
+            if username not in own_followers:
+                print("Added @" + username)
+                own_followers.append(username)
+                screen_iterated_followers += 1
+
+            if screen_iterated_followers >= bloggers_count:
+                random.shuffle(own_followers)
+                return own_followers
+
+        if screen_iterated_followings > 0:
+            print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
+            list_view = device(resourceId='android:id/list',
+                               className='android.widget.ListView')
+            list_view.scroll.toEnd(max_swipes=1)
+        else:
+            print(COLOR_OKGREEN + "No followers found ! Finish." + COLOR_ENDC)
+            return None
 
 
 def _open_user_followers(device, username):
@@ -94,15 +140,16 @@ def _scroll_to_bottom(device):
         list_view.scroll.toBeginning(max_swipes=1)
 
 
+def _scrolled_to_top(device):
+    row_search = device(resourceId='com.instagram.android:id/row_search_edit_text',
+                        className='android.widget.EditText')
+    return row_search.exists(timeout=UI_TIMEOUT)
+
+
 def _iterate_over_followers(device, interaction, is_follow_limit_reached, storage, on_interaction, is_myself):
     # Wait until list is rendered
     device(resourceId='com.instagram.android:id/follow_list_container',
            className='android.widget.LinearLayout').wait(timeout=UI_TIMEOUT)
-
-    def scrolled_to_top():
-        row_search = device(resourceId='com.instagram.android:id/row_search_edit_text',
-                            className='android.widget.EditText')
-        return row_search.exists(timeout=UI_TIMEOUT)
 
     while True:
         print("Iterate over visible followers")
@@ -130,8 +177,8 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
                     user_name_view.click(timeout=UI_TIMEOUT)
 
                     can_follow = not is_myself \
-                        and not is_follow_limit_reached() \
-                        and storage.get_following_status(username) == FollowingStatus.NONE
+                                 and not is_follow_limit_reached() \
+                                 and storage.get_following_status(username) == FollowingStatus.NONE
 
                     interaction_succeed, followed = interaction(device, username=username, can_follow=can_follow)
                     storage.add_interacted_user(username, followed=followed)
@@ -146,7 +193,7 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
         except IndexError:
             print(COLOR_FAIL + "Cannot get next item: probably reached end of the screen." + COLOR_ENDC)
 
-        if is_myself and scrolled_to_top():
+        if is_myself and _scrolled_to_top(device):
             print(COLOR_OKGREEN + "Scrolled to top, finish." + COLOR_ENDC)
             return
         elif screen_iterated_followers > 0:
