@@ -151,8 +151,7 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
             return
         elif screen_iterated_followers > 0:
             print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
-            list_view = device(resourceId='android:id/list',
-                               className='android.widget.ListView')
+            list_view = device(resourceId='android:id/list')
             if is_myself:
                 list_view.scroll.toBeginning(max_swipes=1)
             else:
