@@ -1,5 +1,5 @@
 from functools import partial
-from random import shuffle, randint
+from random import shuffle
 
 import uiautomator2 as uiautomator
 
