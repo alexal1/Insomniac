@@ -51,22 +51,25 @@ Full list of command line arguments:
 ```
   --interact username1 [username2 ...]
                         list of usernames with whose followers you want to
-                        interact
-  --likes-count 2       number of likes for each interacted user, 2 by default,
-                        also accepts range (e.g. 2-4)
+                        interact - also accepts range (e.g. 2-4)
+  --likes-count 2       number of likes for each interacted user, 2 by default
+                        - also accepts range (e.g. 2-4)
   --total-likes-limit 300
                         limit on total amount of likes during the session, 300
-                        by default
+                        by default - also accepts range (e.g. 2-4)
   --interactions-count 70
                         number of interactions per each blogger, 70 by
-                        default. Only successful interactions count
+                        default. Only successful interactions count - also 
+                        accepts range (e.g. 2-4)
   --repeat 180          repeat the same session again after N minutes after
-                        completion, disabled by default
+                        completion, disabled by default - also accepts range
+                        (e.g. 2-4)
   --follow-percentage 50
                         follow given percentage of interacted users, 0 by
-                        default
+                        default - also accepts range (e.g. 2-4)
   --follow-limit 50     limit on amount of follows during interaction with
-                        each one user's followers, disabled by default
+                        each one user's followers, disabled by default -
+                        also accepts range (e.g. 2-4)
   --unfollow 100        unfollow at most given number of users. Only users
                         followed by this script will be unfollowed. The order
                         is from oldest to newest followings
@@ -103,15 +106,15 @@ To get access to the analytics tool you have to [join Patreon $10 tier](https://
 - [x] Follow given percentage of interacted users by `--follow-percentage 50`
 - [x] Unfollow given number of users (only those who were followed by the script) by `--unfollow 100`
 - [x] Unfollow given number of non-followers (only those who were followed by the script) by `--unfollow-non-followers 100`
+- [x] Support intervals for likes and interactions count like `--likes-count 2-3`
 - [ ] Add random actions to behave more like a human (watch your own feed, stories, etc.)
-- [ ] Support intervals for likes and interactions count like `--likes-count 2-3`
 - [ ] Interaction by hashtags
 - [ ] Commenting during interaction
 
 ### Why Insomniac?
 There already is [InstaPy](https://github.com/timgrossmann/InstaPy), which works on Instagram web version. Unfortunately, Instagram bots detection system has become very suspicious to browser actions. Now InstaPy and similar scripts work at most an hour, then Instagram blocks possibility to do any actions, and if you continue using InstaPy, it may ban your account.
 
-That's why need arised in a solution for mobile devices. Instagram can't distinguish bot from a human when it comes to your phone. However, even a human can reach limits when using the app, so don't fail to be careful. Always set `--total-likes-limit` to 300 or less. Also it's better to use `--repeat` to act periodically for 2-3 hours, because Instagram keeps track of how long the app works.
+That's why need arised in a solution for mobile devices. Instagram can't distinguish bot from a human when it comes to your phone. However, even a human can reach limits when using the app, so don't fail to be careful. Always set `--total-likes-limit` to 300 or less. It's better to use `--repeat` to act periodically for 2-3 hours, because Instagram keeps track of how long the app works. Also, to add a bit more random; most of the inputs now accept a range and a random number will be chosen for you in that range.
 
 ### Community
 We have a [Discord server](https://discord.gg/59pUYCw) which is the most convenient place to discuss all bugs, new features, Instagram limits, etc. If you're not familiar with Discord, you can also join our [Telegram chat](https://t.me/insomniac_chat). And finally, all useful info is posted on our [Patreon page](https://www.patreon.com/insomniac_bot). Most posts are available for everyone, but some require joining $10 tier: this is our way to keep evolving and improving the bot.

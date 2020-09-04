@@ -76,10 +76,15 @@ def main():
             print("Action: remove " + str(args.remove_mass_followers) + " mass followers")
             mode = Mode.REMOVE_MASS_FOLLOWERS
 
+    args.interactions_count = get_count(args.interactions_count, 'Interactions count', 70)
+    args.total_likes_limit = get_count(args.total_likes_limit, 'Total Likes count', 300)
+    args.follow_percentage = get_count(args.follow_percentage, 'Follow Percentage', 0)
+    args.follow_limit = get_count(args.follow_limit, 'Follow Limit', 50) if args.follow_limit else None
+
     profile_filter = Filter()
     on_interaction = partial(_on_interaction,
-                             interactions_limit=int(args.interactions_count),
-                             likes_limit=int(args.total_likes_limit))
+                             interactions_limit=args.interactions_count,
+                             likes_limit=args.total_likes_limit)
 
     while True:
         session_state = SessionState()
@@ -98,8 +103,8 @@ def main():
             _job_handle_bloggers(device,
                                  args.interact,
                                  args.likes_count,
-                                 int(args.follow_percentage),
-                                 int(args.follow_limit) if args.follow_limit else None,
+                                 args.follow_percentage,
+                                 args.follow_limit,
                                  storage,
                                  profile_filter,
                                  on_interaction)
@@ -131,7 +136,7 @@ def main():
 
         if args.repeat:
             print_full_report(sessions)
-            repeat = int(args.repeat)
+            repeat = get_count(args.repeat, 'Repeat Interval', 180)
             print_timeless("")
             print("Sleep for " + str(repeat) + " minutes")
             try:
@@ -282,24 +287,27 @@ def _parse_arguments():
                         metavar='2',
                         default='2')
     parser.add_argument('--total-likes-limit',
-                        help='limit on total amount of likes during the session, 300 by default',
+                        help='limit on total amount of likes during the session, 300 by default - also accepts range'
+                             '  (e.g. 2-4)',
                         metavar='300',
                         default='1000')
     parser.add_argument('--interactions-count',
                         help='number of interactions per each blogger, 70 by default. Only successful interactions'
-                             ' count',
+                             ' count - also accepts range (e.g. 2-4)',
                         metavar='70',
                         default='70')
     parser.add_argument('--repeat',
-                        help='repeat the same session again after N minutes after completion, disabled by default',
+                        help='repeat the same session again after N minutes after completion, disabled by default'
+                             ' - also accepts range (e.g. 2-4)',
                         metavar='180')
     parser.add_argument('--follow-percentage',
-                        help='follow given percentage of interacted users, 0 by default',
+                        help='follow given percentage of interacted users, 0 by default - also accepts range'
+                             ' (e.g. 2-4)',
                         metavar='50',
                         default='0')
     parser.add_argument('--follow-limit',
                         help='limit on amount of follows during interaction with each one user\'s followers, '
-                             'disabled by default',
+                             'disabled by default - also accepts range (e.g. 2-4)',
                         metavar='50')
     parser.add_argument('--unfollow',
                         help='unfollow at most given number of users. Only users followed by this script will '
@@ -406,7 +414,6 @@ def _run_safely(device):
                 raise e
         return wrapper
     return actual_decorator
-
 
 @unique
 class Mode(Enum):

@@ -113,6 +113,23 @@ def print_blocked_feature(username, feature_name):
         print_timeless(COLOR_FAIL + "Please visit https://www.patreon.com/insomniac_bot\n" + COLOR_ENDC)
 
 
+def get_count(inStr, inType, default):
+    c = inStr.split("-")
+    if len(c) <= 0:
+        print_timeless(COLOR_FAIL + f"{inType} must be a positive number or range of positive numbers. Using default of {default}." + COLOR_ENDC)
+        count = default
+    elif len(c) == 1:
+        count = int(inStr)
+    elif len(c) == 2:
+        count = randint(int(c[0]),int(c[1]))
+        print(f"{COLOR_BOLD}{inType}: {count}{COLOR_ENDC}")
+    else:
+        print_timeless(COLOR_FAIL + f"{inType} must either be an integer (e.g. 2) or a range (e.g. 2-4). Using default of {default}." + COLOR_ENDC)
+        count = default
+
+    return count
+
+
 def _print_with_time_decorator(standard_print, print_time):
     def wrapper(*args, **kwargs):
         if print_time:
