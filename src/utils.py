@@ -49,13 +49,6 @@ def check_adb_connection(is_device_id_provided):
     return is_ok
 
 
-def double_click(device, *args, **kwargs):
-    visible_bounds = device(*args, **kwargs).info['bounds']
-    center_x = (visible_bounds['right'] - visible_bounds['left']) / 2
-    center_y = (visible_bounds['bottom'] - visible_bounds['top']) / 2
-    device.double_click(center_x, center_y, duration=0)
-
-
 def random_sleep():
     delay = randint(1, 4)
     print("Sleep for " + str(delay) + (delay == 1 and " second" or " seconds"))
@@ -78,8 +71,21 @@ def close_instagram(device_id):
 def take_screenshot(device):
     os.makedirs("screenshots/", exist_ok=True)
     filename = "Crash-" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".png"
-    device.screenshot("screenshots/" + filename)
-    print(COLOR_OKGREEN + "Screenshot taken and saved as " + filename + COLOR_ENDC)
+    try:
+        device.screenshot("screenshots/" + filename)
+        print(COLOR_OKGREEN + "Screenshot taken and saved as " + filename + COLOR_ENDC)
+    except RuntimeError:
+        print(COLOR_FAIL + "Cannot save screenshot." + COLOR_ENDC)
+
+
+def detect_block(device):
+    block_dialog = device.find(resourceId='com.instagram.android:id/dialog_root_view',
+                               className='android.widget.FrameLayout')
+    is_blocked = block_dialog.exists()
+    if is_blocked:
+        print(COLOR_FAIL + "Probably block dialog is shown." + COLOR_ENDC)
+        raise ActionBlockedError("Seems that action is blocked. Consider reinstalling Instagram app and be more careful"
+                                 " with limits!")
 
 
 def print_copyright(username):
@@ -111,3 +117,7 @@ def _print_with_time_decorator(standard_print, print_time):
 
 print_timeless = _print_with_time_decorator(print, False)
 print = _print_with_time_decorator(print, True)
+
+
+class ActionBlockedError(Exception):
+    pass
