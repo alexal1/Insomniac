@@ -3,7 +3,7 @@ from random import shuffle
 
 from src.device_facade import DeviceFacade
 from src.interaction_rect_checker import is_in_interaction_rect
-from src.navigation import navigate, Tabs
+from src.navigation import navigate, Tabs, switch_to_english, LanguageChangedException
 from src.storage import FollowingStatus
 from src.utils import *
 
@@ -53,7 +53,8 @@ def _open_user_followers(device, username):
         username_view = device.find(resourceId='com.instagram.android:id/row_search_user_username',
                                     className='android.widget.TextView',
                                     text=username)
-
+                                    
+        random_sleep()
         if not username_view.exists():
             print_timeless(COLOR_FAIL + "Cannot find user @" + username + ", abort." + COLOR_ENDC)
             return False
@@ -151,6 +152,7 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
             print(COLOR_OKGREEN + "Scrolled to top, finish." + COLOR_ENDC)
             return
         elif screen_iterated_followers > 0:
+            load_more_button = device.find(resourceId='com.instagram.android:id/row_load_more_button')
             need_swipe = screen_skipped_followers == screen_iterated_followers
             list_view = device.find(resourceId='android:id/list',
                                     className='android.widget.ListView')
@@ -158,7 +160,15 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
                 print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
                 list_view.scroll(DeviceFacade.Direction.TOP)
             else:
-                if need_swipe:
+                pressed_retry = False
+                if load_more_button.exists():
+                    retry_button = load_more_button.child(className='android.widget.ImageView')
+                    if retry_button.exists():
+                        retry_button.click()
+                        random_sleep()
+                        pressed_retry = True
+
+                if need_swipe and not pressed_retry:
                     print(COLOR_OKGREEN + "All followers skipped, let's do a swipe" + COLOR_ENDC)
                     list_view.swipe(DeviceFacade.Direction.BOTTOM)
                 else:
@@ -291,27 +301,35 @@ def _follow(device, username, follow_percentage):
     print("Following...")
     coordinator_layout = device.find(resourceId='com.instagram.android:id/coordinator_root_layout')
     if coordinator_layout.exists():
-        coordinator_layout.scroll.toBeginning()
+        coordinator_layout.scroll(DeviceFacade.Direction.TOP)
 
-    profile_actions = device.find(resourceId='com.instagram.android:id/profile_header_actions_top_row',
-                                  className='android.widget.LinearLayout')
-    follow_button = profile_actions.child(index=0)
+    random_sleep()
 
-    if follow_button.exists():
-        follow_button.click()
-        detect_block(device)
-        bottom_sheet = device.find(resourceId='com.instagram.android:id/layout_container_bottom_sheet',
-                                   className='android.widget.FrameLayout')
-        if bottom_sheet.exists():
-            print(COLOR_OKGREEN + "Already followed" + COLOR_ENDC)
-            device.back()
+    follow_button = device.find(className='android.widget.TextView',
+                                clickable=True,
+                                text='Follow')
+    if not follow_button.exists():
+        follow_button = device.find(className='android.widget.TextView',
+                                    clickable=True,
+                                    text='Follow Back')
+    if not follow_button.exists():
+        unfollow_button = device.find(className='android.widget.TextView',
+                                      clickable=True,
+                                      text='Following')
+        if unfollow_button.exists():
+            print(COLOR_OKGREEN + "You already follow @" + username + "." + COLOR_ENDC)
             return False
-        print(COLOR_OKGREEN + "Followed @" + username + COLOR_ENDC)
-        random_sleep()
-        return True
-    else:
-        print_timeless(COLOR_FAIL + "Failed @" + username + " following." + COLOR_ENDC)
-        return False
+        else:
+            print(COLOR_FAIL + "Cannot find neither Follow button, nor Following button. Maybe not "
+                               "English language is set?" + COLOR_ENDC)
+            switch_to_english(device)
+            raise LanguageChangedException()
+
+    follow_button.click()
+    detect_block(device)
+    print(COLOR_OKGREEN + "Followed @" + username + COLOR_ENDC)
+    random_sleep()
+    return True
 
 
 def _is_follow_limit_reached(session_state, follow_limit, blogger):

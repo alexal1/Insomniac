@@ -34,6 +34,9 @@ class DeviceFacade:
             except ImportError:
                 raise ImportError("Please install uiautomator2: pip3 install uiautomator2")
 
+    def is_old(self):
+        return self.deviceV1 is not None
+
     def find(self, *args, **kwargs):
         if self.deviceV1 is not None:
             import uiautomator
@@ -217,15 +220,31 @@ class DeviceFacade:
 
         def get_bounds(self):
             if self.viewV1 is not None:
-                return self.viewV1.bounds
+                import uiautomator
+                try:
+                    return self.viewV1.bounds
+                except uiautomator.JsonRPCError as e:
+                    raise DeviceFacade.JsonRpcError(e)
             else:
-                return self.viewV2.info['bounds']
+                import uiautomator2
+                try:
+                    return self.viewV2.info['bounds']
+                except uiautomator2.JSONRPCError as e:
+                    raise DeviceFacade.JsonRpcError(e)
 
         def get_text(self):
             if self.viewV1 is not None:
-                return self.viewV1.text
+                import uiautomator
+                try:
+                    return self.viewV1.text
+                except uiautomator.JsonRPCError as e:
+                    raise DeviceFacade.JsonRpcError(e)
             else:
-                return self.viewV2.info['text']
+                import uiautomator2
+                try:
+                    return self.viewV2.info['text']
+                except uiautomator2.JSONRPCError as e:
+                    raise DeviceFacade.JsonRpcError(e)
 
         def set_text(self, text):
             if self.viewV1 is not None:
