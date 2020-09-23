@@ -12,13 +12,16 @@ from src.filter import Filter
 
 def handle_hashtags(device,
                    hashtag,
+                   my_username,
                    likes_count,
                    follow_percentage,
                    storage,
                    profile_filter,
                    on_like,
                    on_interaction):
+    is_myself = my_username
     interaction = partial(_interact_with_user,
+                          my_username=my_username,
                           likes_count=likes_count,
                           follow_percentage=follow_percentage,
                           on_like=on_like,
@@ -62,13 +65,19 @@ def _open_post_hashtags(device, hashtag):
         if not hashtag_view.exists:
             print_timeless(COLOR_FAIL + "Cannot find hashtag #" + hashtag + ", abort." + COLOR_ENDC)
             return False
+        recycler_view = device(resourceId='com.instagram.android:id/recycler_view',
+                                className='androidx.recyclerview.widget.RecyclerView')
 
         hashtag_view.click.wait()
 
+        if not recycler_view.child(index=12).exists:
+            print_timeless(COLOR_FAIL + "Not enough posts for #" + hashtag + ", abort." + COLOR_ENDC)
+            return False 
+            
         print("Open #" + hashtag + " recent posts")
-        hashtag_type_recent = device(resourceId='com.instagram.android:id/tab_layout',
+        hashtag_type = device(resourceId='com.instagram.android:id/tab_layout',
                                   className='android.widget.LinearLayout').child(index=1)
-        hashtag_type_recent.click.wait()
+        hashtag_type.click.wait()
 
     return True
 
@@ -96,7 +105,8 @@ def _iterate_over_posts(device, interaction, storage, on_interaction):
             open_photo(device,4)
             device.press.back()
             imageview_index = 6
-            iterations = randint(6,18)
+            iterations = randint(7,18)
+
 
         for x in range(imageview_index,iterations):
 
@@ -114,15 +124,18 @@ def _iterate_over_posts(device, interaction, storage, on_interaction):
                 print("@" + username + ": already interacted. Skip.")
                 device.press.back()
                 device.press.back()
+            elif storage.check_user_was_interacted_recently(username):
+                print("@" + username + ": already interacted in the last week. Skip.")
+                device.press.back()
+                device.press.back()
             else:
                 print("@" + username + ": interact")
-                #user_name_view.click.wait()
 
                 can_follow = storage.get_following_status(username) == FollowingStatus.NONE
                 interaction_succeed, followed = interaction(device, username=username, can_follow=can_follow)
                 storage.add_interacted_user(username, followed=followed)
                 interactions_count += 1
-                can_continue = on_interaction(blogger = username, succeed=interaction_succeed, followed=followed, count=interactions_count)
+                can_continue = on_interaction(blogger = username, succeed=interaction_succeed, followed=followed )
                 
                 if not can_continue:
                     return
@@ -144,4 +157,4 @@ def _iterate_over_posts(device, interaction, storage, on_interaction):
             just_scrolled = True
         else:
             print(COLOR_OKGREEN + "No followers were iterated, finish." + COLOR_ENDC)
-            return    
+            return     
