@@ -57,16 +57,6 @@ def random_sleep():
     print("Sleep for " + str(delay) + (delay == 1 and " second" or " seconds"))
     sleep(delay)
 
-""" def turning_on_device_screen():
-    status=os.popen ("adb shell dumpsys input_method")
-    #status=os.popen ("adb shell dumpsys input_method | grep mInteractive= | cut -f3 -d'='")
-    value = status.read()
-    print(value)
-    
-    if value[0:5] == "false":
-        print("Turning on the screen")
-        os.popen("adb shell input keyevent 26") """
-
 def screen_care():
     d = u2.connect() #connect to device
     if d.info['screenOn'] == False:
