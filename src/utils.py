@@ -2,9 +2,11 @@ import hashlib
 import os
 import re
 import shutil
+import uiautomator2 as u2
 from datetime import datetime
 from random import randint
 from time import sleep
+
 
 COLOR_HEADER = '\033[95m'
 COLOR_OKBLUE = '\033[94m'
@@ -55,16 +57,23 @@ def random_sleep():
     print("Sleep for " + str(delay) + (delay == 1 and " second" or " seconds"))
     sleep(delay)
 
-def turning_on_device_screen():
-    status=os.popen ("adb shell dumpsys input_method | grep mInteractive= | cut -f3 -d'='")
+""" def turning_on_device_screen():
+    status=os.popen ("adb shell dumpsys input_method")
+    #status=os.popen ("adb shell dumpsys input_method | grep mInteractive= | cut -f3 -d'='")
     value = status.read()
+    print(value)
     
     if value[0:5] == "false":
         print("Turning on the screen")
-        os.popen("adb shell input keyevent 26")
+        os.popen("adb shell input keyevent 26") """
+
+def screen_care():
+    d = u2.connect() #connect to device
+    if d.info['screenOn'] == False:
+        d.press("power")
 
 def open_instagram(device_id):
-    turning_on_device_screen()
+    screen_care()
     print("Open Instagram app")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              " shell am start -n com.instagram.android/com.instagram.mainactivity.MainActivity").close()
