@@ -10,12 +10,12 @@ from http.client import HTTPException
 from socket import timeout
 
 import colorama
-import uiautomator
 
 from src.action_get_my_profile_info import get_my_profile_info
 from src.action_handle_blogger import handle_blogger
 from src.action_unfollow import unfollow, UnfollowRestriction
 from src.counters_parser import LanguageChangedException
+from src.device_facade import create_device, DeviceFacade
 from src.filter import Filter
 from src.navigation import navigate, Tabs
 from src.persistent_list import PersistentList
@@ -39,16 +39,18 @@ def main():
 
     global device_id
     device_id = args.device
-    device = uiautomator.device if device_id is None else uiautomator.Device(device_id)
-
     if not check_adb_connection(is_device_id_provided=(device_id is not None)):
+        return
+
+    device = create_device(args.old, device_id)
+    if device is None:
         return
 
     mode = None
     is_interact_enabled = len(args.interact) > 0
-    is_unfollow_enabled = int(args.unfollow) > 0
-    is_unfollow_non_followers_enabled = int(args.unfollow_non_followers) > 0
-    is_unfollow_any_enabled = int(args.unfollow_any) > 0
+    is_unfollow_enabled = args.unfollow is not None
+    is_unfollow_non_followers_enabled = args.unfollow_non_followers is not None
+    is_unfollow_any_enabled = args.unfollow_any is not None
     is_remove_mass_followers_enabled = args.remove_mass_followers is not None and int(args.remove_mass_followers) > 0
     total_enabled = int(is_interact_enabled) + int(is_unfollow_enabled) + int(is_unfollow_non_followers_enabled) \
         + int(is_unfollow_any_enabled) + int(is_remove_mass_followers_enabled)
@@ -77,9 +79,6 @@ def main():
             mode = Mode.REMOVE_MASS_FOLLOWERS
 
     profile_filter = Filter()
-    on_interaction = partial(_on_interaction,
-                             interactions_limit=int(args.interactions_count),
-                             likes_limit=int(args.total_likes_limit))
 
     while True:
         session_state = SessionState()
@@ -95,29 +94,35 @@ def main():
 
         # IMPORTANT: in each job we assume being on the top of the Profile tab already
         if mode == Mode.INTERACT:
+            on_interaction = partial(_on_interaction, likes_limit=int(args.total_likes_limit))
+
             _job_handle_bloggers(device,
                                  args.interact,
-                                 int(args.likes_count),
+                                 args.likes_count,
                                  int(args.follow_percentage),
                                  int(args.follow_limit) if args.follow_limit else None,
                                  storage,
                                  profile_filter,
+                                 args.interactions_count,
                                  on_interaction)
         elif mode == Mode.UNFOLLOW:
+            print_timeless("")
             _job_unfollow(device,
-                          int(args.unfollow),
+                          get_value(args.unfollow, "Unfollow {}", 100),
                           storage,
                           int(args.min_following),
                           UnfollowRestriction.FOLLOWED_BY_SCRIPT)
         elif mode == Mode.UNFOLLOW_NON_FOLLOWERS:
+            print_timeless("")
             _job_unfollow(device,
-                          int(args.unfollow_non_followers),
+                          get_value(args.unfollow_non_followers, "Unfollow {} non followers", 100),
                           storage,
                           int(args.min_following),
                           UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS)
         elif mode == Mode.UNFOLLOW_ANY:
+            print_timeless("")
             _job_unfollow(device,
-                          int(args.unfollow_any),
+                          get_value(args.unfollow_any, "Unfollow {} any", 100),
                           storage,
                           int(args.min_following),
                           UnfollowRestriction.ANY)
@@ -131,9 +136,8 @@ def main():
 
         if args.repeat:
             print_full_report(sessions)
-            repeat = int(args.repeat)
             print_timeless("")
-            print("Sleep for " + str(repeat) + " minutes")
+            repeat = get_value(args.repeat, "Sleep for {} minutes", 180)
             try:
                 sleep(60 * repeat)
             except KeyboardInterrupt:
@@ -154,6 +158,7 @@ def _job_handle_bloggers(device,
                          follow_limit,
                          storage,
                          profile_filter,
+                         interactions_count,
                          on_interaction):
     class State:
         def __init__(self):
@@ -170,12 +175,17 @@ def _job_handle_bloggers(device,
 
     on_interaction = partial(on_interaction, on_likes_limit_reached=on_likes_limit_reached)
 
+    if len(sessions) > 1:
+        random.shuffle(bloggers)
+
     for blogger in bloggers:
         state = State()
         is_myself = blogger == session_state.my_username
         print_timeless("")
         print(COLOR_BOLD + "Handle @" + blogger + (is_myself and " (it\'s you)" or "") + COLOR_ENDC)
-        on_interaction = partial(on_interaction, blogger=blogger)
+        on_interaction = partial(on_interaction,
+                                 blogger=blogger,
+                                 interactions_limit=get_value(interactions_count, "Interactions count: {}", 70))
 
         @_run_safely(device=device)
         def job():
@@ -250,9 +260,9 @@ def _job_remove_mass_followers(device, count, max_followings, storage):
         print_blocked_feature(session_state.my_username, "--remove-mass-followers")
         return
 
-    def on_remove():
+    def on_remove(username):
         state.removed_count += 1
-        session_state.totalRemovedMassFollowers += 1
+        session_state.removedMassFollowers.append(username)
         can_continue = state.removed_count < count
         if not can_continue:
             print(COLOR_OKGREEN + "Removed " + str(state.removed_count) + " mass followers, finish." + COLOR_ENDC)
@@ -278,21 +288,23 @@ def _parse_arguments():
                         metavar=('username1', 'username2'),
                         default=[])
     parser.add_argument('--likes-count',
-                        help='number of likes for each interacted user, 2 by default',
-                        metavar='2',
+                        help='number of likes for each interacted user, 2 by default. It can be a number (e.g. 2) or '
+                             'a range (e.g. 2-4)',
+                        metavar='2-4',
                         default='2')
     parser.add_argument('--total-likes-limit',
                         help='limit on total amount of likes during the session, 300 by default',
                         metavar='300',
                         default='1000')
     parser.add_argument('--interactions-count',
-                        help='number of interactions per each blogger, 70 by default. Only successful interactions'
-                             ' count',
-                        metavar='70',
+                        help='number of interactions per each blogger, 70 by default. It can be a number (e.g. 70) or '
+                             'a range (e.g. 60-80). Only successful interactions count',
+                        metavar='60-80',
                         default='70')
     parser.add_argument('--repeat',
-                        help='repeat the same session again after N minutes after completion, disabled by default',
-                        metavar='180')
+                        help='repeat the same session again after N minutes after completion, disabled by default. '
+                             'It can be a number of minutes (e.g. 180) or a range (e.g. 120-180)',
+                        metavar='120-180')
     parser.add_argument('--follow-percentage',
                         help='follow given percentage of interacted users, 0 by default',
                         metavar='50',
@@ -303,18 +315,18 @@ def _parse_arguments():
                         metavar='50')
     parser.add_argument('--unfollow',
                         help='unfollow at most given number of users. Only users followed by this script will '
-                             'be unfollowed. The order is from oldest to newest followings',
-                        metavar='100',
-                        default='0')
+                             'be unfollowed. The order is from oldest to newest followings. '
+                             'It can be a number (e.g. 100) or a range (e.g. 100-200)',
+                        metavar='100-200')
     parser.add_argument('--unfollow-non-followers',
                         help='unfollow at most given number of users, that don\'t follow you back. Only users followed '
-                             'by this script will be unfollowed. The order is from oldest to newest followings',
-                        metavar='100',
-                        default='0')
+                             'by this script will be unfollowed. The order is from oldest to newest followings. '
+                             'It can be a number (e.g. 100) or a range (e.g. 100-200)',
+                        metavar='100-200')
     parser.add_argument('--unfollow-any',
-                        help='unfollow at most given number of users. The order is from oldest to newest followings',
-                        metavar='100',
-                        default='0')
+                        help='unfollow at most given number of users. The order is from oldest to newest followings. '
+                             'It can be a number (e.g. 100) or a range (e.g. 100-200)',
+                        metavar='100-200')
     parser.add_argument('--min-following',
                         help='minimum amount of followings, after reaching this amount unfollow stops',
                         metavar='100',
@@ -322,6 +334,10 @@ def _parse_arguments():
     parser.add_argument('--device',
                         help='device identifier. Should be used only when multiple devices are connected at once',
                         metavar='2443de990e017ece')
+    parser.add_argument('--old',
+                        help='add this flag to use an old version of uiautomator. Use it only if you experience '
+                             'problems with the default version',
+                        action='store_true')
     # Remove mass followers from the list of your followers. "Mass followers" are those who has more than N followings,
     # where N can be set via --max-following. This is an extra feature, requires Patreon $10 tier.
     parser.add_argument('--remove-mass-followers',
@@ -385,9 +401,9 @@ def _run_safely(device):
                 print_full_report(sessions)
                 sessions.persist(directory=session_state.my_username)
                 sys.exit(0)
-            except (uiautomator.JsonRPCError, IndexError, HTTPException, timeout):
+            except (DeviceFacade.JsonRpcError, IndexError, HTTPException, timeout):
                 print(COLOR_FAIL + traceback.format_exc() + COLOR_ENDC)
-                take_screenshot(device)
+                save_crash(device)
                 print("No idea what it was. Let's try again.")
                 # Hack for the case when IGTV was accidentally opened
                 close_instagram(device_id)
@@ -399,7 +415,7 @@ def _run_safely(device):
                 print("Language was changed. We'll have to start from the beginning.")
                 navigate(device, Tabs.PROFILE)
             except Exception as e:
-                take_screenshot(device)
+                save_crash(device)
                 close_instagram(device_id)
                 print_full_report(sessions)
                 sessions.persist(directory=session_state.my_username)

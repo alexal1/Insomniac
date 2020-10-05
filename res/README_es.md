@@ -14,7 +14,7 @@ Dale like y sigue automáticamente en tu teléfono / tableta Android. No se requ
 
 ### Cómo instalar
 1. Clone el proyecto: `git clone https://github.com/alexal1/Insomniac.git`
-2. Instalar [uiautomator](https://github.com/xiaocong/uiautomator) y [colorama](https://pypi.org/project/colorama/): `pip3 install uiautomator colorama`
+2. Instalar [uiautomator2](https://github.com/openatx/uiautomator2) y [colorama](https://pypi.org/project/colorama/): `pip3 install uiautomator2 colorama`
 3. Download y unzip [Android platform tools](https://developer.android.com/studio/releases/platform-tools), moverlos a un directorio donde no los eliminará accidentalmente, ejemplo:
 ```
 mkdir -p ~/Library/Android/sdk
@@ -26,7 +26,7 @@ mv <ruta-para-downloads>/platform-tools/ ~/Library/Android/sdk
 1. Update apt-get: `sudo apt-get update`
 2. Instalar ADB y Fastboot: `sudo apt-get install -y android-tools-adb android-tools-fastboot`
 3. Clone el proyecto: `git clone https://github.com/alexal1/Insomniac.git`
-4. Instalar [uiautomator](https://github.com/xiaocong/uiautomator) y [colorama](https://pypi.org/project/colorama/): `pip3 install uiautomator colorama`
+4. Instalar [uiautomator2](https://github.com/openatx/uiautomator2) y [colorama](https://pypi.org/project/colorama/): `pip3 install uiautomator2 colorama`
 
 ### Comenzando
 1. Conecte el dispositivo Android a su computadora con un cable USB
@@ -52,45 +52,55 @@ Lista completa de argumentos de línea de comando:
 ```
   --interact username1 [username2 ...]
                         lista de usernames con cuyos seguidores desea
-                        interactuar
-  --likes-count 2       número de likes para cada usuario interactuado, 2 por defecto
+                        interactuar.
+  --likes-count 2-4     número de likes para cada usuario interactuado, 2 por defecto.
+                        Puede ser un número (Ej. 2) o un rango (Ej. 2-4).
   --total-likes-limit 300
                         límite en la cantidad total de likes durante la sesión, 300
-                        por defecto
-  --interactions-count 70
+                        por defecto.
+  --interactions-count 60-80
                         cantidad de interacciones por cada blogger, 70 por
-                        defecto. Solo cuentan las interacciones exitosas
-  --repeat 180          repita la misma sesión nuevamente después de N minutos
-                        completos, deshabilitada por defecto
+                        defecto. Puede ser un número (Ej. 70) o un rango
+                        (Ej. 60-80). Solo cuentan las interacciones exitosas
+  --repeat 120-180      repita la misma sesión nuevamente después de N minutos
+                        completos, deshabilitada por defecto. Puede ser un numero
+                        en minutos (Ej. 180) o un rango (Ej. 120-180)
   --follow-percentage 50
                         segue el porcentaje dado de usuarios, 0 por
                         defecto
   --follow-limit 50     límite en la cantidad de seguidores durante la interacción con
                         los seguidores de cada usuario, deshabilitada por defecto
-  --unfollow 100        deja de seguir el numero maximo de usuarios. Solo usuario
+  --unfollow 100-120    deja de seguir el numero maximo de usuarios. Solo usuario
                         que fue seguido por el script será dejado de seguir. El orden
-                        es del más antiguo al más nuevo.
-  --unfollow-non-followers 100
+                        es del más antiguo al más nuevo. Puede ser un número (Ej. 100)
+                        o un rango (Ej. 100-200).
+  --unfollow-non-followers 100-200
                         deja de seguir el numero maximo de usuarios, que no
                         te siguen de vuelta. Solo usuario que fue seguido por el script
                         será dejado de seguir. El orden es del más antiguo al
-                        más nuevo
-  --unfollow-any 100    deja de seguir el numero maximo de usuarios. El orden es
-                        del más antiguo al más nuevo
+                        más nuevo. Puede ser un número (Ej. 100) o un rango (Ej. 100-200).
+  --unfollow-any 100-200
+                        deja de seguir el numero maximo de usuarios. El orden es
+                        del más antiguo al más nuevo. Puede ser un número
+                        (Ej. 100) o un rango (Ej. 100-200).
   --min-following 100   cantidad mínima de seguidores, después de alcanzar
                         esta cantidad, unfollow se detiene
   --device 2443de990e017ece
                         identificador de dispositivo. Debe usarse solo cuando hay varios
                         dispositivos conectados a la vez
+  --old                 agregue esta bandera para usar la versión anterior de uiautomator.
+                        Úselo solo si tiene problemas con la versión estándar                   
 ```
 
 ### FAQ
+- ¿Cómo detener el script? _Ctrl + C (control + C para Mac)_
 - ¿Puedo evitar que mi teléfono se quede dormido? Si. Configuración -> Opciones para desarrolladores -> Stay awake.
 - [¿Cómo conectar un teléfono Android a través de WiFi?](https://www.patreon.com/posts/connect-android-38655552)
 - [¿Cómo ejecutar en 2 o más dispositivos a la vez?](https://www.patreon.com/posts/38683736)
 - [Script crash con **OSError: RPC server not started!** o **ReadTimeoutError**](https://www.patreon.com/posts/problems-with-to-38702683)
 - [Las cuentas privadas siempre se ignoran. ¿Cómo seguirlas también?](https://www.patreon.com/posts/enable-private-39097751) **(Por favor, únete a Patreon - Plan $ 10)**
 - [Filtrar por seguidores / número de seguidores, ratio, business / no business](https://www.patreon.com/posts/38826184) **(Por favor, únete a Patreon - Plan $ 10)**
+- [¿Puedo automatizar la eliminación de seguidores masivos de mi cuenta? Si.](https://www.patreon.com/posts/40514622) **(Por favor, únete a Patreon - Plan $ 10)**
 
 ### Análisis
 También hay una herramienta de análisis para este bot. Es un script que crea un informe en formato PDF. El informe contiene gráficos de crecimiento de seguidores de la cuenta para diferentes períodos. Las cantidades de acciones de likes, seguir y dejar de seguir están en el mismo eje para determinar la efectividad del bot. El informe también contiene estadísticas de la duración de las sesiones para las diferentes configuraciones que ha utilizado. Todos los datos se toman del archivo `sessions.json` que se genera durante la ejecución del bot.
@@ -102,8 +112,8 @@ Para obtener acceso a la herramienta de análisis, debe [unirte a Patreon - Plan
 - [x] Siga el porcentaje dado de usuarios interaccionado con `--follow-percentage 50`
 - [x] Deja de seguir el porcentaje dado de usuarios (solo aquellos que fueron seguidos por el script) con `--unfollow 100`
 - [x] Deja de seguir el porcentaje dado de usuarios no seguidores (solo aquellos que fueron seguidos por el script) con `--unfollow-non-followers 100`
+- [x] Soporte para intervalos de likes y cuenta de interacciones `--likes-count 2-3`
 - [ ] Agregar acciones aleatorias para comportarse más como un humano (ver su propio feed, stories, etc.)
-- [ ] Soporte para intervalos de likes y cuenta de interacciones `--likes-count 2-3`
 - [ ] Interacción por hashtags
 - [ ] Comentar durante la interacción
 

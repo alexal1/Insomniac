@@ -6,13 +6,14 @@ from src.utils import *
 
 def get_my_profile_info(device):
     navigate(device, Tabs.PROFILE)
+    random_sleep()
     update_interaction_rect(device)
 
     username = None
-    title_view = device(resourceId='com.instagram.android:id/title_view',
-                        className='android.widget.TextView')
-    if title_view.exists:
-        username = title_view.text
+    title_view = device.find(resourceId='com.instagram.android:id/title_view',
+                             className='android.widget.TextView')
+    if title_view.exists():
+        username = title_view.get_text()
     else:
         print(COLOR_FAIL + "Failed to get username" + COLOR_ENDC)
 
@@ -32,9 +33,9 @@ def get_my_profile_info(device):
 
     report_string = ""
     if username:
-        report_string += "Hello, @" + username + "!"
+        report_string += "Hello, @" + username + "! "
     if followers is not None:
-        report_string += " You have " + str(followers) + " followers"
+        report_string += "You have " + str(followers) + " followers"
         if following is not None:
             report_string += " and " + str(following) + " followings"
         report_string += " so far."
@@ -47,10 +48,10 @@ def get_my_profile_info(device):
 
 def _get_followers_count(device):
     followers = None
-    followers_text_view = device(resourceId='com.instagram.android:id/row_profile_header_textview_followers_count',
-                                 className='android.widget.TextView')
-    if followers_text_view.exists:
-        followers_text = followers_text_view.text
+    followers_text_view = device.find(resourceId='com.instagram.android:id/row_profile_header_textview_followers_count',
+                                      className='android.widget.TextView')
+    if followers_text_view.exists():
+        followers_text = followers_text_view.get_text()
         if followers_text:
             followers = parse(device, followers_text)
         else:
@@ -63,10 +64,10 @@ def _get_followers_count(device):
 
 def get_following_count(device):
     following = None
-    following_text_view = device(resourceId='com.instagram.android:id/row_profile_header_textview_following_count',
-                                 className='android.widget.TextView')
-    if following_text_view.exists:
-        following_text = following_text_view.text
+    following_text_view = device.find(resourceId='com.instagram.android:id/row_profile_header_textview_following_count',
+                                      className='android.widget.TextView')
+    if following_text_view.exists():
+        following_text = following_text_view.get_text()
         if following_text:
             following = parse(device, following_text)
         else:

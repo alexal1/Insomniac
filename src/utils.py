@@ -1,6 +1,7 @@
 import hashlib
 import os
 import re
+import shutil
 from datetime import datetime
 from random import randint
 from time import sleep
@@ -49,16 +50,6 @@ def check_adb_connection(is_device_id_provided):
     return is_ok
 
 
-def double_click(device, *args, **kwargs):
-    config = device.server.jsonrpc.getConfigurator()
-    config['actionAcknowledgmentTimeout'] = 40
-    device.server.jsonrpc.setConfigurator(config)
-    device(*args, **kwargs).click()
-    device(*args, **kwargs).click()
-    config['actionAcknowledgmentTimeout'] = 3000
-    device.server.jsonrpc.setConfigurator(config)
-
-
 def random_sleep():
     delay = randint(1, 4)
     print("Sleep for " + str(delay) + (delay == 1 and " second" or " seconds"))
@@ -88,26 +79,53 @@ def close_instagram(device_id):
     os.popen("adb shell input keyevent 26")
 
 
-def stringify_interactions(interactions):
-    if len(interactions) == 0:
-        return "0"
+def save_crash(device):
+    global print_log
 
-    result = ""
-    for blogger, count in interactions.items():
-        result += str(count) + " for @" + blogger + ", "
-    result = result[:-2]
-    return result
+    directory_name = "Crash-" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    try:
+        os.makedirs("crashes/" + directory_name + "/", exist_ok=False)
+    except OSError:
+        print(COLOR_FAIL + "Directory " + directory_name + " already exists." + COLOR_ENDC)
+        return
+
+    screenshot_format = ".png" if device.is_old() else ".jpg"
+    try:
+        device.screenshot("crashes/" + directory_name + "/screenshot" + screenshot_format)
+    except RuntimeError:
+        print(COLOR_FAIL + "Cannot save screenshot." + COLOR_ENDC)
+
+    view_hierarchy_format = ".xml"
+    try:
+        device.dump_hierarchy("crashes/" + directory_name + "/view_hierarchy" + view_hierarchy_format)
+    except RuntimeError:
+        print(COLOR_FAIL + "Cannot save view hierarchy." + COLOR_ENDC)
+
+    with open("crashes/" + directory_name + "/logs.txt", 'w') as outfile:
+        outfile.write(print_log)
+
+    shutil.make_archive("crashes/" + directory_name, 'zip', "crashes/" + directory_name + "/")
+    shutil.rmtree("crashes/" + directory_name + "/")
+
+    print(COLOR_OKGREEN + "Crash saved as \"crashes/" + directory_name + ".zip\"." + COLOR_ENDC)
+    print(COLOR_OKGREEN + "Please attach this file if you gonna report the crash at" + COLOR_ENDC)
+    print(COLOR_OKGREEN + "https://github.com/alexal1/Insomniac/issues\n" + COLOR_ENDC)
+
+    print_log = ""
 
 
-def take_screenshot(device):
-    os.makedirs("screenshots/", exist_ok=True)
-    filename = "Crash-" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".png"
-    device.screenshot("screenshots/" + filename)
-    print(COLOR_OKGREEN + "Screenshot taken and saved as " + filename + COLOR_ENDC)
+def detect_block(device):
+    block_dialog = device.find(resourceId='com.instagram.android:id/dialog_root_view',
+                               className='android.widget.FrameLayout')
+    is_blocked = block_dialog.exists()
+    if is_blocked:
+        print(COLOR_FAIL + "Probably block dialog is shown." + COLOR_ENDC)
+        raise ActionBlockedError("Seems that action is blocked. Consider reinstalling Instagram app and be more careful"
+                                 " with limits!")
 
 
 def print_copyright(username):
-    if hashlib.sha1(username.encode('utf-8')).hexdigest() not in COPYRIGHT_BLACKLIST:
+    if username is None or (hashlib.sha1(username.encode('utf-8')).hexdigest() not in COPYRIGHT_BLACKLIST):
         print_timeless("\nIf you like this script and want it to be improved, " + COLOR_BOLD + "donate please"
                        + COLOR_ENDC + ".")
         print_timeless(COLOR_BOLD + "$3" + COLOR_ENDC + " - support this project")
@@ -124,14 +142,51 @@ def print_blocked_feature(username, feature_name):
 
 def _print_with_time_decorator(standard_print, print_time):
     def wrapper(*args, **kwargs):
+        global print_log
         if print_time:
             time = datetime.now().strftime("%m/%d %H:%M:%S")
+            print_log += re.sub(r"\[\d+m", '', ("[" + time + "] " + str(*args, **kwargs) + "\n"))
             return standard_print("[" + time + "]", *args, **kwargs)
         else:
+            print_log += re.sub(r"\[\d+m", '', (str(*args, **kwargs) + "\n"))
             return standard_print(*args, **kwargs)
 
     return wrapper
 
 
+def get_value(count, name, default):
+    def print_error():
+        print(COLOR_FAIL + name.format(default) + f". Using default value instead of \"{count}\", because it must be "
+                                                  "either a number (e.g. 2) or a range (e.g. 2-4)." + COLOR_ENDC)
+
+    parts = count.split("-")
+    if len(parts) <= 0:
+        value = default
+        print_error()
+    elif len(parts) == 1:
+        try:
+            value = int(count)
+            print(COLOR_BOLD + name.format(value) + COLOR_ENDC)
+        except ValueError:
+            value = default
+            print_error()
+    elif len(parts) == 2:
+        try:
+            value = randint(int(parts[0]), int(parts[1]))
+            print(COLOR_BOLD + name.format(value) + COLOR_ENDC)
+        except ValueError:
+            value = default
+            print_error()
+    else:
+        value = default
+        print_error()
+    return value
+
+
+print_log = ""
 print_timeless = _print_with_time_decorator(print, False)
 print = _print_with_time_decorator(print, True)
+
+
+class ActionBlockedError(Exception):
+    pass
