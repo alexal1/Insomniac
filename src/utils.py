@@ -2,6 +2,7 @@ import hashlib
 import os
 import re
 import shutil
+import uiautomator2 as u2
 from datetime import datetime
 from random import randint
 from time import sleep
@@ -55,6 +56,12 @@ def random_sleep():
     print("Sleep for " + str(delay) + (delay == 1 and " second" or " seconds"))
     sleep(delay)
 
+def screen_care():
+    d = u2.connect() #connect to device
+    if d.info['screenOn'] == False:
+        print("Turning ON screen")
+        sleep(2)
+        d.press("power")
 
 def open_instagram(device_id):
     print("Open Instagram app")
@@ -67,6 +74,8 @@ def close_instagram(device_id):
     print("Close Instagram app")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              " shell am force-stop com.instagram.android").close()
+    print("Turning OFF screen")
+    os.popen("adb shell input keyevent 26"
 
 
 def save_crash(device):
