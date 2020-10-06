@@ -77,7 +77,7 @@ def close_instagram(device_id):
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              " shell am force-stop com.instagram.android").close()
     print("Turning OFF screen")
-    os.popen("adb shell input keyevent 26"
+    os.popen("adb shell input keyevent 26")
 
 
 def save_crash(device):
