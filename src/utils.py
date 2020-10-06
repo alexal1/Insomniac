@@ -7,6 +7,7 @@ from datetime import datetime
 from random import randint
 from time import sleep
 
+
 COLOR_HEADER = '\033[95m'
 COLOR_OKBLUE = '\033[94m'
 COLOR_OKGREEN = '\033[92m'
@@ -64,6 +65,7 @@ def screen_care():
         d.press("power")
 
 def open_instagram(device_id):
+    screen_care()
     print("Open Instagram app")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              " shell am start -n com.instagram.android/com.instagram.mainactivity.MainActivity").close()
