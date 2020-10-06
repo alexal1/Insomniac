@@ -309,15 +309,15 @@ def _follow(device, username, follow_percentage):
 
     random_sleep()
 
-    follow_button = device.find(className='android.widget.TextView',
+    follow_button = device.find(className='android.widget.Button',
                                 clickable=True,
                                 text='Follow')
     if not follow_button.exists():
-        follow_button = device.find(className='android.widget.TextView',
+        follow_button = device.find(className='android.widget.Button',
                                     clickable=True,
                                     text='Follow Back')
     if not follow_button.exists():
-        unfollow_button = device.find(className='android.widget.TextView',
+        unfollow_button = device.find(className='android.widget.Button',
                                       clickable=True,
                                       text='Following')
         if unfollow_button.exists():
