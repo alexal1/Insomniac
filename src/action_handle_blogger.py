@@ -11,6 +11,7 @@ FOLLOWERS_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_followe
                             '|com.instagram.android:id/row_profile_header_container_followers'
 
 
+
 def handle_blogger(device,
                    username,
                    session_state,
@@ -64,8 +65,8 @@ def _open_user_followers(device, username):
         username_view.click()
 
         print("Open @" + username + " followers")
-        followers_button = device.find(resourceId='com.instagram.android:id/row_profile_header_followers_container',
-                                       className='android.widget.LinearLayout')
+        followers_button = device.find(resourceIdMatches=FOLLOWERS_BUTTON_ID_REGEX,
+                                       className='android.widget.Button')
         followers_button.click()
 
     return True

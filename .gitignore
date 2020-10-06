@@ -10,4 +10,5 @@ filter.json
 whitelist.txt
 action_remove_mass_followers.py
 env
-asso.di.nerchia
+.vscode
+.gitignore
