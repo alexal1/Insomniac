@@ -7,7 +7,6 @@ from datetime import datetime
 from random import randint
 from time import sleep
 
-
 COLOR_HEADER = '\033[95m'
 COLOR_OKBLUE = '\033[94m'
 COLOR_OKGREEN = '\033[92m'
