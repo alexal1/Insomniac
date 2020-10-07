@@ -72,7 +72,7 @@ def screen_care():
     System_OS = platform.system()
     if "Linux" == System_OS:
         print("You're on Linux!")
-        status=os.popen ("adb shell dumpsys input_method | grep mInteractive= | cut -f3 -d'='")
+        status=os.popen ("adb shell dumpsys input_method | grep mInteractive=")
     else:
         print("You're on Windows!")
         status=os.popen ("adb shell dumpsys input_method | findstr mInteractive=")

@@ -347,8 +347,8 @@ def _parse_arguments():
                         action='store_true')
     parser.add_argument('--screen_care',
                         help='take care of your device screen by turning off during sleeping time',
-                        metavar=(''),
-                        default='Off')
+                        metavar='ON / OFF',
+                        default='ON')
     # Remove mass followers from the list of your followers. "Mass followers" are those who has more than N followings,
     # where N can be set via --max-following. This is an extra feature, requires Patreon $10 tier.
     parser.add_argument('--remove-mass-followers',
