@@ -11,7 +11,6 @@ FOLLOWERS_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_followe
                             '|com.instagram.android:id/row_profile_header_container_followers'
 
 
-
 def handle_blogger(device,
                    username,
                    session_state,
