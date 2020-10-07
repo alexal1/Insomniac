@@ -1,8 +1,8 @@
 import hashlib
 import os
+import platform
 import re
 import shutil
-import uiautomator2 as u2
 from datetime import datetime
 from random import randint
 from time import sleep
@@ -32,7 +32,7 @@ def get_version():
 
 
 def get_instagram_version():
-    stream = os.popen('adb shell dumpsys package com.instagram.android | grep versionName')
+    stream = os.popen('adb shell dumpsys package com.instagram.android')
     output = stream.read()
     version_match = re.findall('versionName=(\\S+)', output)
     if len(version_match) == 1:
@@ -69,11 +69,22 @@ def random_sleep():
     sleep(delay)
 
 def screen_care():
-    d = u2.connect() #connect to device
-    if d.info['screenOn'] == False:
+    System_OS = platform.system()
+    if "Linux" == System_OS:
+        print("You're on Linux!")
+        status=os.popen ("adb shell dumpsys input_method | grep mInteractive= | cut -f3 -d'='")
+        value = status.read()
+    else:
+        print("You're on Windows!")
+        test=os.popen ("adb shell dumpsys input_method")
+        status=os.popen ("adb shell dumpsys input_method | findstr mInteractive=")
+        value_p = status.read()
+        index = value_p.find("mInteractive=") + 13
+        value = value_p[index:index + 5]
+
+    if value[0:5] == "false":
         print("Turning ON device screen")
-        sleep(2)
-        d.press("power")
+        os.popen("adb shell input keyevent 26")
 
 def open_instagram(device_id):
     print("Open Instagram app")
