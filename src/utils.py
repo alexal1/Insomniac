@@ -73,16 +73,14 @@ def screen_care():
     if "Linux" == System_OS:
         print("You're on Linux!")
         status=os.popen ("adb shell dumpsys input_method | grep mInteractive= | cut -f3 -d'='")
-        value = status.read()
     else:
         print("You're on Windows!")
-        test=os.popen ("adb shell dumpsys input_method")
         status=os.popen ("adb shell dumpsys input_method | findstr mInteractive=")
-        value_p = status.read()
-        index = value_p.find("mInteractive=") + 13
-        value = value_p[index:index + 5]
 
-    if value[0:5] == "false":
+    value = status.read()
+    flag = re.findall("mInteractive=(true|false)", value)
+
+    if flag[0] == "false":
         print("Turning ON device screen")
         os.popen("adb shell input keyevent 26")
 
