@@ -137,6 +137,9 @@ def main():
         print_copyright(session_state.my_username)
         session_state.finishTime = datetime.now()
         print_timeless(COLOR_WARNING + "-------- FINISH: " + str(session_state.finishTime) + " --------" + COLOR_ENDC)
+        
+        print("Turning OFF screen for sleeping time..")
+        os.popen("adb shell input keyevent 26")
 
         if args.repeat:
             print_full_report(sessions)
@@ -342,6 +345,10 @@ def _parse_arguments():
                         help='add this flag to use an old version of uiautomator. Use it only if you experience '
                              'problems with the default version',
                         action='store_true')
+    parser.add_argument('--screen_care',
+                        help='take care of your device screen by turning off during sleeping time',
+                        metavar=(''),
+                        default='Off')
     # Remove mass followers from the list of your followers. "Mass followers" are those who has more than N followings,
     # where N can be set via --max-following. This is an extra feature, requires Patreon $10 tier.
     parser.add_argument('--remove-mass-followers',

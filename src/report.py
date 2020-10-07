@@ -76,9 +76,6 @@ def print_full_report(sessions):
     print_timeless(COLOR_WARNING + "Removed mass followers: "
                    + _stringify_removed_mass_followers(total_removed_mass_followers) + COLOR_ENDC)
     
-    print("Turning OFF screen for sleeping time..")
-    os.popen("adb shell input keyevent 26")
-
 
 def print_short_report(blogger, session_state):
     total_likes = session_state.totalLikes
