@@ -71,25 +71,20 @@ def random_sleep():
 def screen_care():
     d = u2.connect() #connect to device
     if d.info['screenOn'] == False:
-        print("Turning ON screen")
+        print("Turning ON device screen")
         sleep(2)
         d.press("power")
 
 def open_instagram(device_id):
-    screen_care()
     print("Open Instagram app")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              " shell am start -n com.instagram.android/com.instagram.mainactivity.MainActivity").close()
     random_sleep()
 
-
 def close_instagram(device_id):
     print("Close Instagram app")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              " shell am force-stop com.instagram.android").close()
-    print("Turning OFF screen")
-    os.popen("adb shell input keyevent 26")
-
 
 def save_crash(device):
     global print_log

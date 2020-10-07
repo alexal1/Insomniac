@@ -87,6 +87,8 @@ def main():
         session_state.args = args.__dict__
         sessions.append(session_state)
 
+        screen_care() #Turn on the device screen
+
         print_timeless(COLOR_WARNING + "\n-------- START: " + str(session_state.startTime) + " --------" + COLOR_ENDC)
         open_instagram(device_id)
         session_state.my_username,\
