@@ -9,6 +9,7 @@ from src.utils import *
 
 FOLLOWERS_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_followers_container' \
                             '|com.instagram.android:id/row_profile_header_container_followers'
+TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
 
 
 def handle_blogger(device,
@@ -309,15 +310,15 @@ def _follow(device, username, follow_percentage):
 
     random_sleep()
 
-    follow_button = device.find(className='android.widget.Button',
+    follow_button = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
                                 clickable=True,
                                 text='Follow')
     if not follow_button.exists():
-        follow_button = device.find(className='android.widget.Button',
+        follow_button = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
                                     clickable=True,
                                     text='Follow Back')
     if not follow_button.exists():
-        unfollow_button = device.find(className='android.widget.Button',
+        unfollow_button = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
                                       clickable=True,
                                       text='Following')
         if unfollow_button.exists():
@@ -326,6 +327,7 @@ def _follow(device, username, follow_percentage):
         else:
             print(COLOR_FAIL + "Cannot find neither Follow button, nor Following button. Maybe not "
                                "English language is set?" + COLOR_ENDC)
+            save_crash(device)
             switch_to_english(device)
             raise LanguageChangedException()
 
