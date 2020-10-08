@@ -78,9 +78,9 @@ def screen_care():
         status=os.popen ("adb shell dumpsys input_method | findstr mInteractive=")
 
     value = status.read()
-    flag = re.findall("mInteractive=(true|false)", value)
+    flag = re.search("mInteractive=(true|false)", value)
 
-    if flag[0] == "false":
+    if flag.group(1) == "false":
         print("Turning ON device screen")
         os.popen("adb shell input keyevent 26")
 
