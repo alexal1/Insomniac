@@ -71,11 +71,10 @@ def random_sleep():
 def screen_care(value):
     if value == "on":
         System_OS = platform.system()
+        print(f"You're on {System_OS}!")
         if "Linux" == System_OS:
-            print("You're on Linux!")
             status=os.popen ("adb shell dumpsys input_method | grep mInteractive=")
         else:
-            print("You're on Windows!")
             status=os.popen ("adb shell dumpsys input_method | findstr mInteractive=")
 
         data = status.read()
