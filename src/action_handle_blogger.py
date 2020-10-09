@@ -331,7 +331,11 @@ def _follow(device, username, follow_percentage):
         unfollow_button = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
                                       clickable=True,
                                       text='Following')
-        if unfollow_button.exists():
+    if not follow_button.exists():
+        requested_button = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
+                                      clickable=True,
+                                      text='Requested')
+        if unfollow_button.exists() or requested_button.exists():
             print(COLOR_OKGREEN + "You already follow @" + username + "." + COLOR_ENDC)
             return False
         else:
