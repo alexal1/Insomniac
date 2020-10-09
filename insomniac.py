@@ -4,10 +4,12 @@ import argparse
 import random
 import sys
 import traceback
+import json
 from enum import Enum, unique
 from functools import partial
 from http.client import HTTPException
 from socket import timeout
+from croniter import croniter
 
 import colorama
 
@@ -48,6 +50,9 @@ def main():
     if device is None:
         return
 
+    if len(args.interact) > 0 and args.interaction_users_amount:
+        args.__setattr__("full_interact", args.interact.copy())
+
     mode = None
     is_interact_enabled = len(args.interact) > 0
     is_unfollow_enabled = args.unfollow is not None
@@ -80,9 +85,49 @@ def main():
             print("Action: remove " + str(args.remove_mass_followers) + " mass followers")
             mode = Mode.REMOVE_MASS_FOLLOWERS
 
-    profile_filter = Filter()
+    profile_filter = Filter(args.filters)
+
+    start_work_hour, stop_work_hour = 1, 24
+
+    if args.working_hours:
+        start_work_hour, stop_work_hour = get_left_right_values(args.working_hours, "Working hours {}", (9, 21))
+
+        if not (1 <= start_work_hour <= 24):
+            print(COLOR_FAIL + "Working-hours left-boundary ({0}) is not valid. "
+                               "Using (9) instead".format(start_work_hour) + COLOR_ENDC)
+            start_work_hour = 9
+
+        if not (1 <= stop_work_hour <= 24):
+            print(COLOR_FAIL + "Working-hours right-boundary ({0}) is not valid. "
+                               "Using (21) instead".format(stop_work_hour) + COLOR_ENDC)
+            stop_work_hour = 21
 
     while True:
+        now = datetime.now()
+
+        if not (start_work_hour <= now.hour <= stop_work_hour):
+            print("Current Time: {0} which is out of working-time range ({1}-{2})"
+                  .format(now.strftime("%H:%M:%S"), start_work_hour, stop_work_hour))
+            next_execution = '0 {0} * * *'.format(start_work_hour)
+
+            time_to_sleep_seconds = (croniter(next_execution, now).get_next(datetime) - now).seconds
+            print("Going to sleep until working time ({0} minutes)...".format(time_to_sleep_seconds/60))
+
+            sleep(time_to_sleep_seconds)
+            continue
+
+        if len(args.full_interact) > 0 and args.interaction_users_amount:
+            args.interact = args.full_interact.copy()
+            users_amount = get_value(args.interaction_users_amount, "Interaction user amount {}", 100)
+
+            if users_amount >= len(args.interact):
+                print("interaction-users-amount parameter is equal or higher then the users-interact list. "
+                      "Choosing all list for interaction.")
+            else:
+                amount_to_remove = len(args.interact) - users_amount
+                for i in range(0, amount_to_remove):
+                    args.interact.remove(random.choice(args.interact))
+
         session_state = SessionState()
         session_state.args = args.__dict__
         sessions.append(session_state)
@@ -289,6 +334,10 @@ def _parse_arguments():
                         help='list of usernames with whose followers you want to interact',
                         metavar=('username1', 'username2'),
                         default=[])
+    parser.add_argument('--interaction-users-amount',
+                        help='add this argument to select an amount of users from the interact-list '
+                             '(users are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)',
+                        metavar='3-8')
     parser.add_argument('--likes-count',
                         help='number of likes for each interacted user, 2 by default. It can be a number (e.g. 2) or '
                              'a range (e.g. 2-4)',
@@ -307,6 +356,11 @@ def _parse_arguments():
                         help='repeat the same session again after N minutes after completion, disabled by default. '
                              'It can be a number of minutes (e.g. 180) or a range (e.g. 120-180)',
                         metavar='120-180')
+    parser.add_argument('--working-hours',
+                        help='set working hours to the script, disabled by default. '
+                             'It can be a number presenting specific hour (e.g. 13) or a range (e.g. 9-21). '
+                             'Notice that right value must be higher than the left value.',
+                        metavar='9-21')
     parser.add_argument('--follow-percentage',
                         help='follow given percentage of interacted users, 0 by default',
                         metavar='50',
@@ -347,6 +401,10 @@ def _parse_arguments():
     parser.add_argument('--max-following',
                         help=argparse.SUPPRESS,
                         default=1000)
+    parser.add_argument('--filters',
+                        help=argparse.SUPPRESS)
+    parser.add_argument('--config-file',
+                        help=argparse.SUPPRESS)
 
     if not len(sys.argv) > 1:
         parser.print_help()
@@ -358,6 +416,19 @@ def _parse_arguments():
         print(COLOR_FAIL + "Unknown arguments: " + ", ".join(str(arg) for arg in unknown_args) + COLOR_ENDC)
         parser.print_help()
         return False, None
+
+    if args.config_file is not None:
+        if not os.path.exists(args.config_file):
+            print(COLOR_FAIL + "Config file {0} could not be found".format(args.config_file) + COLOR_ENDC)
+            parser.print_help()
+            return False, None
+
+        with open(args.config_file) as json_file:
+            params = json.load(json_file)
+
+            for param in params:
+                if param["enabled"]:
+                    args.__setattr__(param["parameter-name"], param["value"])
 
     return True, args
 

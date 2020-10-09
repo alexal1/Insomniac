@@ -17,8 +17,10 @@ FIELD_FOLLOW_PRIVATE_OR_EMPTY = "follow_private_or_empty"
 class Filter:
     conditions = None
 
-    def __init__(self):
-        if os.path.exists(FILENAME_CONDITIONS):
+    def __init__(self, preloaded_filters=None):
+        if preloaded_filters:
+            self.conditions = preloaded_filters
+        elif os.path.exists(FILENAME_CONDITIONS):
             with open(FILENAME_CONDITIONS) as json_file:
                 self.conditions = json.load(json_file)
 

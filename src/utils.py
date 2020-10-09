@@ -183,6 +183,35 @@ def get_value(count, name, default):
     return value
 
 
+def get_left_right_values(left_right_str, name, default):
+    def print_error():
+        print(COLOR_FAIL + name.format(default) + f". Using default value instead of \"{left_right_str}\", because it "
+                                                  "must be either a number (e.g. 2) or a range (e.g. 2-4)." + COLOR_ENDC)
+
+    parts = left_right_str.split("-")
+    if len(parts) <= 0:
+        value = default
+        print_error()
+    elif len(parts) == 1:
+        try:
+            value = (int(left_right_str), int(left_right_str))
+            print(COLOR_BOLD + name.format(value) + COLOR_ENDC)
+        except ValueError:
+            value = default
+            print_error()
+    elif len(parts) == 2:
+        try:
+            value = (int(parts[0]), int(parts[1]))
+            print(COLOR_BOLD + name.format(value) + COLOR_ENDC)
+        except ValueError:
+            value = default
+            print_error()
+    else:
+        value = default
+        print_error()
+    return value
+
+
 print_log = ""
 print_timeless = _print_with_time_decorator(print, False)
 print = _print_with_time_decorator(print, True)
