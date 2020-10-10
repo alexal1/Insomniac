@@ -42,6 +42,12 @@
     "description" : "limit on amount of follows during interaction with each one user's followers, disabled by default"
   },
   {
+    "parameter-name": "total_follow_limit",
+    "enabled": false,
+    "value": "",
+    "description" : "limit on total amount of follows during the session, disabled by default"
+  },
+  {
     "parameter-name": "unfollow",
     "enabled": false,
     "value": "",

@@ -20,6 +20,7 @@ def handle_blogger(device,
                    likes_count,
                    follow_percentage,
                    follow_limit,
+                   total_follow_limit,
                    storage,
                    profile_filter,
                    on_like,
@@ -34,6 +35,7 @@ def handle_blogger(device,
     is_follow_limit_reached = partial(_is_follow_limit_reached,
                                       session_state=session_state,
                                       follow_limit=follow_limit,
+                                      total_follow_limit=total_follow_limit,
                                       blogger=username)
 
     if not _open_user_followers(device, username):
@@ -354,7 +356,12 @@ def _follow(device, username, follow_percentage):
     return True
 
 
-def _is_follow_limit_reached(session_state, follow_limit, blogger):
+def _is_follow_limit_reached(session_state, follow_limit, total_follow_limit, blogger):
+    if total_follow_limit is not None:
+        total_followed_count = sum(session_state.totalFollowed.values())
+        if total_followed_count >= total_follow_limit:
+            return True
+
     if follow_limit is None:
         return False
 

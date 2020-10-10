@@ -111,7 +111,7 @@ def main():
                   .format(now.strftime("%H:%M:%S"), start_work_hour, stop_work_hour))
             next_execution = '0 {0} * * *'.format(start_work_hour)
 
-            time_to_sleep_seconds = (croniter(next_execution, now).get_next(datetime) - now).seconds
+            time_to_sleep_seconds = (croniter(next_execution, now).get_next(datetime) - now).seconds + 60
             print("Going to sleep until working time ({0} minutes)...".format(time_to_sleep_seconds/60))
 
             sleep(time_to_sleep_seconds)
@@ -149,6 +149,7 @@ def main():
                                  args.likes_count,
                                  int(args.follow_percentage),
                                  int(args.follow_limit) if args.follow_limit else None,
+                                 int(args.total_follow_limit) if args.total_follow_limit else None,
                                  storage,
                                  profile_filter,
                                  args.interactions_count,
@@ -205,6 +206,7 @@ def _job_handle_bloggers(device,
                          likes_count,
                          follow_percentage,
                          follow_limit,
+                         total_follow_limit,
                          storage,
                          profile_filter,
                          interactions_count,
@@ -244,6 +246,7 @@ def _job_handle_bloggers(device,
                            likes_count,
                            follow_percentage,
                            follow_limit,
+                           total_follow_limit,
                            storage,
                            profile_filter,
                            _on_like,
@@ -369,6 +372,10 @@ def _parse_arguments():
                         default='0')
     parser.add_argument('--follow-limit',
                         help='limit on amount of follows during interaction with each one user\'s followers, '
+                             'disabled by default',
+                        metavar='50')
+    parser.add_argument('--total-follow-limit',
+                        help='limit on total amount of follows during the session, '
                              'disabled by default',
                         metavar='50')
     parser.add_argument('--unfollow',
