@@ -30,6 +30,18 @@ def get_version():
     return version
 
 
+def get_instagram_version():
+    stream = os.popen('adb shell dumpsys package com.instagram.android')
+    output = stream.read()
+    version_match = re.findall('versionName=(\\S+)', output)
+    if len(version_match) == 1:
+        version = version_match[0]
+    else:
+        version = "not found"
+    stream.close()
+    return version
+
+
 def check_adb_connection(is_device_id_provided):
     stream = os.popen('adb devices')
     output = stream.read()
@@ -85,6 +97,12 @@ def save_crash(device):
     except RuntimeError:
         print(COLOR_FAIL + "Cannot save screenshot." + COLOR_ENDC)
 
+    view_hierarchy_format = ".xml"
+    try:
+        device.dump_hierarchy("crashes/" + directory_name + "/view_hierarchy" + view_hierarchy_format)
+    except RuntimeError:
+        print(COLOR_FAIL + "Cannot save view hierarchy." + COLOR_ENDC)
+
     with open("crashes/" + directory_name + "/logs.txt", 'w') as outfile:
         outfile.write(print_log)
 
@@ -94,8 +112,6 @@ def save_crash(device):
     print(COLOR_OKGREEN + "Crash saved as \"crashes/" + directory_name + ".zip\"." + COLOR_ENDC)
     print(COLOR_OKGREEN + "Please attach this file if you gonna report the crash at" + COLOR_ENDC)
     print(COLOR_OKGREEN + "https://github.com/alexal1/Insomniac/issues\n" + COLOR_ENDC)
-
-    print_log = ""
 
 
 def detect_block(device):
@@ -136,6 +152,35 @@ def _print_with_time_decorator(standard_print, print_time):
             return standard_print(*args, **kwargs)
 
     return wrapper
+
+
+def get_value(count, name, default):
+    def print_error():
+        print(COLOR_FAIL + name.format(default) + f". Using default value instead of \"{count}\", because it must be "
+                                                  "either a number (e.g. 2) or a range (e.g. 2-4)." + COLOR_ENDC)
+
+    parts = count.split("-")
+    if len(parts) <= 0:
+        value = default
+        print_error()
+    elif len(parts) == 1:
+        try:
+            value = int(count)
+            print(COLOR_BOLD + name.format(value) + COLOR_ENDC)
+        except ValueError:
+            value = default
+            print_error()
+    elif len(parts) == 2:
+        try:
+            value = randint(int(parts[0]), int(parts[1]))
+            print(COLOR_BOLD + name.format(value) + COLOR_ENDC)
+        except ValueError:
+            value = default
+            print_error()
+    else:
+        value = default
+        print_error()
+    return value
 
 
 print_log = ""

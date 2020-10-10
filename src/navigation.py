@@ -2,7 +2,7 @@ from enum import Enum, unique
 
 from src.utils import *
 
-SEARCH_CONTENT_DESC = 'Search and Explore'
+SEARCH_CONTENT_DESC_REGEX = '[Ss]earch and [Ee]xplore'
 
 
 def navigate(device, tab):
@@ -29,10 +29,11 @@ def switch_to_english(device):
 
     action_bar = device.find(resourceId='com.instagram.android:id/action_bar',
                              className='android.widget.LinearLayout')
-    options_view = action_bar.child(index=2, className='android.widget.ImageView')
-    if not options_view.exists():
-        options_view = action_bar.child(index=3, className='android.widget.ImageView')
-    if not options_view.exists():
+    # We wanna pick last ImageView in the action bar
+    options_view = None
+    for options_view in action_bar.child(className='android.widget.ImageView'):
+        pass
+    if options_view is None or not options_view.exists():
         print(COLOR_FAIL + "No idea how to open menu..." + COLOR_ENDC)
         return
     options_view.click()
@@ -78,7 +79,7 @@ def _navigate_to_search(device):
     # "Home" tab and press search in the action bar.
 
     tab_bar = device.find(resourceId='com.instagram.android:id/tab_bar', className='android.widget.LinearLayout')
-    search_in_tab_bar = tab_bar.child(description=SEARCH_CONTENT_DESC)
+    search_in_tab_bar = tab_bar.child(descriptionMatches=SEARCH_CONTENT_DESC_REGEX)
     if search_in_tab_bar.exists():
         # Two clicks to reset tab content
         search_in_tab_bar.click()
@@ -89,15 +90,14 @@ def _navigate_to_search(device):
     navigate(device, Tabs.HOME)
     print("Press search in the action bar")
     action_bar = device.find(resourceId='com.instagram.android:id/action_bar', className='android.widget.LinearLayout')
-    search_in_action_bar = action_bar.child(description=SEARCH_CONTENT_DESC)
+    search_in_action_bar = action_bar.child(descriptionMatches=SEARCH_CONTENT_DESC_REGEX)
     if search_in_action_bar.exists():
-        # Two clicks to reset tab content
-        search_in_action_bar.click()
         search_in_action_bar.click()
         return
 
     print(COLOR_FAIL + "Cannot find search tab neither in the tab bar, nor in the action bar. Maybe not English "
                        "language is set?" + COLOR_ENDC)
+    save_crash(device)
     switch_to_english(device)
     raise LanguageChangedException()
 
