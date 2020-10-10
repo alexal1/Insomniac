@@ -86,8 +86,10 @@ def main():
         session_state = SessionState()
         session_state.args = args.__dict__
         sessions.append(session_state)
-
-        screen_care(args.screen_care) #Turn on the device screen
+        if args.screen_care == "on":
+            screen_care() #Turn on the device screen
+        else:
+            print("Screen care off")
 
         print_timeless(COLOR_WARNING + "\n-------- START: " + str(session_state.startTime) + " --------" + COLOR_ENDC)
         open_instagram(device_id)
