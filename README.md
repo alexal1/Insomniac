@@ -52,6 +52,10 @@ Full list of command line arguments:
   --interact username1 [username2 ...]
                         list of usernames with whose followers you want to
                         interact
+  --interaction-users-amount 3-8
+                        add this argument to select an amount of users from the
+                        interact-list (users are randomized). It can be a number
+                        (e.g. 4) or a range (e.g. 3-8)
   --likes-count 2-4     number of likes for each interacted user, 2 by
                         default. It can be a number (e.g. 2) or a range (e.g.
                         2-4)
@@ -65,11 +69,17 @@ Full list of command line arguments:
   --repeat 120-180      repeat the same session again after N minutes after
                         completion, disabled by default. It can be a number of
                         minutes (e.g. 180) or a range (e.g. 120-180)
+  --working-hours 9-21  set working hours to the script, disabled by default.
+                        It can be a number presenting specific hour (e.g. 13)
+                        or a range (e.g. 9-21)
   --follow-percentage 50
                         follow given percentage of interacted users, 0 by
                         default
   --follow-limit 50     limit on amount of follows during interaction with
                         each one user's followers, disabled by default
+  --total-follow-limit 50
+                        limit on total amount of follows during the session,
+                        disabled by default
   --unfollow 100-200    unfollow at most given number of users. Only users
                         followed by this script will be unfollowed. The order
                         is from oldest to newest followings. It can be a
@@ -92,6 +102,13 @@ Full list of command line arguments:
   --old                 add this flag to use an old version of uiautomator.
                         Use it only if you experience problems with the
                         default version
+  --config-file conf.json
+                        path to a configuration-file contains all of the
+                        arguments above, in the file format that can be found
+                        at 'conf_example.json'. When combined with 'repeat',
+                        the script will reload the parameters from the file
+                        before each session, providing an option to change the
+                        parameters without restarting the script
 ```
 
 ### FAQ
