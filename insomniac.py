@@ -137,10 +137,11 @@ def main():
         print_copyright(session_state.my_username)
         session_state.finishTime = datetime.now()
         print_timeless(COLOR_WARNING + "-------- FINISH: " + str(session_state.finishTime) + " --------" + COLOR_ENDC)
-        
+
         if args.screen_care == "on":
-            print("Turning OFF screen for sleeping time..")
-            os.popen("adb shell input keyevent 26")
+            screen_care() #Turn on the device screen
+        else:
+            print("Screen care off")
 
         if args.repeat:
             print_full_report(sessions)
