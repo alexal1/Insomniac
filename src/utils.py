@@ -68,23 +68,23 @@ def random_sleep():
     print("Sleep for " + str(delay) + (delay == 1 and " second" or " seconds"))
     sleep(delay)
 
-def screen_care(value):
-    if value == "on":
-        System_OS = platform.system()
-        print(f"You're on {System_OS}!")
-        if "Linux" == System_OS:
-            status=os.popen ("adb shell dumpsys input_method | grep mInteractive=")
-        else:
-            status=os.popen ("adb shell dumpsys input_method | findstr mInteractive=")
+def screen_care():
+    System_OS = platform.system()
+    print(f"You're on {System_OS}!")
+    if "Linux" == System_OS:
+        status=os.popen ("adb shell dumpsys input_method | grep mInteractive=")
+    else:
+        status=os.popen ("adb shell dumpsys input_method | findstr mInteractive=")
 
-        data = status.read()
-        flag = re.search("mInteractive=(true|false)", data)
-
+    data = status.read()
+    flag = re.search("mInteractive=(true|false)", data)
+    if flag is not None:
         if flag.group(1) == "false":
             print("Turning ON device screen")
             os.popen("adb shell input keyevent 26")
     else:
         print("Screen care off")
+        print("You're using an emulator!")
 
 def open_instagram(device_id):
     print("Open Instagram app")
