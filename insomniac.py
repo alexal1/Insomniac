@@ -53,56 +53,57 @@ def main():
     if len(args.interact) > 0 and args.interaction_users_amount:
         args.__setattr__("full_interact", args.interact.copy())
 
-    mode = None
-    is_interact_enabled = len(args.interact) > 0
-    is_unfollow_enabled = args.unfollow is not None
-    is_unfollow_non_followers_enabled = args.unfollow_non_followers is not None
-    is_unfollow_any_enabled = args.unfollow_any is not None
-    is_remove_mass_followers_enabled = args.remove_mass_followers is not None and int(args.remove_mass_followers) > 0
-    total_enabled = int(is_interact_enabled) + int(is_unfollow_enabled) + int(is_unfollow_non_followers_enabled) \
-        + int(is_unfollow_any_enabled) + int(is_remove_mass_followers_enabled)
-    if total_enabled == 0:
-        print_timeless(COLOR_FAIL + "You have to specify one of the actions: --interact, --unfollow, "
-                                    "--unfollow-non-followers, --unfollow-any, --remove-mass-followers" + COLOR_ENDC)
-        return
-    elif total_enabled > 1:
-        print_timeless(COLOR_FAIL + "Running Insomniac with two or more actions is not supported yet." + COLOR_ENDC)
-        return
-    else:
-        if is_interact_enabled:
-            print("Action: interact with @" + ", @".join(str(blogger) for blogger in args.interact))
-            mode = Mode.INTERACT
-        elif is_unfollow_enabled:
-            print("Action: unfollow " + str(args.unfollow))
-            mode = Mode.UNFOLLOW
-        elif is_unfollow_non_followers_enabled:
-            print("Action: unfollow " + str(args.unfollow_non_followers) + " non followers")
-            mode = Mode.UNFOLLOW_NON_FOLLOWERS
-        elif is_unfollow_any_enabled:
-            print("Action: unfollow any " + str(args.unfollow_any))
-            mode = Mode.UNFOLLOW_ANY
-        elif is_remove_mass_followers_enabled:
-            print("Action: remove " + str(args.remove_mass_followers) + " mass followers")
-            mode = Mode.REMOVE_MASS_FOLLOWERS
-
-    profile_filter = Filter(args.filters)
-
-    start_work_hour, stop_work_hour = 1, 24
-
-    if args.working_hours:
-        start_work_hour, stop_work_hour = get_left_right_values(args.working_hours, "Working hours {}", (9, 21))
-
-        if not (1 <= start_work_hour <= 24):
-            print(COLOR_FAIL + "Working-hours left-boundary ({0}) is not valid. "
-                               "Using (9) instead".format(start_work_hour) + COLOR_ENDC)
-            start_work_hour = 9
-
-        if not (1 <= stop_work_hour <= 24):
-            print(COLOR_FAIL + "Working-hours right-boundary ({0}) is not valid. "
-                               "Using (21) instead".format(stop_work_hour) + COLOR_ENDC)
-            stop_work_hour = 21
-
     while True:
+        mode = None
+        is_interact_enabled = len(args.interact) > 0
+        is_unfollow_enabled = args.unfollow is not None
+        is_unfollow_non_followers_enabled = args.unfollow_non_followers is not None
+        is_unfollow_any_enabled = args.unfollow_any is not None
+        is_remove_mass_followers_enabled = args.remove_mass_followers is not None and int(
+            args.remove_mass_followers) > 0
+        total_enabled = int(is_interact_enabled) + int(is_unfollow_enabled) + int(is_unfollow_non_followers_enabled) \
+                        + int(is_unfollow_any_enabled) + int(is_remove_mass_followers_enabled)
+        if total_enabled == 0:
+            print_timeless(COLOR_FAIL + "You have to specify one of the actions: --interact, --unfollow, "
+                                        "--unfollow-non-followers, --unfollow-any, --remove-mass-followers" + COLOR_ENDC)
+            return
+        elif total_enabled > 1:
+            print_timeless(COLOR_FAIL + "Running Insomniac with two or more actions is not supported yet." + COLOR_ENDC)
+            return
+        else:
+            if is_interact_enabled:
+                print("Action: interact with @" + ", @".join(str(blogger) for blogger in args.interact))
+                mode = Mode.INTERACT
+            elif is_unfollow_enabled:
+                print("Action: unfollow " + str(args.unfollow))
+                mode = Mode.UNFOLLOW
+            elif is_unfollow_non_followers_enabled:
+                print("Action: unfollow " + str(args.unfollow_non_followers) + " non followers")
+                mode = Mode.UNFOLLOW_NON_FOLLOWERS
+            elif is_unfollow_any_enabled:
+                print("Action: unfollow any " + str(args.unfollow_any))
+                mode = Mode.UNFOLLOW_ANY
+            elif is_remove_mass_followers_enabled:
+                print("Action: remove " + str(args.remove_mass_followers) + " mass followers")
+                mode = Mode.REMOVE_MASS_FOLLOWERS
+
+        profile_filter = Filter(args.filters)
+
+        start_work_hour, stop_work_hour = 1, 24
+
+        if args.working_hours:
+            start_work_hour, stop_work_hour = get_left_right_values(args.working_hours, "Working hours {}", (9, 21))
+
+            if not (1 <= start_work_hour <= 24):
+                print(COLOR_FAIL + "Working-hours left-boundary ({0}) is not valid. "
+                                   "Using (9) instead".format(start_work_hour) + COLOR_ENDC)
+                start_work_hour = 9
+
+            if not (1 <= stop_work_hour <= 24):
+                print(COLOR_FAIL + "Working-hours right-boundary ({0}) is not valid. "
+                                   "Using (21) instead".format(stop_work_hour) + COLOR_ENDC)
+                stop_work_hour = 21
+
         now = datetime.now()
 
         if not (start_work_hour <= now.hour <= stop_work_hour):
@@ -187,6 +188,7 @@ def main():
             repeat = get_value(args.repeat, "Sleep for {} minutes", 180)
             try:
                 sleep(60 * repeat)
+                _refresh_args_by_conf_file(args)
             except KeyboardInterrupt:
                 print_full_report(sessions)
                 sessions.persist(directory=session_state.my_username)
@@ -423,14 +425,19 @@ def _parse_arguments():
             parser.print_help()
             return False, None
 
+        _refresh_args_by_conf_file(args)
+
+    return True, args
+
+
+def _refresh_args_by_conf_file(args):
+    if args.config_file is not None:
         with open(args.config_file) as json_file:
             params = json.load(json_file)
 
             for param in params:
                 if param["enabled"]:
                     args.__setattr__(param["parameter-name"], param["value"])
-
-    return True, args
 
 
 def _on_like():
