@@ -117,7 +117,7 @@ def main():
             sleep(time_to_sleep_seconds)
             continue
 
-        if len(args.full_interact) > 0 and args.interaction_users_amount:
+        if args.interaction_users_amount and len(args.full_interact) > 0:
             args.interact = args.full_interact.copy()
             users_amount = get_value(args.interaction_users_amount, "Interaction user amount {}", 100)
 
