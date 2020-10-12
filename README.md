@@ -76,7 +76,8 @@ Full list of command line arguments:
                         follow given percentage of interacted users, 0 by
                         default
   --follow-limit 50     limit on amount of follows during interaction with
-                        each one user's followers, disabled by default
+                        each one user's followers, disabled by default.
+                        (e.g. 13) or a range (e.g. 8-10)
   --total-follow-limit 50
                         limit on total amount of follows during the session,
                         disabled by default

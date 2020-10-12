@@ -50,9 +50,6 @@ def main():
     if device is None:
         return
 
-    if len(args.interact) > 0 and args.interaction_users_amount:
-        args.__setattr__("full_interact", args.interact.copy())
-
     while True:
         mode = None
         is_interact_enabled = len(args.interact) > 0
@@ -61,8 +58,8 @@ def main():
         is_unfollow_any_enabled = args.unfollow_any is not None
         is_remove_mass_followers_enabled = args.remove_mass_followers is not None and int(
             args.remove_mass_followers) > 0
-        total_enabled = int(is_interact_enabled) + int(is_unfollow_enabled) + int(is_unfollow_non_followers_enabled) \
-                        + int(is_unfollow_any_enabled) + int(is_remove_mass_followers_enabled)
+        total_enabled = int(is_interact_enabled) + int(is_unfollow_enabled) + int(is_unfollow_non_followers_enabled) + \
+                        int(is_unfollow_any_enabled) + int(is_remove_mass_followers_enabled)
         if total_enabled == 0:
             print_timeless(COLOR_FAIL + "You have to specify one of the actions: --interact, --unfollow, "
                                         "--unfollow-non-followers, --unfollow-any, --remove-mass-followers" + COLOR_ENDC)
@@ -72,7 +69,12 @@ def main():
             return
         else:
             if is_interact_enabled:
-                print("Action: interact with @" + ", @".join(str(blogger) for blogger in args.interact))
+                if args.interact_targets is not None:
+                    print("Action: interact with targets-list from targets.txt")
+                elif args.scrape_for_account is not None:
+                    print("Action: scraping targets from @" + ", @".join(str(blogger) for blogger in args.interact))
+                else:
+                    print("Action: interact with @" + ", @".join(str(blogger) for blogger in args.interact))
                 mode = Mode.INTERACT
             elif is_unfollow_enabled:
                 print("Action: unfollow " + str(args.unfollow))
@@ -89,45 +91,12 @@ def main():
 
         profile_filter = Filter(args.filters)
 
-        start_work_hour, stop_work_hour = 1, 24
+        can_continue, time_till_next_execution_seconds = _is_at_working_hour(args.working_hours)
 
-        if args.working_hours:
-            start_work_hour, stop_work_hour = get_left_right_values(args.working_hours, "Working hours {}", (9, 21))
-
-            if not (1 <= start_work_hour <= 24):
-                print(COLOR_FAIL + "Working-hours left-boundary ({0}) is not valid. "
-                                   "Using (9) instead".format(start_work_hour) + COLOR_ENDC)
-                start_work_hour = 9
-
-            if not (1 <= stop_work_hour <= 24):
-                print(COLOR_FAIL + "Working-hours right-boundary ({0}) is not valid. "
-                                   "Using (21) instead".format(stop_work_hour) + COLOR_ENDC)
-                stop_work_hour = 21
-
-        now = datetime.now()
-
-        if not (start_work_hour <= now.hour <= stop_work_hour):
-            print("Current Time: {0} which is out of working-time range ({1}-{2})"
-                  .format(now.strftime("%H:%M:%S"), start_work_hour, stop_work_hour))
-            next_execution = '0 {0} * * *'.format(start_work_hour)
-
-            time_to_sleep_seconds = (croniter(next_execution, now).get_next(datetime) - now).seconds + 60
-            print("Going to sleep until working time ({0} minutes)...".format(time_to_sleep_seconds/60))
-
-            sleep(time_to_sleep_seconds)
+        if not can_continue:
+            print("Going to sleep until working time ({0} minutes)...".format(time_till_next_execution_seconds/60))
+            sleep(time_till_next_execution_seconds)
             continue
-
-        if args.interaction_users_amount and len(args.full_interact) > 0:
-            args.interact = args.full_interact.copy()
-            users_amount = get_value(args.interaction_users_amount, "Interaction user amount {}", 100)
-
-            if users_amount >= len(args.interact):
-                print("interaction-users-amount parameter is equal or higher then the users-interact list. "
-                      "Choosing all list for interaction.")
-            else:
-                amount_to_remove = len(args.interact) - users_amount
-                for i in range(0, amount_to_remove):
-                    args.interact.remove(random.choice(args.interact))
 
         session_state = SessionState()
         session_state.args = args.__dict__
@@ -138,14 +107,23 @@ def main():
         session_state.my_username,\
             session_state.my_followers_count,\
             session_state.my_following_count = get_my_profile_info(device)
-        storage = Storage(session_state.my_username)
+        storage = Storage(session_state.my_username, args.scrape_for_account)
 
         # IMPORTANT: in each job we assume being on the top of the Profile tab already
         if mode == Mode.INTERACT:
-            on_interaction = partial(_on_interaction, likes_limit=int(args.total_likes_limit))
+            can_continue = _refresh_interaction_list(args, storage)
+            if not can_continue:
+                print("Cant interact. Will try again in 5 minutes...")
+                sleep(5 * 60)
+                continue
+            is_targeted_session = args.interact_targets is not None
+            is_scrapping_session = args.scrape_for_account is not None
 
+            on_interaction = partial(_on_interaction, likes_limit=int(args.total_likes_limit))
             _job_handle_bloggers(device,
                                  args.interact,
+                                 is_scrapping_session,
+                                 is_targeted_session,
                                  args.likes_count,
                                  int(args.follow_percentage),
                                  args.follow_limit,
@@ -203,6 +181,8 @@ def main():
 
 def _job_handle_bloggers(device,
                          bloggers,
+                         is_scrapping_session,
+                         is_targeted_session,
                          likes_count,
                          follow_percentage,
                          follow_limit,
@@ -242,6 +222,8 @@ def _job_handle_bloggers(device,
         def job():
             handle_blogger(device,
                            blogger,
+                           is_scrapping_session,
+                           is_targeted_session,
                            session_state,
                            likes_count,
                            follow_percentage,
@@ -339,6 +321,13 @@ def _parse_arguments():
                         help='list of usernames with whose followers you want to interact',
                         metavar=('username1', 'username2'),
                         default=[])
+    parser.add_argument('--interact-targets',
+                        help='use this argument in order to interact with profiles from targets.txt',
+                        default=False)
+    parser.add_argument('--scrape-for-account',
+                        help='add this argument in order to just scrape targeted profiles for an account. '
+                             'The scraped profiles names will be added to targets.txt file at target account directory',
+                        metavar='your_profile')
     parser.add_argument('--interaction-users-amount',
                         help='add this argument to select an amount of users from the interact-list '
                              '(users are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)',
@@ -445,6 +434,66 @@ def _refresh_args_by_conf_file(args):
             for param in params:
                 if param["enabled"]:
                     args.__setattr__(param["parameter-name"], param["value"])
+
+
+def _is_at_working_hour(working_hours):
+    start_work_hour, stop_work_hour = 1, 24
+
+    if working_hours:
+        start_work_hour, stop_work_hour = get_left_right_values(working_hours, "Working hours {}", (9, 21))
+
+        if not (1 <= start_work_hour <= 24):
+            print(COLOR_FAIL + "Working-hours left-boundary ({0}) is not valid. "
+                               "Using (9) instead".format(start_work_hour) + COLOR_ENDC)
+            start_work_hour = 9
+
+        if not (1 <= stop_work_hour <= 24):
+            print(COLOR_FAIL + "Working-hours right-boundary ({0}) is not valid. "
+                               "Using (21) instead".format(stop_work_hour) + COLOR_ENDC)
+            stop_work_hour = 21
+
+    now = datetime.now()
+
+    if not (start_work_hour <= now.hour <= stop_work_hour):
+        print("Current Time: {0} which is out of working-time range ({1}-{2})"
+              .format(now.strftime("%H:%M:%S"), start_work_hour, stop_work_hour))
+        next_execution = '0 {0} * * *'.format(start_work_hour)
+
+        time_till_next_execution_seconds = (croniter(next_execution, now).get_next(datetime) - now).seconds + 60
+
+        return False, time_till_next_execution_seconds
+
+    return True, 0
+
+
+def _refresh_interaction_list(args, storage: Storage):
+    if args.interact_targets is not None:
+        targets_list = storage.targets
+
+        if len(targets_list) <= 0:
+            print("could not find any target at targets.txt")
+            return False
+
+        args.__setattr__("interact", targets_list)
+        print("Interacting with specific profiles from targets.txt file ({0} targets found)".format(len(targets_list)))
+
+    if args.interaction_users_amount:
+        if args.get("full_interact", None) is None:
+            args.__setattr__("full_interact", args.interact.copy())
+
+        if len(args.full_interact) > 0:
+            args.interact = args.full_interact.copy()
+            users_amount = get_value(args.interaction_users_amount, "Interaction user amount {}", 100)
+
+            if users_amount >= len(args.interact):
+                print("interaction-users-amount parameter is equal or higher then the users-interact list. "
+                      "Choosing all list for interaction.")
+            else:
+                amount_to_remove = len(args.interact) - users_amount
+                for i in range(0, amount_to_remove):
+                    args.interact.remove(random.choice(args.interact))
+
+    return True
 
 
 def _on_like():

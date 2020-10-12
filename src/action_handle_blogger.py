@@ -16,6 +16,8 @@ UNFOLLOW_REGEX = 'Following|Requested'
 
 def handle_blogger(device,
                    username,
+                   is_scrapping_session,
+                   is_targeted_session,
                    session_state,
                    likes_count,
                    follow_percentage,
@@ -31,21 +33,43 @@ def handle_blogger(device,
                           likes_count=likes_count,
                           follow_percentage=follow_percentage,
                           on_like=on_like,
-                          profile_filter=profile_filter)
+                          profile_filter=profile_filter,
+                          is_scrapping_session=is_scrapping_session)
+
     is_follow_limit_reached = partial(_is_follow_limit_reached,
                                       session_state=session_state,
                                       follow_limit=follow_limit,
                                       total_follow_limit=total_follow_limit,
                                       blogger=username)
 
-    if not _open_user_followers(device, username):
-        return
-    if is_myself:
-        _scroll_to_bottom(device)
-    _iterate_over_followers(device, interaction, is_follow_limit_reached, storage, on_interaction, is_myself)
+    if is_targeted_session:
+        if is_myself:
+            return
+
+        if storage.check_user_was_interacted(username):
+            print("@" + username + ": already interacted. Skip.")
+            return
+
+        if not _open_user(device, username):
+            return
+
+        _interact_single_user(device, username, interaction, is_follow_limit_reached, storage,
+                              on_interaction, is_myself, is_scrapping_session)
+
+    else:
+        if not _open_user_followers(device, username):
+            return
+        if is_myself:
+            _scroll_to_bottom(device)
+        _iterate_over_followers(device, interaction, is_follow_limit_reached, storage,
+                                on_interaction, is_myself, is_scrapping_session)
 
 
 def _open_user_followers(device, username):
+    _open_user(device, username, True)
+
+
+def _open_user(device, username, open_followers=False):
     if username is None:
         print("Open your followers")
         followers_button = device.find(resourceIdMatches=FOLLOWERS_BUTTON_ID_REGEX)
@@ -68,9 +92,10 @@ def _open_user_followers(device, username):
 
         username_view.click()
 
-        print("Open @" + username + " followers")
-        followers_button = device.find(resourceIdMatches=FOLLOWERS_BUTTON_ID_REGEX)
-        followers_button.click()
+        if open_followers:
+            print("Open @" + username + " followers")
+            followers_button = device.find(resourceIdMatches=FOLLOWERS_BUTTON_ID_REGEX)
+            followers_button.click()
 
     return True
 
@@ -99,7 +124,36 @@ def _scroll_to_bottom(device):
         list_view.scroll(DeviceFacade.Direction.TOP)
 
 
-def _iterate_over_followers(device, interaction, is_follow_limit_reached, storage, on_interaction, is_myself):
+def _interact_single_user(device, username, interaction, is_follow_limit_reached, storage,
+                          on_interaction, is_myself, is_scrapping_session):
+    if is_myself:
+        print("Cant interact your-self. Skip.")
+        return
+
+    if storage.check_user_was_interacted(username):
+        print("@" + username + ": already interacted. Skip.")
+        return
+
+    print("@" + username + ": interact")
+
+    can_follow = not is_myself \
+                 and not is_follow_limit_reached() \
+                 and storage.get_following_status(username) == FollowingStatus.NONE
+
+    interaction_succeed, followed = interaction(device, username=username, can_follow=can_follow)
+
+    if is_scrapping_session and interaction_succeed:
+        storage.add_target_user(username)
+
+    storage.add_interacted_user(username, followed=followed)
+    on_interaction(succeed=interaction_succeed, followed=followed)
+
+    print("Back to search view")
+    device.back()
+
+
+def _iterate_over_followers(device, interaction, is_follow_limit_reached, storage,
+                            on_interaction, is_myself, is_scrapping_session):
     # Wait until list is rendered
     device.find(resourceId='com.instagram.android:id/follow_list_container',
                 className='android.widget.LinearLayout').wait()
@@ -143,6 +197,10 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
                         and storage.get_following_status(username) == FollowingStatus.NONE
 
                     interaction_succeed, followed = interaction(device, username=username, can_follow=can_follow)
+
+                    if is_scrapping_session and interaction_succeed:
+                        storage.add_target_user(username)
+
                     storage.add_interacted_user(username, followed=followed)
                     can_continue = on_interaction(succeed=interaction_succeed,
                                                   followed=followed)
@@ -196,6 +254,7 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
 
 
 def _interact_with_user(device,
+                        is_scrapping_session,
                         username,
                         my_username,
                         likes_count,
@@ -214,6 +273,9 @@ def _interact_with_user(device,
 
     if not profile_filter.check_profile(device, username):
         return False, False
+
+    if is_scrapping_session:
+        return True, False
 
     likes_value = get_value(likes_count, "Likes count: {}", 2)
     if likes_value > 12:

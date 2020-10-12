@@ -108,6 +108,18 @@
     "description" : "add this argument to select an amount of users from the interact-list (users are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)"
   },
   {
+    "parameter-name": "interact_targets",
+    "enabled": false,
+    "value": "",
+    "description" : "use this argument in order to interact with profiles from targets.txt"
+  },
+  {
+    "parameter-name": "scrape_for_account",
+    "enabled": false,
+    "value": "",
+    "description" : "add this argument in order to just scrape targeted profiles for an account. The scraped profiles names will be added to targets.txt file at target account dir"
+  },
+  {
     "parameter-name": "filters",
     "enabled": true,
     "value": {

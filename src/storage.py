@@ -9,14 +9,16 @@ USER_LAST_INTERACTION = "last_interaction"
 USER_FOLLOWING_STATUS = "following_status"
 
 FILENAME_WHITELIST = "whitelist.txt"
+FILENAME_TARGETS = "targets.txt"
 
 
 class Storage:
     interacted_users_path = None
     interacted_users = {}
     whitelist = []
+    targets = []
 
-    def __init__(self, my_username):
+    def __init__(self, my_username, scrape_for_account):
         if my_username is None:
             print(COLOR_FAIL + "No username, thus the script won't get access to interacted users and sessions data" +
                   COLOR_ENDC)
@@ -32,6 +34,16 @@ class Storage:
         if os.path.exists(whitelist_path):
             with open(whitelist_path) as file:
                 self.whitelist = [line.rstrip() for line in file]
+        targets_path = my_username + "/" + FILENAME_TARGETS
+        if os.path.exists(targets_path):
+            with open(targets_path) as file:
+                self.targets = [line.rstrip() for line in file]
+
+        if scrape_for_account is not None:
+            self.targets_path = scrape_for_account + "/" + FILENAME_TARGETS
+            if os.path.exists(self.targets_path):
+                with open(self.targets_path) as file:
+                    self.targets = [line.rstrip() for line in file]
 
     def check_user_was_interacted(self, username):
         return not self.interacted_users.get(username) is None
@@ -61,6 +73,14 @@ class Storage:
 
         self.interacted_users[username] = user
         self._update_file()
+
+    def add_target_user(self, username):
+        if username in self.targets:
+            return
+
+        if self.targets_path is not None:
+            with open(self.targets_path, 'a') as outfile:
+                outfile.write(username + '\n')
 
     def is_user_in_whitelist(self, username):
         return username in self.whitelist
