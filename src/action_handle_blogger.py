@@ -66,7 +66,7 @@ def handle_blogger(device,
 
 
 def _open_user_followers(device, username):
-    _open_user(device, username, True)
+    return _open_user(device, username, True)
 
 
 def _open_user(device, username, open_followers=False):

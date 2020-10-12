@@ -130,6 +130,7 @@
       "min_followings": 10,
       "max_followings": 1500,
       "min_potency_ratio": 0.3,
+      "min_posts": 7,
       "follow_private_or_empty": true
     },
     "description" : "add this argument to select an amount of users from the interact-list (users are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)"

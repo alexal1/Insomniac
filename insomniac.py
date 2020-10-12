@@ -72,7 +72,8 @@ def main():
                 if args.interact_targets is not None:
                     print("Action: interact with targets-list from targets.txt")
                 elif args.scrape_for_account is not None:
-                    print("Action: scraping targets from @" + ", @".join(str(blogger) for blogger in args.interact))
+                    print("Action: scraping targets to " + args.scrape_for_account + " from @" + ", @"
+                          .join(str(blogger) for blogger in args.interact))
                 else:
                     print("Action: interact with @" + ", @".join(str(blogger) for blogger in args.interact))
                 mode = Mode.INTERACT
@@ -323,7 +324,7 @@ def _parse_arguments():
                         default=[])
     parser.add_argument('--interact-targets',
                         help='use this argument in order to interact with profiles from targets.txt',
-                        default=False)
+                        default=None)
     parser.add_argument('--scrape-for-account',
                         help='add this argument in order to just scrape targeted profiles for an account. '
                              'The scraped profiles names will be added to targets.txt file at target account directory',
