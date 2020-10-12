@@ -128,7 +128,7 @@ class Filter:
     def _get_posts_count(device):
         posts_count = 0
         posts_count_text_view = device.find(
-            resourceId='com.instagram.android:id/row_profile_header_textview_followers_count',
+            resourceId='com.instagram.android:id/row_profile_header_textview_post_count',
             className='android.widget.TextView'
         )
         if posts_count_text_view.exists():
