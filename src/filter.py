@@ -12,6 +12,7 @@ FIELD_MIN_FOLLOWINGS = "min_followings"
 FIELD_MAX_FOLLOWINGS = "max_followings"
 FIELD_MIN_POSTS = "min_posts"
 FIELD_MIN_POTENCY_RATIO = "min_potency_ratio"
+FIELD_MAX_NUM_IN_PROFILE_NAME = "max_numbers_in_profile_name"
 FIELD_FOLLOW_PRIVATE_OR_EMPTY = "follow_private_or_empty"
 
 
@@ -40,6 +41,13 @@ class Filter:
         field_max_followings = self.conditions.get(FIELD_MAX_FOLLOWINGS)
         field_min_potency_ratio = self.conditions.get(FIELD_MIN_POTENCY_RATIO)
         field_min_posts = self.conditions.get(FIELD_MIN_POSTS)
+        field_max_numbers_in_profile_name = self.conditions.get(FIELD_MAX_NUM_IN_PROFILE_NAME)
+
+        if field_max_numbers_in_profile_name is not None:
+            if get_count_of_nums_in_str(username) > int(field_max_numbers_in_profile_name):
+                print(COLOR_OKGREEN + "@" + username + " has more than " + str(field_max_numbers_in_profile_name) +
+                      " numbers in profile-name, skip." + COLOR_ENDC)
+                return False
 
         if field_skip_business is not None or field_skip_non_business is not None:
             has_business_category = self._has_business_category(device)
@@ -90,6 +98,9 @@ class Filter:
 
         field_follow_private_or_empty = self.conditions.get(FIELD_FOLLOW_PRIVATE_OR_EMPTY)
         return field_follow_private_or_empty is not None and bool(field_follow_private_or_empty)
+
+    def get_max_numbers_in_profile_name(self):
+        return self.conditions.get(FIELD_MAX_NUM_IN_PROFILE_NAME)
 
     @staticmethod
     def _get_followers_and_followings(device):

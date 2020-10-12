@@ -61,8 +61,8 @@ def handle_blogger(device,
             return
         if is_myself:
             _scroll_to_bottom(device)
-        _iterate_over_followers(device, interaction, is_follow_limit_reached, storage,
-                                on_interaction, is_myself, is_scrapping_session)
+        _iterate_over_followers(device, interaction, is_follow_limit_reached, storage, on_interaction, is_myself,
+                                is_scrapping_session, profile_filter.get_max_numbers_in_profile_name())
 
 
 def _open_user_followers(device, username):
@@ -153,7 +153,7 @@ def _interact_single_user(device, username, interaction, is_follow_limit_reached
 
 
 def _iterate_over_followers(device, interaction, is_follow_limit_reached, storage,
-                            on_interaction, is_myself, is_scrapping_session):
+                            on_interaction, is_myself, is_scrapping_session, max_nums_in_username=None):
     # Wait until list is rendered
     device.find(resourceId='com.instagram.android:id/follow_list_container',
                 className='android.widget.LinearLayout').wait()
@@ -187,6 +187,10 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
                     screen_skipped_followers_count += 1
                 elif is_myself and storage.check_user_was_interacted_recently(username):
                     print("@" + username + ": already interacted in the last week. Skip.")
+                    screen_skipped_followers_count += 1
+                elif max_nums_in_username is not None and \
+                        get_count_of_nums_in_str(username) > int(max_nums_in_username):
+                    print("@" + username + ": more than " + str(max_nums_in_username) + " numbers in username. Skip.")
                     screen_skipped_followers_count += 1
                 else:
                     print("@" + username + ": interact")

@@ -212,6 +212,14 @@ def get_left_right_values(left_right_str, name, default):
     return value
 
 
+def get_count_of_nums_in_str(string):
+    count = 0
+    for i in range(0, 10):
+        count += string.count(str(i))
+
+    return count
+
+
 print_log = ""
 print_timeless = _print_with_time_decorator(print, False)
 print = _print_with_time_decorator(print, True)
