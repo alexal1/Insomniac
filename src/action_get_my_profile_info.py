@@ -1,5 +1,5 @@
 from src.counters_parser import parse, LanguageChangedException
-from src.interaction_rect_checker import update_interaction_rect
+from src.interaction import update_interaction_rect
 from src.navigation import navigate, Tabs
 from src.utils import *
 

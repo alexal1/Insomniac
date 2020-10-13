@@ -13,6 +13,7 @@ import colorama
 
 from src.action_get_my_profile_info import get_my_profile_info
 from src.action_handle_blogger import handle_blogger
+from src.action_handle_hashtag import handle_hashtag
 from src.action_unfollow import unfollow, UnfollowRestriction
 from src.counters_parser import LanguageChangedException
 from src.device_facade import create_device, DeviceFacade
@@ -65,7 +66,8 @@ def main():
         return
     else:
         if is_interact_enabled:
-            print("Action: interact with @" + ", @".join(str(blogger) for blogger in args.interact))
+            print("Action: interact with " +
+                  ", ".join(source if source[0] == '@' else ('#' + source) for source in args.interact))
             mode = Mode.INTERACT
         elif is_unfollow_enabled:
             print("Action: unfollow " + str(args.unfollow))
@@ -97,16 +99,16 @@ def main():
         # IMPORTANT: in each job we assume being on the top of the Profile tab already
         if mode == Mode.INTERACT:
             on_interaction = partial(_on_interaction, likes_limit=int(args.total_likes_limit))
-
-            _job_handle_bloggers(device,
-                                 args.interact,
-                                 args.likes_count,
-                                 int(args.follow_percentage),
-                                 int(args.follow_limit) if args.follow_limit else None,
-                                 storage,
-                                 profile_filter,
-                                 args.interactions_count,
-                                 on_interaction)
+            sources = (source if source[0] == '@' else ('#' + source) for source in args.interact)
+            _job_handle_interaction(device,
+                                    sources,
+                                    args.likes_count,
+                                    int(args.follow_percentage),
+                                    int(args.follow_limit) if args.follow_limit else None,
+                                    storage,
+                                    profile_filter,
+                                    args.interactions_count,
+                                    on_interaction)
         elif mode == Mode.UNFOLLOW:
             print_timeless("")
             _job_unfollow(device,
@@ -153,15 +155,15 @@ def main():
     sessions.persist(directory=session_state.my_username)
 
 
-def _job_handle_bloggers(device,
-                         bloggers,
-                         likes_count,
-                         follow_percentage,
-                         follow_limit,
-                         storage,
-                         profile_filter,
-                         interactions_count,
-                         on_interaction):
+def _job_handle_interaction(device,
+                            sources,
+                            likes_count,
+                            follow_percentage,
+                            follow_limit,
+                            storage,
+                            profile_filter,
+                            interactions_count,
+                            on_interaction):
     class State:
         def __init__(self):
             pass
@@ -178,29 +180,47 @@ def _job_handle_bloggers(device,
     on_interaction = partial(on_interaction, on_likes_limit_reached=on_likes_limit_reached)
 
     if len(sessions) > 1:
-        random.shuffle(bloggers)
+        random.shuffle(sources)
 
-    for blogger in bloggers:
+    for source in sources:
         state = State()
-        is_myself = blogger == session_state.my_username
-        print_timeless("")
-        print(COLOR_BOLD + "Handle @" + blogger + (is_myself and " (it\'s you)" or "") + COLOR_ENDC)
+
+        if source[0] == '@':
+            is_myself = source[1:] == session_state.my_username
+            print_timeless("")
+            print(COLOR_BOLD + "Handle " + source + (is_myself and " (it\'s you)" or "") + COLOR_ENDC)
+        elif source[0] == '#':
+            print_timeless("")
+            print(COLOR_BOLD + "Handle " + source + COLOR_ENDC)
+
         on_interaction = partial(on_interaction,
-                                 blogger=blogger,
+                                 source=source,
                                  interactions_limit=get_value(interactions_count, "Interactions count: {}", 70))
 
         @_run_safely(device=device)
         def job():
-            handle_blogger(device,
-                           blogger,
-                           session_state,
-                           likes_count,
-                           follow_percentage,
-                           follow_limit,
-                           storage,
-                           profile_filter,
-                           _on_like,
-                           on_interaction)
+            if source[0] == '@':
+                handle_blogger(device,
+                               source[1:],  # drop "@"
+                               session_state,
+                               likes_count,
+                               follow_percentage,
+                               follow_limit,
+                               storage,
+                               profile_filter,
+                               _on_like,
+                               on_interaction)
+            elif source[0] == '#':
+                handle_hashtag(device,
+                               source[1:],  # drop "#"
+                               session_state,
+                               likes_count,
+                               follow_percentage,
+                               follow_limit,
+                               storage,
+                               profile_filter,
+                               _on_like,
+                               on_interaction)
             state.is_job_completed = True
 
         while not state.is_job_completed and not state.is_likes_limit_reached:
@@ -286,8 +306,9 @@ def _parse_arguments():
     )
     parser.add_argument('--interact',
                         nargs='+',
-                        help='list of usernames with whose followers you want to interact',
-                        metavar=('username1', 'username2'),
+                        help='list of hashtags and usernames. Usernames should start with \"@\" symbol. The script '
+                             'will interact with with hashtags\' posts likers and with users\' followers',
+                        metavar=('hashtag', '@username'),
                         default=[])
     parser.add_argument('--likes-count',
                         help='number of likes for each interacted user, 2 by default. It can be a number (e.g. 2) or '
@@ -367,9 +388,9 @@ def _on_like():
     session_state.totalLikes += 1
 
 
-def _on_interaction(blogger, succeed, followed, interactions_limit, likes_limit, on_likes_limit_reached):
+def _on_interaction(source, succeed, followed, interactions_limit, likes_limit, on_likes_limit_reached):
     session_state = sessions[-1]
-    session_state.add_interaction(blogger, succeed, followed)
+    session_state.add_interaction(source, succeed, followed)
 
     can_continue = True
 
@@ -378,13 +399,13 @@ def _on_interaction(blogger, succeed, followed, interactions_limit, likes_limit,
         on_likes_limit_reached()
         can_continue = False
 
-    successful_interactions_count = session_state.successfulInteractions.get(blogger)
+    successful_interactions_count = session_state.successfulInteractions.get(source)
     if successful_interactions_count and successful_interactions_count >= interactions_limit:
         print("Made " + str(successful_interactions_count) + " successful interactions, finish.")
         can_continue = False
 
     if can_continue and succeed:
-        print_short_report(blogger, session_state)
+        print_short_report(source, session_state)
 
     return can_continue
 

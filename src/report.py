@@ -40,23 +40,23 @@ def print_full_report(sessions):
     total_followed = {}
     total_removed_mass_followers = []
     for session in sessions:
-        for blogger, count in session.totalInteractions.items():
-            if total_interactions.get(blogger) is None:
-                total_interactions[blogger] = count
+        for source, count in session.totalInteractions.items():
+            if total_interactions.get(source) is None:
+                total_interactions[source] = count
             else:
-                total_interactions[blogger] += count
+                total_interactions[source] += count
 
-        for blogger, count in session.successfulInteractions.items():
-            if successful_interactions.get(blogger) is None:
-                successful_interactions[blogger] = count
+        for source, count in session.successfulInteractions.items():
+            if successful_interactions.get(source) is None:
+                successful_interactions[source] = count
             else:
-                successful_interactions[blogger] += count
+                successful_interactions[source] += count
 
-        for blogger, count in session.totalFollowed.items():
-            if total_followed.get(blogger) is None:
-                total_followed[blogger] = count
+        for source, count in session.totalFollowed.items():
+            if total_followed.get(source) is None:
+                total_followed[source] = count
             else:
-                total_followed[blogger] += count
+                total_followed[source] += count
 
         for username in session.removedMassFollowers:
             total_removed_mass_followers.append(username)
@@ -77,13 +77,13 @@ def print_full_report(sessions):
                    + _stringify_removed_mass_followers(total_removed_mass_followers) + COLOR_ENDC)
 
 
-def print_short_report(blogger, session_state):
+def print_short_report(source, session_state):
     total_likes = session_state.totalLikes
     total_followed = sum(session_state.totalFollowed.values())
-    interactions = session_state.successfulInteractions.get(blogger, 0)
+    interactions = session_state.successfulInteractions.get(source, 0)
     print(COLOR_WARNING + "Session progress: " + str(total_likes) + " likes, " + str(total_followed) + " followed, " +
           str(interactions) + " successful " + ("interaction" if interactions == 1 else "interactions") +
-          " for @" + blogger + COLOR_ENDC)
+          " for " + source + COLOR_ENDC)
 
 
 def _stringify_interactions(interactions):
@@ -91,8 +91,8 @@ def _stringify_interactions(interactions):
         return "0"
 
     result = ""
-    for blogger, count in interactions.items():
-        result += str(count) + " for @" + blogger + ", "
+    for source, count in interactions.items():
+        result += str(count) + " for " + source + ", "
     result = result[:-2]
     return result
 
