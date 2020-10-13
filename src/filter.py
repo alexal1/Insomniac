@@ -100,6 +100,9 @@ class Filter:
         return field_follow_private_or_empty is not None and bool(field_follow_private_or_empty)
 
     def get_max_numbers_in_profile_name(self):
+        if self.conditions is None:
+            return None
+
         return self.conditions.get(FIELD_MAX_NUM_IN_PROFILE_NAME)
 
     @staticmethod
