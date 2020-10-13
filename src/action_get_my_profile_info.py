@@ -1,4 +1,5 @@
 from src.counters_parser import parse, LanguageChangedException
+from src.device_facade import DeviceFacade
 from src.interaction_rect_checker import update_interaction_rect
 from src.navigation import navigate, Tabs
 from src.utils import *
@@ -7,6 +8,14 @@ from src.utils import *
 def get_my_profile_info(device):
     navigate(device, Tabs.PROFILE)
     random_sleep()
+
+    print("Refreshing you profile status...")
+    coordinator_layout = device.find(resourceId='com.instagram.android:id/coordinator_root_layout')
+    if coordinator_layout.exists():
+        coordinator_layout.scroll(DeviceFacade.Direction.TOP)
+
+    random_sleep()
+
     update_interaction_rect(device)
 
     username = None
