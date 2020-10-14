@@ -436,6 +436,9 @@ def _refresh_args_by_conf_file(args):
                 if param["enabled"]:
                     args.__setattr__(param["parameter-name"], param["value"])
 
+    if args.interact_targets is not None:
+        args.interact = ['interacting_targets']
+
 
 def _is_at_working_hour(working_hours):
     start_work_hour, stop_work_hour = 1, 24
