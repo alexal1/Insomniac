@@ -1,10 +1,10 @@
 from functools import partial
 
-from src.device_facade import DeviceFacade
-from src.interaction import is_follow_limit_reached_for_source, interact_with_user, is_in_interaction_rect
-from src.navigation import search_for
-from src.storage import FollowingStatus
-from src.utils import *
+from ..src.device_facade import DeviceFacade
+from ..src.interaction import is_follow_limit_reached_for_source, interact_with_user, is_in_interaction_rect
+from ..src.navigation import search_for
+from ..src.storage import FollowingStatus
+from ..src.utils import *
 
 
 def handle_hashtag(device,

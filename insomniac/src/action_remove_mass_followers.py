@@ -1,6 +1,6 @@
-from src.action_get_my_profile_info import get_following_count
-from src.device_facade import DeviceFacade
-from src.utils import *
+from ..src.action_get_my_profile_info import get_following_count
+from ..src.device_facade import DeviceFacade
+from ..src.utils import *
 
 
 def remove_mass_followers(device, max_followings, on_remove, storage):

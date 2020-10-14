@@ -1,5 +1,3 @@
-# Since of v1.2.3 this script works on Python 3
-
 import argparse
 import random
 import sys
@@ -11,25 +9,25 @@ from socket import timeout
 
 import colorama
 
-from src.action_get_my_profile_info import get_my_profile_info
-from src.action_handle_blogger import handle_blogger
-from src.action_handle_hashtag import handle_hashtag
-from src.action_unfollow import unfollow, UnfollowRestriction
-from src.counters_parser import LanguageChangedException
-from src.device_facade import create_device, DeviceFacade
-from src.filter import Filter
-from src.navigation import navigate, Tabs
-from src.persistent_list import PersistentList
-from src.report import print_full_report, print_short_report
-from src.session_state import SessionState, SessionStateEncoder
-from src.storage import Storage
-from src.utils import *
+from .src.action_get_my_profile_info import get_my_profile_info
+from .src.action_handle_blogger import handle_blogger
+from .src.action_handle_hashtag import handle_hashtag
+from .src.action_unfollow import unfollow, UnfollowRestriction
+from .src.counters_parser import LanguageChangedException
+from .src.device_facade import create_device, DeviceFacade
+from .src.filter import Filter
+from .src.navigation import navigate, Tabs
+from .src.persistent_list import PersistentList
+from .src.report import print_full_report, print_short_report
+from .src.session_state import SessionState, SessionStateEncoder
+from .src.storage import Storage
+from .src.utils import *
 
 device_id = None
 sessions = PersistentList("sessions", SessionStateEncoder)
 
 
-def main():
+def run():
     random.seed()
     colorama.init()
     print_timeless(COLOR_HEADER + "Insomniac " + get_version() + "\n" + COLOR_ENDC)
@@ -454,7 +452,3 @@ class Mode(Enum):
     UNFOLLOW_NON_FOLLOWERS = 2
     UNFOLLOW_ANY = 3
     REMOVE_MASS_FOLLOWERS = 4
-
-
-if __name__ == "__main__":
-    main()

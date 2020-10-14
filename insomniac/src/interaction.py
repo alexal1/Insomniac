@@ -1,8 +1,8 @@
 from random import shuffle
 
-from src.device_facade import DeviceFacade
-from src.navigation import switch_to_english, LanguageChangedException
-from src.utils import *
+from ..src.device_facade import DeviceFacade
+from ..src.navigation import switch_to_english, LanguageChangedException
+from ..src.utils import *
 
 TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
 FOLLOW_REGEX = 'Follow|Follow Back'

@@ -1,6 +1,6 @@
 from enum import Enum, unique
 
-from src.utils import *
+from ..src.utils import *
 
 # How long we're waiting until UI element appears (loading content + animation)
 UI_TIMEOUT_LONG = 5

@@ -1,5 +1,5 @@
-from src.navigation import switch_to_english, LanguageChangedException
-from src.utils import *
+from ..src.navigation import switch_to_english, LanguageChangedException
+from ..src.utils import *
 
 
 def parse(device, text):

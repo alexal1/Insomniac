@@ -2,7 +2,7 @@ import json
 from datetime import timedelta
 from enum import Enum, unique
 
-from src.utils import *
+from ..src.utils import *
 
 FILENAME_INTERACTED_USERS = "interacted_users.json"
 USER_LAST_INTERACTION = "last_interaction"
