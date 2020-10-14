@@ -257,6 +257,11 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
             return
 
 
+def _is_private_account(device):
+    recycler_view = device.find(resourceId='android:id/list')
+    return not recycler_view.exists()
+
+
 def _interact_with_user(device,
                         is_scrapping_session,
                         username,
@@ -279,6 +284,9 @@ def _interact_with_user(device,
         return False, False
 
     if is_scrapping_session:
+        if (not profile_filter.can_follow_private_or_empty()) and _is_private_account(device):
+            return False, False
+
         return True, False
 
     likes_value = get_value(likes_count, "Likes count: {}", 2)
@@ -291,8 +299,7 @@ def _interact_with_user(device,
         print("Scroll down to see more photos.")
         coordinator_layout.scroll(DeviceFacade.Direction.BOTTOM)
 
-    recycler_view = device.find(resourceId='android:id/list')
-    if not recycler_view.exists():
+    if _is_private_account(device):
         print(COLOR_OKGREEN + "Private / empty account." + COLOR_ENDC)
         if can_follow and profile_filter.can_follow_private_or_empty():
             followed = _follow(device,
