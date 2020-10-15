@@ -119,8 +119,13 @@ def main():
                 continue
             is_targeted_session = args.interact_targets is not None
             is_scrapping_session = args.scrape_for_account is not None
+            total_follow_limit = None
+            if args.total_follow_limit is not None:
+                total_follow_limit = get_value(args.total_follow_limit, "Total follow limit {}", 15)
 
-            on_interaction = partial(_on_interaction, likes_limit=int(args.total_likes_limit))
+            total_likes_limit = get_value(args.total_likes_limit, "Total likes limit {}", 300)
+
+            on_interaction = partial(_on_interaction, likes_limit=total_likes_limit)
             _job_handle_bloggers(device,
                                  args.interact,
                                  is_scrapping_session,
@@ -128,7 +133,7 @@ def main():
                                  args.likes_count,
                                  int(args.follow_percentage),
                                  args.follow_limit,
-                                 int(args.total_follow_limit) if args.total_follow_limit else None,
+                                 total_follow_limit,
                                  storage,
                                  profile_filter,
                                  args.interactions_count,
@@ -341,7 +346,7 @@ def _parse_arguments():
     parser.add_argument('--total-likes-limit',
                         help='limit on total amount of likes during the session, 300 by default',
                         metavar='300',
-                        default='1000')
+                        default='300')
     parser.add_argument('--interactions-count',
                         help='number of interactions per each blogger, 70 by default. It can be a number (e.g. 70) or '
                              'a range (e.g. 60-80). Only successful interactions count',
