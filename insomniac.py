@@ -14,7 +14,7 @@ from croniter import croniter
 import colorama
 
 from src.action_get_my_profile_info import get_my_profile_info
-from src.action_handle_blogger import handle_blogger
+from src.action_handle_blogger import handle_blogger, get_user_followers_list
 from src.action_unfollow import unfollow, UnfollowRestriction
 from src.counters_parser import LanguageChangedException
 from src.device_facade import create_device, DeviceFacade
@@ -108,6 +108,7 @@ def main():
         session_state.my_username,\
             session_state.my_followers_count,\
             session_state.my_following_count = get_my_profile_info(device)
+
         storage = Storage(session_state.my_username, args.scrape_for_account)
 
         # IMPORTANT: in each job we assume being on the top of the Profile tab already
@@ -119,17 +120,28 @@ def main():
                 continue
             is_targeted_session = args.interact_targets is not None
             is_scrapping_session = args.scrape_for_account is not None
+            dump_profile_followers = is_scrapping_session and args.dump_profile_followers is not None
+
             total_follow_limit = None
             if args.total_follow_limit is not None:
                 total_follow_limit = get_value(args.total_follow_limit, "Total follow limit {}", 15)
 
             total_likes_limit = get_value(args.total_likes_limit, "Total likes limit {}", 300)
 
-            on_interaction = partial(_on_interaction, likes_limit=total_likes_limit)
+            total_interactions_limit = None
+            if args.total_interactions_limit is not None:
+                total_interactions_limit = get_value(args.total_interactions_limit, "Total interactions limit {}", 70)
+
+            on_interaction = partial(_on_interaction,
+                                     likes_limit=total_likes_limit,
+                                     total_interactions_limit=total_interactions_limit)
+
             _job_handle_bloggers(device,
                                  args.interact,
                                  is_scrapping_session,
                                  is_targeted_session,
+                                 dump_profile_followers,
+                                 args.scrape_for_account,
                                  args.likes_count,
                                  int(args.follow_percentage),
                                  args.follow_limit,
@@ -170,6 +182,7 @@ def main():
         if args.repeat:
             print_full_report(sessions)
             print_timeless("")
+            sessions.persist(directory=session_state.my_username)
             repeat = get_value(args.repeat, "Sleep for {} minutes", 180)
             try:
                 sleep(60 * repeat)
@@ -189,6 +202,8 @@ def _job_handle_bloggers(device,
                          bloggers,
                          is_scrapping_session,
                          is_targeted_session,
+                         dump_profile_followers,
+                         account_to_scrape,
                          likes_count,
                          follow_percentage,
                          follow_limit,
@@ -203,6 +218,7 @@ def _job_handle_bloggers(device,
 
         is_job_completed = False
         is_likes_limit_reached = False
+        is_interactions_limit_reached = False
 
     state = None
     session_state = sessions[-1]
@@ -210,10 +226,20 @@ def _job_handle_bloggers(device,
     def on_likes_limit_reached():
         state.is_likes_limit_reached = True
 
-    on_interaction = partial(on_interaction, on_likes_limit_reached=on_likes_limit_reached)
+    def on_interactions_limit_reached():
+        state.is_interactions_limit_reached = True
+
+    on_interaction = partial(on_interaction,
+                             on_likes_limit_reached=on_likes_limit_reached,
+                             on_interactions_limit_reached=on_interactions_limit_reached)
 
     if len(sessions) > 1:
         random.shuffle(bloggers)
+
+    if dump_profile_followers:
+        curr_day = str(datetime.date(datetime.now()))
+        if curr_day not in storage.account_followers:
+            storage.save_followers_for_today(get_user_followers_list(device, account_to_scrape))
 
     for blogger in bloggers:
         state = State()
@@ -241,10 +267,10 @@ def _job_handle_bloggers(device,
                            on_interaction)
             state.is_job_completed = True
 
-        while not state.is_job_completed and not state.is_likes_limit_reached:
+        while not state.is_job_completed and not (state.is_likes_limit_reached or state.is_interactions_limit_reached):
             job()
 
-        if state.is_likes_limit_reached:
+        if state.is_likes_limit_reached or state.is_interactions_limit_reached:
             break
 
 
@@ -338,6 +364,9 @@ def _parse_arguments():
                         help='add this argument to select an amount of users from the interact-list '
                              '(users are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)',
                         metavar='3-8')
+    parser.add_argument('--total-interactions-limit',
+                        help='number of total interactions per session, disabled by default',
+                        metavar='60-80')
     parser.add_argument('--likes-count',
                         help='number of likes for each interacted user, 2 by default. It can be a number (e.g. 2) or '
                              'a range (e.g. 2-4)',
@@ -391,6 +420,10 @@ def _parse_arguments():
                         help='minimum amount of followings, after reaching this amount unfollow stops',
                         metavar='100',
                         default=0)
+    parser.add_argument('--dump-profile-followers',
+                        help='add this argument in dump your profile followers as a part of a scrapping session into '
+                             'followers.txt file under your real account directory',
+                        default=None)
     parser.add_argument('--device',
                         help='device identifier. Should be used only when multiple devices are connected at once',
                         metavar='2443de990e017ece')
@@ -510,7 +543,8 @@ def _on_like():
     session_state.totalLikes += 1
 
 
-def _on_interaction(blogger, succeed, followed, interactions_limit, likes_limit, on_likes_limit_reached):
+def _on_interaction(blogger, succeed, followed, interactions_limit, likes_limit, total_interactions_limit,
+                    on_likes_limit_reached, on_interactions_limit_reached):
     session_state = sessions[-1]
     session_state.add_interaction(blogger, succeed, followed)
 
@@ -520,6 +554,12 @@ def _on_interaction(blogger, succeed, followed, interactions_limit, likes_limit,
         print("Reached total likes limit, finish.")
         on_likes_limit_reached()
         can_continue = False
+
+    if total_interactions_limit is not None:
+        if sum(session_state.successfulInteractions.values()) >= total_interactions_limit:
+            print("Reached total interactions limit, finish.")
+            on_interactions_limit_reached()
+            can_continue = False
 
     successful_interactions_count = session_state.successfulInteractions.get(blogger)
     if successful_interactions_count and successful_interactions_count >= interactions_limit:

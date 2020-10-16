@@ -18,6 +18,12 @@
     "description" : "number of interactions per each blogger, 70 by default. It can be a number (e.g. 70) or a range (e.g. 60-80). Only successful interactions count"
   },
   {
+    "parameter-name": "total_interactions_limit",
+    "enabled": false,
+    "value": "60-80",
+    "description" : "number of total interactions per session, disabled by default"
+  },
+  {
     "parameter-name": "repeat",
     "enabled": true,
     "value": "180",
@@ -118,6 +124,12 @@
     "enabled": false,
     "value": "",
     "description" : "add this argument in order to just scrape targeted profiles for an account. The scraped profiles names will be added to targets.txt file at target account dir"
+  },
+  {
+    "parameter-name": "dump_profile_followers",
+    "enabled": false,
+    "value": false,
+    "description" : "add this argument in dump your profile followers as a part of a scrapping session into followers.txt file under your real account directory"
   },
   {
     "parameter-name": "filters",

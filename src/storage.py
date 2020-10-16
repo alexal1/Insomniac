@@ -1,5 +1,5 @@
 import json
-from datetime import timedelta
+from datetime import timedelta, date
 from enum import Enum, unique
 
 from src.utils import *
@@ -10,6 +10,7 @@ USER_FOLLOWING_STATUS = "following_status"
 
 FILENAME_WHITELIST = "whitelist.txt"
 FILENAME_TARGETS = "targets.txt"
+FILENAME_FOLLOWERS = "followers.txt"
 
 
 class Storage:
@@ -17,6 +18,7 @@ class Storage:
     interacted_users = {}
     whitelist = []
     targets = []
+    account_followers = {}
 
     def __init__(self, my_username, scrape_for_account):
         if my_username is None:
@@ -44,6 +46,11 @@ class Storage:
             if os.path.exists(self.targets_path):
                 with open(self.targets_path) as file:
                     self.targets = [line.rstrip() for line in file]
+
+            self.followers_path = scrape_for_account + "/" + FILENAME_FOLLOWERS
+            if os.path.exists(self.followers_path):
+                with open(self.followers_path) as json_file:
+                    self.account_followers = json.load(json_file)
 
     def check_user_was_interacted(self, username):
         return not self.interacted_users.get(username) is None
@@ -81,6 +88,18 @@ class Storage:
         if self.targets_path is not None:
             with open(self.targets_path, 'a') as outfile:
                 outfile.write(username + '\n')
+
+    def save_followers_for_today(self, followers_list, override=False):
+        curr_day = str(datetime.date(datetime.now()))
+        if curr_day in self.account_followers:
+            if not override:
+                return
+
+        self.account_followers[curr_day] = followers_list
+
+        if self.followers_path is not None:
+            with open(self.followers_path, 'w') as outfile:
+                json.dump(self.account_followers, outfile, indent=4, sort_keys=False)
 
     def is_user_in_whitelist(self, username):
         return username in self.whitelist
