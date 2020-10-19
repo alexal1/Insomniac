@@ -13,6 +13,7 @@ from .src.action_get_my_profile_info import get_my_profile_info
 from .src.action_handle_blogger import handle_blogger
 from .src.action_handle_hashtag import handle_hashtag
 from .src.action_unfollow import unfollow, UnfollowRestriction
+from .src.activation import ActivationController, ActivationRequiredException
 from .src.counters_parser import LanguageChangedException
 from .src.device_facade import create_device, DeviceFacade
 from .src.filter import Filter
@@ -25,12 +26,14 @@ from .src.utils import *
 
 device_id = None
 sessions = PersistentList("sessions", SessionStateEncoder)
+activation_controller = ActivationController()
 
 
-def run():
+def run(activation_code):
     random.seed()
     colorama.init()
     print_timeless(COLOR_HEADER + "Insomniac " + get_version() + "\n" + COLOR_ENDC)
+    activation_controller.validate(activation_code)
 
     ok, args = _parse_arguments()
     if not ok:
@@ -92,12 +95,12 @@ def run():
         session_state.my_username,\
             session_state.my_followers_count,\
             session_state.my_following_count = get_my_profile_info(device)
-        storage = Storage(session_state.my_username)
+        storage = Storage(session_state.my_username, activation_controller)
 
         # IMPORTANT: in each job we assume being on the top of the Profile tab already
         if mode == Mode.INTERACT:
             on_interaction = partial(_on_interaction, likes_limit=int(args.total_likes_limit))
-            sources = (source if source[0] == '@' else ('#' + source) for source in args.interact)
+            sources = [source if source[0] == '@' else ('#' + source) for source in args.interact]
             _job_handle_interaction(device,
                                     sources,
                                     args.likes_count,
@@ -421,6 +424,14 @@ def _run_safely(device):
                                COLOR_ENDC)
                 print_full_report(sessions)
                 sessions.persist(directory=session_state.my_username)
+                sys.exit(0)
+            except ActivationRequiredException as e:
+                close_instagram(device_id)
+                print_timeless(COLOR_WARNING + "-------- FINISH: " + str(datetime.now().time()) + " --------" +
+                               COLOR_ENDC)
+                print_full_report(sessions)
+                sessions.persist(directory=session_state.my_username)
+                print_timeless(COLOR_FAIL + str(e) + COLOR_ENDC)
                 sys.exit(0)
             except (DeviceFacade.JsonRpcError, IndexError, HTTPException, timeout):
                 print(COLOR_FAIL + traceback.format_exc() + COLOR_ENDC)

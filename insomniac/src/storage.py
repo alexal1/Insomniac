@@ -12,11 +12,12 @@ FILENAME_WHITELIST = "whitelist.txt"
 
 
 class Storage:
+    activation_controller = None
     interacted_users_path = None
     interacted_users = {}
     whitelist = []
 
-    def __init__(self, my_username):
+    def __init__(self, my_username, activation_controller):
         if my_username is None:
             print(COLOR_FAIL + "No username, thus the script won't get access to interacted users and sessions data" +
                   COLOR_ENDC)
@@ -32,6 +33,9 @@ class Storage:
         if os.path.exists(whitelist_path):
             with open(whitelist_path) as file:
                 self.whitelist = [line.rstrip() for line in file]
+
+        self.activation_controller = activation_controller
+        activation_controller.last_day_interactions_count = self._get_last_day_interactions_count()
 
     def check_user_was_interacted(self, username):
         return not self.interacted_users.get(username) is None
@@ -61,9 +65,20 @@ class Storage:
 
         self.interacted_users[username] = user
         self._update_file()
+        self.activation_controller.notify_interaction_made()
 
     def is_user_in_whitelist(self, username):
         return username in self.whitelist
+
+    def _get_last_day_interactions_count(self):
+        count = 0
+        users_list = list(self.interacted_users.values())
+        for user in users_list:
+            last_interaction = datetime.strptime(user[USER_LAST_INTERACTION], '%Y-%m-%d %H:%M:%S.%f')
+            is_last_day = datetime.now() - last_interaction <= timedelta(days=1)
+            if is_last_day:
+                count += 1
+        return count
 
     def _update_file(self):
         if self.interacted_users_path is not None:
