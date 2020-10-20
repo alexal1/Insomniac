@@ -1,5 +1,5 @@
-from ..src.navigation import switch_to_english, LanguageChangedException
-from ..src.utils import *
+from insomniac.navigation import switch_to_english, LanguageChangedException
+from insomniac.utils import *
 
 
 def parse(device, text):

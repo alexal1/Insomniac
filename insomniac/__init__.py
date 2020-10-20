@@ -9,20 +9,20 @@ from socket import timeout
 
 import colorama
 
-from .src.action_get_my_profile_info import get_my_profile_info
-from .src.action_handle_blogger import handle_blogger
-from .src.action_handle_hashtag import handle_hashtag
-from .src.action_unfollow import unfollow, UnfollowRestriction
-from .src.activation import ActivationController, ActivationRequiredException
-from .src.counters_parser import LanguageChangedException
-from .src.device_facade import create_device, DeviceFacade
-from .src.filter import Filter
-from .src.navigation import navigate, Tabs
-from .src.persistent_list import PersistentList
-from .src.report import print_full_report, print_short_report
-from .src.session_state import SessionState, SessionStateEncoder
-from .src.storage import Storage
-from .src.utils import *
+from insomniac.action_get_my_profile_info import get_my_profile_info
+from insomniac.action_handle_blogger import handle_blogger
+from insomniac.action_handle_hashtag import handle_hashtag
+from insomniac.action_unfollow import unfollow, UnfollowRestriction
+from insomniac.activation import ActivationController, ActivationRequiredException
+from insomniac.counters_parser import LanguageChangedException
+from insomniac.device_facade import create_device, DeviceFacade
+from insomniac.filter import Filter
+from insomniac.navigation import navigate, Tabs
+from insomniac.persistent_list import PersistentList
+from insomniac.report import print_full_report, print_short_report
+from insomniac.session_state import SessionState, SessionStateEncoder
+from insomniac.storage import Storage
+from insomniac.utils import *
 
 device_id = None
 sessions = PersistentList("sessions", SessionStateEncoder)

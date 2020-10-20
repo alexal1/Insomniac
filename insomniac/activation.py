@@ -1,7 +1,7 @@
 import urllib.request
 from urllib.error import HTTPError, URLError
 
-from ..src.utils import *
+from insomniac.utils import *
 
 HOST = "https://insomniac-bot.com"
 PATH_VALIDATE = "/validate"

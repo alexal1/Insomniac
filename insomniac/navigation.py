@@ -1,6 +1,6 @@
 from enum import Enum, unique
 
-from ..src.utils import *
+from insomniac.utils import *
 
 SEARCH_CONTENT_DESC_REGEX = '[Ss]earch and [Ee]xplore'
 

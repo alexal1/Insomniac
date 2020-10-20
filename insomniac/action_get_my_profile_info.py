@@ -1,7 +1,7 @@
-from ..src.counters_parser import parse, LanguageChangedException
-from ..src.interaction import update_interaction_rect
-from ..src.navigation import navigate, Tabs
-from ..src.utils import *
+from insomniac.counters_parser import parse, LanguageChangedException
+from insomniac.interaction import update_interaction_rect
+from insomniac.navigation import navigate, Tabs
+from insomniac.utils import *
 
 
 def get_my_profile_info(device):

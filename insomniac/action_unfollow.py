@@ -1,9 +1,9 @@
 from enum import unique, Enum
 
-from ..src.device_facade import DeviceFacade
-from ..src.navigation import switch_to_english, LanguageChangedException
-from ..src.storage import FollowingStatus
-from ..src.utils import *
+from insomniac.device_facade import DeviceFacade
+from insomniac.navigation import switch_to_english, LanguageChangedException
+from insomniac.storage import FollowingStatus
+from insomniac.utils import *
 
 FOLLOWING_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_following_container' \
                             '|com.instagram.android:id/row_profile_header_container_following'

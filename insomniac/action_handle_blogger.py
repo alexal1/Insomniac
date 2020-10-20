@@ -1,10 +1,10 @@
 from functools import partial
 
-from ..src.device_facade import DeviceFacade
-from ..src.interaction import interact_with_user, is_follow_limit_reached_for_source
-from ..src.navigation import search_for
-from ..src.storage import FollowingStatus
-from ..src.utils import *
+from insomniac.device_facade import DeviceFacade
+from insomniac.interaction import interact_with_user, is_follow_limit_reached_for_source
+from insomniac.navigation import search_for
+from insomniac.storage import FollowingStatus
+from insomniac.utils import *
 
 FOLLOWERS_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_followers_container' \
                             '|com.instagram.android:id/row_profile_header_container_followers'

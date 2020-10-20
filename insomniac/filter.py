@@ -1,7 +1,7 @@
 import json
 
-from ..src.counters_parser import parse
-from ..src.utils import *
+from insomniac.counters_parser import parse
+from insomniac.utils import *
 
 FILENAME_CONDITIONS = "filter.json"
 FIELD_SKIP_BUSINESS = "skip_business"

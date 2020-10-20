@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from ..src.utils import *
+from insomniac.utils import *
 
 
 def print_full_report(sessions):
