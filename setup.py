@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="insomniac",
-    version="0.0.1",
+    version="0.0.2",
     author="Alexander Mishchenko",
     author_email="5740235@gmail.com",
     description="Insomniac: Instagram bot for automated Instagram interaction using Android device via ADB",
