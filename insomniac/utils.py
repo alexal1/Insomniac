@@ -1,10 +1,15 @@
 import hashlib
+import json
 import os
 import re
 import shutil
+import urllib.request
 from datetime import datetime
 from random import randint
 from time import sleep
+from urllib.error import URLError
+
+import insomniac
 
 COLOR_HEADER = '\033[95m'
 COLOR_OKBLUE = '\033[94m'
@@ -21,13 +26,14 @@ COPYRIGHT_BLACKLIST = (
 )
 
 
-def get_version():
-    stream = os.popen('git describe --tags')
-    output = stream.read()
-    version_match = re.match('(v\\d+.\\d+.\\d+)', output)
-    version = (version_match is None) and "(Work In Progress)" or version_match.group(1)
-    stream.close()
-    return version
+def print_version():
+    current_version = insomniac.__version__
+    print_timeless(COLOR_HEADER + f"Insomniac v{current_version}" + COLOR_ENDC)
+    latest_version = _get_latest_version('insomniac')
+    if latest_version is not None and latest_version > current_version:
+        print_timeless(COLOR_HEADER + f"Newer version is available (v{latest_version}). Please run" + COLOR_ENDC)
+        print_timeless(COLOR_HEADER + COLOR_BOLD + "python3 -m pip install insomniac --upgrade" + COLOR_ENDC)
+    print_timeless('\n')
 
 
 def get_instagram_version():
@@ -152,6 +158,18 @@ def _print_with_time_decorator(standard_print, print_time):
             return standard_print(*args, **kwargs)
 
     return wrapper
+
+
+def _get_latest_version(package):
+    latest_version = None
+    try:
+        with urllib.request.urlopen(f"https://pypi.python.org/pypi/{package}/json") as response:
+            if response.code == 200:
+                json_package = json.loads(response.read())
+                latest_version = json_package['info']['version']
+    except URLError:
+        return None
+    return latest_version
 
 
 def get_value(count, name, default):

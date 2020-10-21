@@ -1,11 +1,13 @@
 import setuptools
 
+import insomniac
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="insomniac",
-    version="0.0.2",
+    version=insomniac.__version__,
     author="Alexander Mishchenko",
     author_email="5740235@gmail.com",
     description="Insomniac: Instagram bot for automated Instagram interaction using Android device via ADB",

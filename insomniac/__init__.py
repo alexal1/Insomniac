@@ -24,6 +24,8 @@ from insomniac.session_state import SessionState, SessionStateEncoder
 from insomniac.storage import Storage
 from insomniac.utils import *
 
+__version__ = "0.0.2"
+
 device_id = None
 sessions = PersistentList("sessions", SessionStateEncoder)
 activation_controller = ActivationController()
@@ -32,7 +34,7 @@ activation_controller = ActivationController()
 def run(activation_code):
     random.seed()
     colorama.init()
-    print_timeless(COLOR_HEADER + "Insomniac " + get_version() + "\n" + COLOR_ENDC)
+    print_version()
     activation_controller.validate(activation_code)
 
     ok, args = _parse_arguments()
