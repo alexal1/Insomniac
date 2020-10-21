@@ -1,8 +1,7 @@
-from enum import unique, Enum
-
+from insomniac import UnfollowRestriction
 from insomniac.device_facade import DeviceFacade
+from insomniac.hidden.storage import FollowingStatus
 from insomniac.navigation import switch_to_english, LanguageChangedException
-from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
 FOLLOWING_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_following_container' \
@@ -179,10 +178,3 @@ def _close_confirm_dialog_if_shown(device):
     unfollow_button = dialog_root_view.child(resourceId='com.instagram.android:id/primary_button',
                                              className='android.widget.TextView')
     unfollow_button.click()
-
-
-@unique
-class UnfollowRestriction(Enum):
-    ANY = 0
-    FOLLOWED_BY_SCRIPT = 1
-    FOLLOWED_BY_SCRIPT_NON_FOLLOWERS = 2

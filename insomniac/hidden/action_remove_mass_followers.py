@@ -1,4 +1,4 @@
-from insomniac.action_get_my_profile_info import get_following_count
+from insomniac.hidden.action_get_my_profile_info import get_following_count
 from insomniac.device_facade import DeviceFacade
 from insomniac.utils import *
 

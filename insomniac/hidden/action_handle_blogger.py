@@ -3,7 +3,7 @@ from functools import partial
 from insomniac.device_facade import DeviceFacade
 from insomniac.interaction import interact_with_user, is_follow_limit_reached_for_source
 from insomniac.navigation import search_for
-from insomniac.storage import FollowingStatus
+from insomniac.hidden.storage import FollowingStatus
 from insomniac.utils import *
 
 FOLLOWERS_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_followers_container' \

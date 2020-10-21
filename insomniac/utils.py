@@ -125,7 +125,7 @@ def detect_block(device):
 
 
 def print_copyright():
-    print_timeless("\nIf you like this script, please " + COLOR_BOLD + "give us a star ☆" + COLOR_ENDC + ":")
+    print_timeless("\nIf you like this script, please " + COLOR_BOLD + "give us a star" + COLOR_ENDC + ":")
     print_timeless(COLOR_BOLD + "https://github.com/alexal1/Insomniac\n" + COLOR_ENDC)
 
 
