@@ -8,20 +8,22 @@ from http.client import HTTPException
 from socket import timeout
 
 import colorama
+# noinspection PyUnresolvedReferences
+import sourcedefender
 
-from insomniac.hidden.action_get_my_profile_info import get_my_profile_info
-from insomniac.hidden.activation import ActivationController, ActivationRequiredException
 from insomniac.counters_parser import LanguageChangedException
 from insomniac.device_facade import create_device, DeviceFacade
 from insomniac.filter import Filter
+from insomniac.hidden.action_get_my_profile_info import get_my_profile_info
+from insomniac.hidden.activation import ActivationController, ActivationRequiredException
+from insomniac.hidden.storage import Storage
 from insomniac.navigation import navigate, Tabs
 from insomniac.persistent_list import PersistentList
 from insomniac.report import print_full_report, print_short_report
 from insomniac.session_state import SessionState, SessionStateEncoder
-from insomniac.hidden.storage import Storage
 from insomniac.utils import *
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 device_id = None
 sessions = PersistentList("sessions", SessionStateEncoder)
