@@ -12,6 +12,7 @@ import colorama
 from insomniac.action_get_my_profile_info import get_my_profile_info
 from insomniac.action_handle_blogger import handle_blogger
 from insomniac.action_handle_hashtag import handle_hashtag
+from insomniac.action_remove_mass_followers import remove_mass_followers
 from insomniac.action_unfollow import unfollow, UnfollowRestriction
 from insomniac.activation import ActivationController, ActivationRequiredException
 from insomniac.counters_parser import LanguageChangedException
@@ -137,7 +138,7 @@ def run(activation_code):
             _job_remove_mass_followers(device, int(args.remove_mass_followers), int(args.max_following), storage)
 
         close_instagram(device_id)
-        print_copyright(session_state.my_username)
+        print_copyright()
         session_state.finishTime = datetime.now()
         print_timeless(COLOR_WARNING + "-------- FINISH: " + str(session_state.finishTime) + " --------" + COLOR_ENDC)
 
@@ -279,12 +280,6 @@ def _job_remove_mass_followers(device, count, max_followings, storage):
     state = State()
     session_state = sessions[-1]
 
-    try:
-        from src.action_remove_mass_followers import remove_mass_followers
-    except ImportError:
-        print_blocked_feature(session_state.my_username, "--remove-mass-followers")
-        return
-
     def on_remove(username):
         state.removed_count += 1
         session_state.removedMassFollowers.append(username)
@@ -421,7 +416,7 @@ def _run_safely(device):
                 func(*args, **kwargs)
             except KeyboardInterrupt:
                 close_instagram(device_id)
-                print_copyright(session_state.my_username)
+                print_copyright()
                 print_timeless(COLOR_WARNING + "-------- FINISH: " + str(datetime.now().time()) + " --------" +
                                COLOR_ENDC)
                 print_full_report(sessions)
