@@ -307,7 +307,7 @@ def _parse_arguments():
     parser.add_argument('--interact',
                         nargs='+',
                         help='list of hashtags and usernames. Usernames should start with \"@\" symbol. The script '
-                             'will interact with with hashtags\' posts likers and with users\' followers',
+                             'will interact with hashtags\' posts likers and with users\' followers',
                         metavar=('hashtag', '@username'),
                         default=[])
     parser.add_argument('--likes-count',
