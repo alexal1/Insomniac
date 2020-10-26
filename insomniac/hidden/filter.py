@@ -1,6 +1,5 @@
-import json
-
 from insomniac.counters_parser import parse
+from insomniac.hidden.activation import print_activation_required_to
 from insomniac.utils import *
 
 FILENAME_CONDITIONS = "filter.json"
@@ -17,7 +16,11 @@ FIELD_FOLLOW_PRIVATE_OR_EMPTY = "follow_private_or_empty"
 class Filter:
     conditions = None
 
-    def __init__(self):
+    def __init__(self, activation_controller):
+        if not activation_controller.is_activated:
+            print_activation_required_to("use filter.json")
+            return
+
         if os.path.exists(FILENAME_CONDITIONS):
             with open(FILENAME_CONDITIONS) as json_file:
                 self.conditions = json.load(json_file)

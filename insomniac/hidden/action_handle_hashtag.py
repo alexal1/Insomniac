@@ -1,9 +1,10 @@
 from functools import partial
 
 from insomniac.device_facade import DeviceFacade
+from insomniac.hidden.activation import print_activation_required_to
 from insomniac.interaction import is_follow_limit_reached_for_source, interact_with_user, is_in_interaction_rect
 from insomniac.navigation import search_for
-from insomniac.hidden.storage import FollowingStatus
+from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
 
@@ -16,7 +17,12 @@ def handle_hashtag(device,
                    storage,
                    profile_filter,
                    on_like,
-                   on_interaction):
+                   on_interaction,
+                   activation_controller):
+    if not activation_controller.is_activated:
+        print_activation_required_to(f"interact by hashtag #{hashtag}")
+        return
+
     interaction = partial(interact_with_user,
                           my_username=session_state.my_username,
                           likes_count=likes_count,

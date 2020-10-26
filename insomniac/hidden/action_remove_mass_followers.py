@@ -1,12 +1,19 @@
-from insomniac.hidden.action_get_my_profile_info import get_following_count
 from insomniac.device_facade import DeviceFacade
+from insomniac.hidden.action_get_my_profile_info import get_following_count
+from insomniac.hidden.activation import print_activation_required_to
 from insomniac.utils import *
 
+FOLLOWERS_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_followers_container' \
+                            '|com.instagram.android:id/row_profile_header_container_followers'
 
-def remove_mass_followers(device, max_followings, on_remove, storage):
+
+def remove_mass_followers(device, max_followings, on_remove, storage, activation_controller):
+    if not activation_controller.is_activated:
+        print_activation_required_to("remove mass followers")
+        return
+
     print("Open your followers")
-    followers_button = device.find(resourceId='com.instagram.android:id/row_profile_header_followers_container',
-                                   className='android.widget.LinearLayout')
+    followers_button = device.find(resourceIdMatches=FOLLOWERS_BUTTON_ID_REGEX)
     followers_button.click()
     _scroll_to_bottom(device)
 
