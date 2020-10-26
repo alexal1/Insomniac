@@ -13,14 +13,14 @@ import sourcedefender
 
 from insomniac.counters_parser import LanguageChangedException
 from insomniac.device_facade import create_device, DeviceFacade
-from insomniac.filter import Filter
 from insomniac.hidden.action_get_my_profile_info import get_my_profile_info
 from insomniac.hidden.activation import ActivationController, ActivationRequiredException
-from insomniac.hidden.storage import Storage
+from insomniac.hidden.filter import Filter
 from insomniac.navigation import navigate, Tabs
 from insomniac.persistent_list import PersistentList
 from insomniac.report import print_full_report, print_short_report
 from insomniac.session_state import SessionState, SessionStateEncoder
+from insomniac.storage import Storage
 from insomniac.utils import *
 
 __version__ = "0.0.4"
@@ -84,7 +84,7 @@ def run(activation_code):
             print("Action: remove " + str(args.remove_mass_followers) + " mass followers")
             mode = Mode.REMOVE_MASS_FOLLOWERS
 
-    profile_filter = Filter()
+    profile_filter = Filter(activation_controller)
 
     while True:
         session_state = SessionState()
@@ -96,7 +96,7 @@ def run(activation_code):
         session_state.my_username,\
             session_state.my_followers_count,\
             session_state.my_following_count = get_my_profile_info(device)
-        storage = Storage(session_state.my_username, activation_controller)
+        storage = Storage(session_state.my_username)
 
         # IMPORTANT: in each job we assume being on the top of the Profile tab already
         if mode == Mode.INTERACT:
@@ -224,7 +224,8 @@ def _job_handle_interaction(device,
                                storage,
                                profile_filter,
                                _on_like,
-                               on_interaction)
+                               on_interaction,
+                               activation_controller)
             state.is_job_completed = True
 
         while not state.is_job_completed and not state.is_likes_limit_reached:
@@ -262,7 +263,8 @@ def _job_unfollow(device, count, storage, min_following, unfollow_restriction):
                  on_unfollow,
                  storage,
                  unfollow_restriction,
-                 session_state.my_username)
+                 session_state.my_username,
+                 activation_controller)
         print("Unfollowed " + str(state.unfollowed_count) + ", finish.")
         state.is_job_completed = True
 
@@ -292,7 +294,7 @@ def _job_remove_mass_followers(device, count, max_followings, storage):
     @_run_safely(device=device)
     def job():
         from insomniac.hidden.action_remove_mass_followers import remove_mass_followers
-        remove_mass_followers(device, max_followings, on_remove, storage)
+        remove_mass_followers(device, max_followings, on_remove, storage, activation_controller)
         state.is_job_completed = True
 
     while not state.is_job_completed and state.removed_count < count:
@@ -361,12 +363,13 @@ def _parse_arguments():
                         help='add this flag to use an old version of uiautomator. Use it only if you experience '
                              'problems with the default version',
                         action='store_true')
-    # Remove mass followers from the list of your followers. "Mass followers" are those who has more than N followings,
-    # where N can be set via --max-following. This is an extra feature, requires Patreon $10 tier.
     parser.add_argument('--remove-mass-followers',
-                        help=argparse.SUPPRESS)
+                        help='Remove given number of mass followers from the list of your followers. "Mass followers" '
+                             'are those who has more than N followings, where N can be set via --max-following',
+                        metavar='10')
     parser.add_argument('--max-following',
-                        help=argparse.SUPPRESS,
+                        help='Should be used together with --remove-mass-followers. Specifies max number of '
+                             'followings for any your follower, 1000 by default',
                         default=1000)
 
     if not len(sys.argv) > 1:
@@ -423,14 +426,6 @@ def _run_safely(device):
                                COLOR_ENDC)
                 print_full_report(sessions)
                 sessions.persist(directory=session_state.my_username)
-                sys.exit(0)
-            except ActivationRequiredException as e:
-                close_instagram(device_id)
-                print_timeless(COLOR_WARNING + "-------- FINISH: " + str(datetime.now().time()) + " --------" +
-                               COLOR_ENDC)
-                print_full_report(sessions)
-                sessions.persist(directory=session_state.my_username)
-                print_timeless(COLOR_FAIL + str(e) + COLOR_ENDC)
                 sys.exit(0)
             except (DeviceFacade.JsonRpcError, IndexError, HTTPException, timeout):
                 print(COLOR_FAIL + traceback.format_exc() + COLOR_ENDC)

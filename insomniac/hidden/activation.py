@@ -1,31 +1,31 @@
 import urllib.request
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 
 from insomniac.utils import *
 
 HOST = "https://insomniac-bot.com"
 PATH_VALIDATE = "/validate"
-MAX_FREE_INTERACTIONS_PER_DAY = 50
+PATH_ACTIVATE = "/activate/"
 
 
 class ActivationController:
     is_activated = False
-    last_day_interactions_count = 0
 
     def validate(self, activation_code):
-        if activation_code == "":
-            return
-
-        if _validate(activation_code):
+        if not activation_code == "" and _validate(activation_code):
             self.is_activated = True
 
-    def notify_interaction_made(self):
-        self.last_day_interactions_count += 1
-        if not self.is_activated and self.last_day_interactions_count >= MAX_FREE_INTERACTIONS_PER_DAY:
-            raise ActivationRequiredException(f"\nSorry, but only {MAX_FREE_INTERACTIONS_PER_DAY} interactions per day "
-                                              f"are allowed without activation.\n"
-                                              f"Please activate your bot if you like it\n"
-                                              f"https://insomniac-bot.com/activate/\n")
+        if not self.is_activated:
+            dot = '\n    • '
+            print_timeless(COLOR_FAIL + f"Note that these features won't work until the bot is activated:" +
+                           COLOR_BOLD + f"{dot}Interaction by #hashtags{dot}Unfollowing{dot}Filtering"
+                                        f"{dot}Removing mass followers\n" + COLOR_ENDC +
+                           COLOR_FAIL + f"Activate here: " + COLOR_BOLD + f"{HOST}{PATH_ACTIVATE}\n" + COLOR_ENDC)
+
+
+def print_activation_required_to(action):
+    print_timeless(COLOR_FAIL + f"\nActivate the bot to {action}:\n" + COLOR_BOLD + f"{HOST}{PATH_ACTIVATE}\n" +
+                   COLOR_ENDC)
 
 
 def _validate(activation_code):
@@ -41,7 +41,7 @@ def _validate(activation_code):
         reason = e.reason
 
     if code == 200:
-        print("Your activation code is confirmed, welcome!")
+        print(COLOR_OKGREEN + "Your activation code is confirmed, welcome!" + COLOR_ENDC)
         return True
 
     if reason is None:

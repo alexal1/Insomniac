@@ -128,6 +128,15 @@ You can also see this list by running with no arguments: `python3 start.py`.
   --old                 add this flag to use an old version of uiautomator.
                         Use it only if you experience problems with the
                         default version
+  --remove-mass-followers 10
+                        Remove given number of mass followers from the list of
+                        your followers. "Mass followers" are those who has
+                        more than N followings, where N can be set via --max-
+                        following
+  --max-following MAX_FOLLOWING
+                        Should be used together with --remove-mass-followers.
+                        Specifies max number of followings for any your
+                        follower, 1000 by default
 ```
 
 ### Filtering
@@ -153,14 +162,20 @@ Save this file and replace values with ones that suit your needs. You can also d
 
 - What to do if I got soft ban (cannot like/follow/comment)?<br/>_Clear Instagram application data. You'll have to login again and then it will work as usual. But it's **highly recommended** to lower your interactions count for the future and take a pause with the script._
 
-- [How to connect Android phone via WiFi?](https://www.patreon.com/posts/connect-android-38655552)
+- [How to connect Android phone via WiFi?](https://www.patreon.com/posts/connect-android-43141956)
 
-- [How to run on 2 or more devices at once?](https://www.patreon.com/posts/38683736)
+- [How to run on 2 or more devices at once?](https://www.patreon.com/posts/running-script-43143021)
 
-- [Script crashes with **OSError: RPC server not started!** or **ReadTimeoutError**](https://www.patreon.com/posts/problems-with-to-38702683)
+- [Script crashes with **OSError: RPC server not started!** or **ReadTimeoutError**](https://www.patreon.com/posts/problems-with-to-43143682)
 
 ### Activation
-You have to activate this bot to use it. You may not do it, but then it will work in a limited mode: only 50 interactions per day. Activation is pretty simple, it's described on out official site: [insomniac-bot.com/activate/](https://insomniac-bot.com/activate/).
+You have to activate this bot to get access to the most valuable features:
+- **Interaction by #hashtags**
+- **Unfollowing**
+- **Filtering**
+- **Removing mass followers**
+
+Activation is pretty simple, it's described on out official site: [https://insomniac-bot.com/activate/](https://insomniac-bot.com/activate/).
 
 ### Analytics
 There also is an analytics tool for this bot. It is a script that builds a report in PDF format. The report contains account's followers growth graphs for different periods. Liking, following and unfollowing actions' amounts are on the same axis to determine bot effectiveness. The report also contains stats of sessions length for different configurations that you've used. All data is taken from `sessions.json` file that's generated during bot's execution.
