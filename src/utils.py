@@ -124,14 +124,9 @@ def detect_block(device):
                                  " with limits!")
 
 
-def print_copyright(username):
-    if username is None or (hashlib.sha1(username.encode('utf-8')).hexdigest() not in COPYRIGHT_BLACKLIST):
-        print_timeless("\nIf you like this script and want it to be improved, " + COLOR_BOLD + "donate please"
-                       + COLOR_ENDC + ".")
-        print_timeless(COLOR_BOLD + "$3" + COLOR_ENDC + " - support this project")
-        print_timeless(COLOR_BOLD + "$10" + COLOR_ENDC + " - unblock extra features")
-        print_timeless(COLOR_BOLD + "$25" + COLOR_ENDC + " - same as $10 + vote for the next feature")
-        print_timeless("https://www.patreon.com/insomniac_bot\n")
+def print_copyright():
+    print_timeless("\nIf you like this script, please " + COLOR_BOLD + "give us a star" + COLOR_ENDC + ":")
+    print_timeless(COLOR_BOLD + "https://github.com/alexal1/Insomniac\n" + COLOR_ENDC)
 
 
 def print_blocked_feature(username, feature_name):

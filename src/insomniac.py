@@ -132,7 +132,7 @@ def main():
             _job_remove_mass_followers(device, int(args.remove_mass_followers), int(args.max_following), storage)
 
         close_instagram(device_id)
-        print_copyright(session_state.my_username)
+        print_copyright()
         session_state.finishTime = datetime.now()
         print_timeless(COLOR_WARNING + "-------- FINISH: " + str(session_state.finishTime) + " --------" + COLOR_ENDC)
 
@@ -397,7 +397,7 @@ def _run_safely(device):
                 func(*args, **kwargs)
             except KeyboardInterrupt:
                 close_instagram(device_id)
-                print_copyright(session_state.my_username)
+                print_copyright()
                 print_timeless(COLOR_WARNING + "-------- FINISH: " + str(datetime.now().time()) + " --------" +
                                COLOR_ENDC)
                 print_full_report(sessions)
