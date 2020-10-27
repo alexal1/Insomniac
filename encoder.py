@@ -4,7 +4,7 @@ import re
 
 HIDDEN_DIRECTORY = './insomniac/hidden/'
 EMPTY_REGEX = r'^\s*$'
-IMPORTS_REGEX = r'^from|import[\s\S]*$'
+IMPORTS_REGEX = r'^from|import [\s\S]+$'
 
 
 def encode():
