@@ -91,10 +91,11 @@ def _stringify_interactions(interactions):
         return "0"
 
     result = ""
+    total = sum(interactions.values())
     for source, count in interactions.items():
         result += str(count) + " for " + source + ", "
     result = result[:-2]
-    return result
+    return "({0}) {1}".format(total, result)
 
 
 def _stringify_removed_mass_followers(removed_mass_followers):

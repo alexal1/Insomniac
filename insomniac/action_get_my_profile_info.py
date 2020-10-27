@@ -1,3 +1,4 @@
+from insomniac import DeviceFacade
 from insomniac.counters_parser import parse, LanguageChangedException
 from insomniac.interaction import update_interaction_rect
 from insomniac.navigation import navigate, Tabs
@@ -9,6 +10,14 @@ TITLE_VIEW_ID_REGEX = 'com.instagram.android:id/title_view|com.instagram.android
 def get_my_profile_info(device):
     navigate(device, Tabs.PROFILE)
     random_sleep()
+
+    print("Refreshing you profile status...")
+    coordinator_layout = device.find(resourceId='com.instagram.android:id/coordinator_root_layout')
+    if coordinator_layout.exists():
+        coordinator_layout.scroll(DeviceFacade.Direction.TOP)
+
+    random_sleep()
+
     update_interaction_rect(device)
 
     username = None

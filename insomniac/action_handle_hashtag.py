@@ -10,10 +10,12 @@ from insomniac.utils import *
 
 def handle_hashtag(device,
                    hashtag,
+                   is_scrapping_session,
                    session_state,
                    likes_count,
                    follow_percentage,
                    follow_limit,
+                   total_follow_limit,
                    storage,
                    profile_filter,
                    on_like,
@@ -23,11 +25,13 @@ def handle_hashtag(device,
                           likes_count=likes_count,
                           follow_percentage=follow_percentage,
                           on_like=on_like,
-                          profile_filter=profile_filter)
+                          profile_filter=profile_filter,
+                          is_scrapping_session=is_scrapping_session)
 
     is_follow_limit_reached = partial(is_follow_limit_reached_for_source,
                                       session_state=session_state,
                                       follow_limit=follow_limit,
+                                      total_follow_limit=total_follow_limit,
                                       source=hashtag)
 
     if not search_for(device, hashtag=hashtag):
@@ -95,6 +99,10 @@ def handle_hashtag(device,
                         and storage.get_following_status(username) == FollowingStatus.NONE
 
                     interaction_succeed, followed = interaction(device, username=username, can_follow=can_follow)
+
+                    if is_scrapping_session and interaction_succeed:
+                        storage.add_target_user(username)
+
                     storage.add_interacted_user(username, followed=followed)
                     can_continue = on_interaction(succeed=interaction_succeed,
                                                   followed=followed)

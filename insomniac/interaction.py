@@ -36,7 +36,13 @@ def is_in_interaction_rect(view):
     return _action_bar_bottom <= view_top and view_bottom <= _tab_bar_top
 
 
+def is_private_account(device):
+    recycler_view = device.find(resourceId='android:id/list')
+    return not recycler_view.exists()
+
+
 def interact_with_user(device,
+                       is_scrapping_session,
                        username,
                        my_username,
                        likes_count,
@@ -56,6 +62,12 @@ def interact_with_user(device,
     if not profile_filter.check_profile(device, username):
         return False, False
 
+    if is_scrapping_session:
+        if (not profile_filter.can_follow_private_or_empty()) and is_private_account(device):
+            return False, False
+
+        return True, False
+
     likes_value = get_value(likes_count, "Likes count: {}", 2)
     if likes_value > 12:
         print(COLOR_FAIL + "Max number of likes per user is 12" + COLOR_ENDC)
@@ -66,8 +78,7 @@ def interact_with_user(device,
         print("Scroll down to see more photos.")
         coordinator_layout.scroll(DeviceFacade.Direction.BOTTOM)
 
-    recycler_view = device.find(resourceId='android:id/list')
-    if not recycler_view.exists():
+    if is_private_account(device):
         print(COLOR_OKGREEN + "Private / empty account." + COLOR_ENDC)
         if can_follow and profile_filter.can_follow_private_or_empty():
             followed = _follow(device,
@@ -109,7 +120,12 @@ def interact_with_user(device,
     return True, False
 
 
-def is_follow_limit_reached_for_source(session_state, follow_limit, source):
+def is_follow_limit_reached_for_source(session_state, follow_limit, total_follow_limit, source):
+    if total_follow_limit is not None:
+        total_followed_count = sum(session_state.totalFollowed.values())
+        if total_followed_count >= total_follow_limit:
+            return True
+
     if follow_limit is None:
         return False
 
