@@ -8,8 +8,6 @@ from http.client import HTTPException
 from socket import timeout
 
 import colorama
-# noinspection PyUnresolvedReferences
-import sourcedefender
 
 from insomniac.counters_parser import LanguageChangedException
 from insomniac.device_facade import create_device, DeviceFacade
