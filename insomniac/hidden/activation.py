@@ -17,14 +17,14 @@ class ActivationController:
 
         if not self.is_activated:
             dot = '\n    • '
-            print_timeless(COLOR_FAIL + f"Note that these features won't work until the bot is activated:" +
-                           COLOR_BOLD + f"{dot}Interaction by #hashtags{dot}Unfollowing{dot}Filtering"
-                                        f"{dot}Removing mass followers\n" + COLOR_ENDC +
-                           COLOR_FAIL + f"Activate here: " + COLOR_BOLD + f"{HOST}{PATH_ACTIVATE}\n" + COLOR_ENDC)
+            print_timeless(f"\nNote that these features won't work until the bot is activated:" + COLOR_BOLD +
+                           f"{dot}Interaction by #hashtags{dot}Unfollowing{dot}Filtering"
+                           f"{dot}Removing mass followers\n" + COLOR_ENDC +
+                           f"Activate here: " + COLOR_BOLD + f"{HOST}{PATH_ACTIVATE}" + COLOR_ENDC)
 
 
 def print_activation_required_to(action):
-    print_timeless(COLOR_FAIL + f"\nActivate the bot to {action}:\n" + COLOR_BOLD + f"{HOST}{PATH_ACTIVATE}\n" +
+    print_timeless(COLOR_FAIL + f"\nActivate the bot to {action}:\n" + COLOR_BOLD + f"{HOST}{PATH_ACTIVATE}" +
                    COLOR_ENDC)
 
 

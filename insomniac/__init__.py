@@ -32,7 +32,6 @@ def run(activation_code):
     random.seed()
     colorama.init()
     print_version()
-    activation_controller.validate(activation_code)
 
     ok, args = _parse_arguments()
     if not ok:
@@ -82,6 +81,7 @@ def run(activation_code):
             print("Action: remove " + str(args.remove_mass_followers) + " mass followers")
             mode = Mode.REMOVE_MASS_FOLLOWERS
 
+    activation_controller.validate(activation_code)
     profile_filter = Filter(activation_controller)
 
     while True:
@@ -368,6 +368,7 @@ def _parse_arguments():
     parser.add_argument('--max-following',
                         help='Should be used together with --remove-mass-followers. Specifies max number of '
                              'followings for any your follower, 1000 by default',
+                        metavar='1000',
                         default=1000)
 
     if not len(sys.argv) > 1:
