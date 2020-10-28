@@ -21,7 +21,7 @@ from insomniac.session_state import SessionState, SessionStateEncoder
 from insomniac.storage import Storage
 from insomniac.utils import *
 
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 
 device_id = None
 sessions = PersistentList("sessions", SessionStateEncoder)
