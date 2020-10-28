@@ -31,7 +31,8 @@ def print_activation_required_to(action):
 def _validate(activation_code):
     reason = None
     try:
-        with urllib.request.urlopen(f"{HOST}{PATH_VALIDATE}?activation_code={activation_code}") as response:
+        with urllib.request.urlopen(f"{HOST}{PATH_VALIDATE}?activation_code={activation_code}",
+                                    context=ssl.SSLContext()) as response:
             code = response.code
     except HTTPError as e:
         code = e.code

@@ -2,6 +2,7 @@ import json
 import os
 import re
 import shutil
+import ssl
 import urllib.request
 from datetime import datetime
 from random import randint
@@ -146,7 +147,8 @@ def _print_with_time_decorator(standard_print, print_time):
 def _get_latest_version(package):
     latest_version = None
     try:
-        with urllib.request.urlopen(f"https://pypi.python.org/pypi/{package}/json") as response:
+        with urllib.request.urlopen(f"https://pypi.python.org/pypi/{package}/json",
+                                    context=ssl.SSLContext()) as response:
             if response.code == 200:
                 json_package = json.loads(response.read())
                 latest_version = json_package['info']['version']
