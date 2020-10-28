@@ -17,11 +17,11 @@ class Filter:
     conditions = None
 
     def __init__(self, activation_controller):
-        if not activation_controller.is_activated:
-            print_activation_required_to("use filter.json")
-            return
-
         if os.path.exists(FILENAME_CONDITIONS):
+            if not activation_controller.is_activated:
+                print_activation_required_to("use filter.json")
+                return
+
             with open(FILENAME_CONDITIONS) as json_file:
                 self.conditions = json.load(json_file)
 
