@@ -133,8 +133,7 @@ You can also see this list by running with no arguments: `python3 start.py`.
                         your followers. "Mass followers" are those who has
                         more than N followings, where N can be set via --max-
                         following
-  --max-following MAX_FOLLOWING
-                        Should be used together with --remove-mass-followers.
+  --max-following 1000  Should be used together with --remove-mass-followers.
                         Specifies max number of followings for any your
                         follower, 1000 by default
 ```
