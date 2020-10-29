@@ -190,21 +190,9 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
                 screen_iterated_followers.append(username)
                 scroll_end_detector.notify_username_iterated(username)
 
-                if not just_get_list:
-                    if not is_myself and storage.check_user_was_interacted(username):
-                        print("@" + username + ": already interacted. Skip.")
-                        screen_skipped_followers_count += 1
-                    elif is_myself and storage.check_user_was_interacted_recently(username):
-                        print("@" + username + ": already interacted in the last week. Skip.")
-                        screen_skipped_followers_count += 1
-                    elif max_nums_in_username is not None and \
-                            get_count_of_nums_in_str(username) > int(max_nums_in_username):
-                        print(
-                            "@" + username + ": more than " + str(max_nums_in_username) + " numbers in username. Skip.")
-                        screen_skipped_followers_count += 1
-                    else:
-                        print("@" + username + ": interact")
-                        user_name_view.click()
+                if just_get_list:
+                    continue
+
                 if storage.is_user_in_blacklist(username):
                     print("@" + username + " is in blacklist. Skip.")
                 elif not is_myself and storage.check_user_was_interacted(username):
@@ -213,28 +201,33 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
                 elif is_myself and storage.check_user_was_interacted_recently(username):
                     print("@" + username + ": already interacted in the last week. Skip.")
                     screen_skipped_followers_count += 1
+                elif max_nums_in_username is not None and \
+                        get_count_of_nums_in_str(username) > int(max_nums_in_username):
+                    print(
+                        "@" + username + ": more than " + str(max_nums_in_username) + " numbers in username. Skip.")
+                    screen_skipped_followers_count += 1
                 else:
                     print("@" + username + ": interact")
                     user_name_view.click()
 
-                        can_follow = not is_myself \
-                                     and not is_follow_limit_reached() \
-                                     and storage.get_following_status(username) == FollowingStatus.NONE
+                    can_follow = not is_myself \
+                                 and not is_follow_limit_reached() \
+                                 and storage.get_following_status(username) == FollowingStatus.NONE
 
-                        interaction_succeed, followed = interaction(device, username=username, can_follow=can_follow)
+                    interaction_succeed, followed = interaction(device, username=username, can_follow=can_follow)
 
-                        if is_scrapping_session and interaction_succeed:
-                            storage.add_target_user(username)
+                    if is_scrapping_session and interaction_succeed:
+                        storage.add_target_user(username)
 
-                        storage.add_interacted_user(username, followed=followed)
-                        can_continue = on_interaction(succeed=interaction_succeed,
-                                                      followed=followed)
+                    storage.add_interacted_user(username, followed=followed)
+                    can_continue = on_interaction(succeed=interaction_succeed,
+                                                  followed=followed)
 
-                        if not can_continue:
-                            return
+                    if not can_continue:
+                        return
 
-                        print("Back to followers list")
-                        device.back()
+                    print("Back to followers list")
+                    device.back()
         except IndexError:
             print(COLOR_FAIL + "Cannot get next item: probably reached end of the screen." + COLOR_ENDC)
 

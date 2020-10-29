@@ -15,7 +15,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/alexal1/Insomniac",
     packages=setuptools.find_packages(),
-    install_requires=['colorama', 'uiautomator', 'uiautomator2'],
+    install_requires=['colorama', 'uiautomator', 'uiautomator2', 'croniter'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
