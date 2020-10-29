@@ -222,8 +222,7 @@ def _job_handle_interaction(device,
                                storage,
                                profile_filter,
                                _on_like,
-                               on_interaction,
-                               activation_controller)
+                               on_interaction)
             state.is_job_completed = True
 
         while not state.is_job_completed and not state.is_likes_limit_reached:

@@ -16,6 +16,7 @@ def get_my_profile_info(device):
         username = title_view.get_text()
     else:
         print(COLOR_FAIL + "Failed to get username" + COLOR_ENDC)
+        save_crash(device)
 
     try:
         followers = _get_followers_count(device)

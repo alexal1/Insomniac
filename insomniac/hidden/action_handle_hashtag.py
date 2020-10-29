@@ -17,14 +17,7 @@ def handle_hashtag(device,
                    storage,
                    profile_filter,
                    on_like,
-                   on_interaction,
-                   activation_controller):
-    if not activation_controller.is_activated:
-        print_activation_required_to(f"interact by hashtag #{hashtag}")
-        print_timeless(f"To interact with user @{hashtag}, use " +
-                       COLOR_BOLD + f"python3 start.py --interact @{hashtag}" + COLOR_ENDC)
-        return
-
+                   on_interaction):
     interaction = partial(interact_with_user,
                           my_username=session_state.my_username,
                           likes_count=likes_count,
