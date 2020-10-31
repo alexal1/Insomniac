@@ -1,6 +1,5 @@
 from insomniac import UnfollowRestriction
 from insomniac.device_facade import DeviceFacade
-from insomniac.hidden.activation import print_activation_required_to
 from insomniac.navigation import switch_to_english, LanguageChangedException
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
@@ -10,11 +9,7 @@ FOLLOWING_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_followi
 TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
 
 
-def unfollow(device, count, on_unfollow, storage, unfollow_restriction, my_username, activation_controller):
-    if not activation_controller.is_activated:
-        print_activation_required_to("unfollow")
-        return
-
+def unfollow(device, count, on_unfollow, storage, unfollow_restriction, my_username):
     _open_my_followings(device)
     _sort_followings_by_date(device)
     random_sleep()

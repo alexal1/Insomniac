@@ -260,8 +260,7 @@ def _job_unfollow(device, count, storage, min_following, unfollow_restriction):
                  on_unfollow,
                  storage,
                  unfollow_restriction,
-                 session_state.my_username,
-                 activation_controller)
+                 session_state.my_username)
         print("Unfollowed " + str(state.unfollowed_count) + ", finish.")
         state.is_job_completed = True
 
