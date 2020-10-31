@@ -9,11 +9,15 @@ from socket import timeout
 
 import colorama
 
+from insomniac.action_get_my_profile_info import get_my_profile_info
+from insomniac.action_handle_blogger import handle_blogger
+from insomniac.action_handle_hashtag import handle_hashtag
+from insomniac.action_remove_mass_followers import remove_mass_followers
+from insomniac.action_unfollow import unfollow, UnfollowRestriction
+from insomniac.activation import ActivationController
 from insomniac.counters_parser import LanguageChangedException
 from insomniac.device_facade import create_device, DeviceFacade
-from insomniac.hidden.action_get_my_profile_info import get_my_profile_info
-from insomniac.hidden.activation import ActivationController, ActivationRequiredException
-from insomniac.hidden.filter import Filter
+from insomniac.filter import Filter
 from insomniac.navigation import navigate, Tabs
 from insomniac.persistent_list import PersistentList
 from insomniac.report import print_full_report, print_short_report
@@ -200,7 +204,6 @@ def _job_handle_interaction(device,
         @_run_safely(device=device)
         def job():
             if source[0] == '@':
-                from insomniac.hidden.action_handle_blogger import handle_blogger
                 handle_blogger(device,
                                source[1:],  # drop "@"
                                session_state,
@@ -212,7 +215,6 @@ def _job_handle_interaction(device,
                                _on_like,
                                on_interaction)
             elif source[0] == '#':
-                from insomniac.hidden.action_handle_hashtag import handle_hashtag
                 handle_hashtag(device,
                                source[1:],  # drop "#"
                                session_state,
@@ -254,7 +256,6 @@ def _job_unfollow(device, count, storage, min_following, unfollow_restriction):
 
     @_run_safely(device=device)
     def job():
-        from insomniac.hidden.action_unfollow import unfollow
         unfollow(device,
                  new_count - state.unfollowed_count,
                  on_unfollow,
@@ -289,7 +290,6 @@ def _job_remove_mass_followers(device, count, max_followings, storage):
 
     @_run_safely(device=device)
     def job():
-        from insomniac.hidden.action_remove_mass_followers import remove_mass_followers
         remove_mass_followers(device, max_followings, on_remove, storage, activation_controller)
         state.is_job_completed = True
 
@@ -454,10 +454,3 @@ class Mode(Enum):
     UNFOLLOW_NON_FOLLOWERS = 2
     UNFOLLOW_ANY = 3
     REMOVE_MASS_FOLLOWERS = 4
-
-
-@unique
-class UnfollowRestriction(Enum):
-    ANY = 0
-    FOLLOWED_BY_SCRIPT = 1
-    FOLLOWED_BY_SCRIPT_NON_FOLLOWERS = 2
