@@ -3,6 +3,8 @@ from insomniac.interaction import update_interaction_rect
 from insomniac.navigation import navigate, Tabs
 from insomniac.utils import *
 
+TITLE_VIEW_ID_REGEX = 'com.instagram.android:id/title_view|com.instagram.android:id/action_bar_large_title'
+
 
 def get_my_profile_info(device):
     navigate(device, Tabs.PROFILE)
@@ -10,12 +12,13 @@ def get_my_profile_info(device):
     update_interaction_rect(device)
 
     username = None
-    title_view = device.find(resourceId='com.instagram.android:id/title_view',
+    title_view = device.find(resourceIdMatches=TITLE_VIEW_ID_REGEX,
                              className='android.widget.TextView')
     if title_view.exists():
         username = title_view.get_text()
     else:
         print(COLOR_FAIL + "Failed to get username" + COLOR_ENDC)
+        save_crash(device)
 
     try:
         followers = _get_followers_count(device)

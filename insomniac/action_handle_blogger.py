@@ -3,6 +3,7 @@ from functools import partial
 from insomniac.device_facade import DeviceFacade
 from insomniac.interaction import interact_with_user, is_follow_limit_reached_for_source
 from insomniac.navigation import search_for
+from insomniac.scroll_end_detector import ScrollEndDetector
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
@@ -89,12 +90,13 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
                                  className='android.widget.EditText')
         return row_search.exists()
 
-    prev_screen_iterated_followers = []
+    scroll_end_detector = ScrollEndDetector()
     while True:
         print("Iterate over visible followers")
         random_sleep()
         screen_iterated_followers = []
         screen_skipped_followers_count = 0
+        scroll_end_detector.notify_new_page()
 
         try:
             for item in device.find(resourceId='com.instagram.android:id/follow_list_container',
@@ -107,8 +109,11 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
 
                 username = user_name_view.get_text()
                 screen_iterated_followers.append(username)
+                scroll_end_detector.notify_username_iterated(username)
 
-                if not is_myself and storage.check_user_was_interacted(username):
+                if storage.is_user_in_blacklist(username):
+                    print("@" + username + " is in blacklist. Skip.")
+                elif is_myself and storage.check_user_was_interacted(username):
                     print("@" + username + ": already interacted. Skip.")
                     screen_skipped_followers_count += 1
                 elif is_myself and storage.check_user_was_interacted_recently(username):
@@ -142,13 +147,18 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
             load_more_button = device.find(resourceId='com.instagram.android:id/row_load_more_button')
             load_more_button_exists = load_more_button.exists(quick=True)
 
-            if not load_more_button_exists and screen_iterated_followers == prev_screen_iterated_followers:
-                print(COLOR_OKGREEN + "Iterated exactly the same followers twice, finish." + COLOR_ENDC)
+            if scroll_end_detector.is_the_end():
                 return
 
             need_swipe = screen_skipped_followers_count == len(screen_iterated_followers)
             list_view = device.find(resourceId='android:id/list',
                                     className='android.widget.ListView')
+            if not list_view.exists():
+                print(COLOR_FAIL + "Cannot find the list of followers. Trying to press back again." + COLOR_ENDC)
+                device.back()
+                list_view = device.find(resourceId='android:id/list',
+                                        className='android.widget.ListView')
+
             if is_myself:
                 print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
                 list_view.scroll(DeviceFacade.Direction.TOP)
@@ -157,6 +167,7 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
                 if load_more_button_exists:
                     retry_button = load_more_button.child(className='android.widget.ImageView')
                     if retry_button.exists():
+                        print("Press \"Load\" button")
                         retry_button.click()
                         random_sleep()
                         pressed_retry = True
@@ -167,9 +178,6 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
                 else:
                     print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
                     list_view.scroll(DeviceFacade.Direction.BOTTOM)
-
-            prev_screen_iterated_followers.clear()
-            prev_screen_iterated_followers += screen_iterated_followers
         else:
             print(COLOR_OKGREEN + "No followers were iterated, finish." + COLOR_ENDC)
             return

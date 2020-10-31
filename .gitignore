@@ -8,6 +8,7 @@ screenshots
 crashes
 filter.json
 whitelist.txt
+blacklist.txt
 /build
 /dist
 /*.egg-info

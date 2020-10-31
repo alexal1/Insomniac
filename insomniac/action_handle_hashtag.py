@@ -17,14 +17,7 @@ def handle_hashtag(device,
                    storage,
                    profile_filter,
                    on_like,
-                   on_interaction,
-                   activation_controller):
-    if not activation_controller.is_activated:
-        print_activation_required_to(f"interact by hashtag #{hashtag}")
-        print_timeless(f"To interact with user @{hashtag}, use " +
-                       COLOR_BOLD + f"python3 start.py --interact @{hashtag}" + COLOR_ENDC)
-        return
-
+                   on_interaction):
     interaction = partial(interact_with_user,
                           my_username=session_state.my_username,
                           likes_count=likes_count,
@@ -88,12 +81,15 @@ def handle_hashtag(device,
                     screen_iterated_likers.append(username)
                     posts_end_detector.notify_username_iterated(username)
 
-                    if not storage.check_user_was_interacted(username):
-                        print("@" + username + ": interact")
-                        username_view.click()
-                    else:
+                    if storage.is_user_in_blacklist(username):
+                        print("@" + username + " is in blacklist. Skip.")
+                        continue
+                    elif storage.check_user_was_interacted(username):
                         print("@" + username + ": already interacted. Skip.")
                         continue
+                    else:
+                        print("@" + username + ": interact")
+                        username_view.click()
 
                     can_follow = not is_follow_limit_reached() \
                         and storage.get_following_status(username) == FollowingStatus.NONE

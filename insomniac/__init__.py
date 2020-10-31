@@ -224,8 +224,7 @@ def _job_handle_interaction(device,
                                storage,
                                profile_filter,
                                _on_like,
-                               on_interaction,
-                               activation_controller)
+                               on_interaction)
             state.is_job_completed = True
 
         while not state.is_job_completed and not state.is_likes_limit_reached:
@@ -262,8 +261,7 @@ def _job_unfollow(device, count, storage, min_following, unfollow_restriction):
                  on_unfollow,
                  storage,
                  unfollow_restriction,
-                 session_state.my_username,
-                 activation_controller)
+                 session_state.my_username)
         print("Unfollowed " + str(state.unfollowed_count) + ", finish.")
         state.is_job_completed = True
 
