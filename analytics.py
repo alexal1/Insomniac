@@ -74,11 +74,11 @@ def _load_sessions(username):
 
 
 def plot_followers_growth(sessions, pdf, username, period):
-    followers_count = [session['profile']['followers'] for session in sessions]
+    followers_count = [int(session['profile']['followers']) for session in sessions]
     dates = [get_start_time(session) for session in sessions]
-    total_followed = [session['total_followed'] for session in sessions]
-    total_unfollowed = [-session['total_unfollowed'] for session in sessions]
-    total_likes = [session['total_likes'] for session in sessions]
+    total_followed = [int(session['total_followed']) for session in sessions]
+    total_unfollowed = [-int(session['total_unfollowed']) for session in sessions]
+    total_likes = [int(session['total_likes']) for session in sessions]
 
     fig, (axes1, axes2, axes3) = plt.subplots(ncols=1,
                                               nrows=3,
@@ -94,7 +94,7 @@ def plot_followers_growth(sessions, pdf, username, period):
     plt.gcf().autofmt_xdate()
     plt.gca().xaxis.set_major_formatter(formatter)
 
-    axes1.plot(dates, followers_count, marker='o')
+    axes1.plot(dates, followers_count, marker='.')
     axes1.set_ylabel('Followers')
     axes1.xaxis.grid(True, linestyle='--')
     axes1.set_title('Followers growth for account "@' + username + '".\nThis page shows correlation between '
