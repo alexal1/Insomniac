@@ -151,6 +151,12 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
             need_swipe = screen_skipped_followers_count == len(screen_iterated_followers)
             list_view = device.find(resourceId='android:id/list',
                                     className='android.widget.ListView')
+            if not list_view.exists():
+                print(COLOR_FAIL + "Cannot find the list of followers. Trying to press back again." + COLOR_ENDC)
+                device.back()
+                list_view = device.find(resourceId='android:id/list',
+                                        className='android.widget.ListView')
+
             if is_myself:
                 print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
                 list_view.scroll(DeviceFacade.Direction.TOP)
