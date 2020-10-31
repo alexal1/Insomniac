@@ -7,4 +7,5 @@ sessions.json
 screenshots
 crashes
 whitelist.txt
-action_remove_mass_followers.py
+blacklist.txt
+filter.json
