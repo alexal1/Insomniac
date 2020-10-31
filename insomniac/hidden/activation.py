@@ -16,10 +16,9 @@ class ActivationController:
             self.is_activated = True
 
         if not self.is_activated:
-            dot = '\n    • '
+            dot = '\n    - '
             print_timeless(f"\nNote that these features won't work until the bot is activated:" + COLOR_BOLD +
-                           f"{dot}Interaction by #hashtags{dot}Unfollowing{dot}Filtering"
-                           f"{dot}Removing mass followers\n" + COLOR_ENDC +
+                           f"{dot}Unfollowing{dot}Filtering{dot}Removing mass followers\n" + COLOR_ENDC +
                            f"Activate here: " + COLOR_BOLD + f"{HOST}{PATH_ACTIVATE}" + COLOR_ENDC)
 
 
