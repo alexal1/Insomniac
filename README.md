@@ -189,9 +189,9 @@ You may want to ignore mass-followers (e.g. > 1000 followings) because they are 
 Save this file and replace values with ones that suit your needs. You can also delete any line if you don't need that limitation. Then put this file into a folder from which you launch the script and launch it as usual.
 
 ###Whitelist and Blacklist
-**Whitelist** – is used only for `--remove-mass-followers`. Users from this list will _never_ be removed from your followers.
+**Whitelist** – affects `--remove-mass-followers`, `--unfollow` and all other unfollow actions. Users from this list will _never_ be removed from your followers or unfollowed.
 
-**Blacklist** - is used for _all other actions_, including unfollowing. Users from this list will be skipped immediately: no interactions, no following, no unfollowing.
+**Blacklist** - affects _all other actions_. Users from this list will be skipped immediately: no interactions and no following.
 
 Go to Insomniac folder and create a folder named as your Instagram nickname (or open an existing one, as Insomniac creates such folder when launched). Create there a file `whitelist.txt` or `blacklist.txt` (or both of them). Write usernames in these files, one username per line, no `@`'s, no commas. Don't forget to save. That's it! 
 
