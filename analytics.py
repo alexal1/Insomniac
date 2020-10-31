@@ -1,14 +1,13 @@
 import argparse
 import json
-from datetime import timedelta
+import os
+from datetime import timedelta, datetime
 from enum import Enum, unique
 
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.dates import DateFormatter
-
-from src.utils import *
 
 A4_WIDTH_INCHES = 8.27
 A4_HEIGHT_INCHES = 11.69
@@ -36,7 +35,7 @@ def main():
         plot_duration_statistics(sessions_month, pdf, username, Period.LAST_MONTH)
         plot_duration_statistics(sessions, pdf, username, Period.ALL_TIME)
 
-    print_timeless("Report saved as " + filename)
+    print("Report saved as " + filename)
 
 
 def _parse_arguments():
@@ -56,7 +55,7 @@ def _parse_arguments():
         return False, None
 
     if unknown_args:
-        print_timeless(COLOR_FAIL + "Unknown arguments: " + ", ".join(str(arg) for arg in unknown_args) + COLOR_ENDC)
+        print("Unknown arguments: " + ", ".join(str(arg) for arg in unknown_args))
         parser.print_help()
         return False, None
 
@@ -70,7 +69,7 @@ def _load_sessions(username):
             json_array = json.load(json_file)
         return json_array
     else:
-        print_timeless(COLOR_FAIL + "No sessions.json file found for @" + username + COLOR_ENDC)
+        print("No sessions.json file found for @" + username)
         return None
 
 
