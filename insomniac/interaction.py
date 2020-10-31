@@ -37,13 +37,13 @@ def is_in_interaction_rect(view):
 
 
 def interact_with_user(device,
-                        username,
-                        my_username,
-                        likes_count,
-                        on_like,
-                        can_follow,
-                        follow_percentage,
-                        profile_filter) -> (bool, bool):
+                       username,
+                       my_username,
+                       likes_count,
+                       on_like,
+                       can_follow,
+                       follow_percentage,
+                       profile_filter) -> (bool, bool):
     """
     :return: (whether interaction succeed, whether @username was followed during the interaction)
     """

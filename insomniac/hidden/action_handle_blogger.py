@@ -108,7 +108,9 @@ def _iterate_over_followers(device, interaction, is_follow_limit_reached, storag
                 username = user_name_view.get_text()
                 screen_iterated_followers.append(username)
 
-                if not is_myself and storage.check_user_was_interacted(username):
+                if storage.is_user_in_blacklist(username):
+                    print("@" + username + " is in blacklist. Skip.")
+                elif is_myself and storage.check_user_was_interacted(username):
                     print("@" + username + ": already interacted. Skip.")
                     screen_skipped_followers_count += 1
                 elif is_myself and storage.check_user_was_interacted_recently(username):
