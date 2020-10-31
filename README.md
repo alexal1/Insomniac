@@ -188,7 +188,7 @@ You may want to ignore mass-followers (e.g. > 1000 followings) because they are 
 
 You can read detailed explanation and instructions how to use it [in the Patreon post](https://www.patreon.com/posts/43362005) **(you'll have to join $10 tier)**.
 
-###Whitelist and Blacklist
+### Whitelist and Blacklist
 **Whitelist** – affects `--remove-mass-followers`, `--unfollow` and all other unfollow actions. Users from this list will _never_ be removed from your followers or unfollowed.
 
 **Blacklist** - affects _all other actions_. Users from this list will be skipped immediately: no interactions and no following.
