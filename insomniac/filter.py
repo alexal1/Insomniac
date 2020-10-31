@@ -1,5 +1,5 @@
+from insomniac.activation import print_activation_required_to
 from insomniac.counters_parser import parse
-from insomniac.hidden.activation import print_activation_required_to
 from insomniac.utils import *
 
 FILENAME_CONDITIONS = "filter.json"

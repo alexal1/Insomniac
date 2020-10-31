@@ -1,7 +1,7 @@
 from functools import partial
 
+from insomniac.activation import print_activation_required_to
 from insomniac.device_facade import DeviceFacade
-from insomniac.hidden.activation import print_activation_required_to
 from insomniac.interaction import is_follow_limit_reached_for_source, interact_with_user, is_in_interaction_rect
 from insomniac.navigation import search_for
 from insomniac.storage import FollowingStatus
