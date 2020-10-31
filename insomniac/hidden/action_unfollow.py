@@ -67,6 +67,10 @@ def _iterate_over_followings(device, count, on_unfollow, storage, unfollow_restr
             username = user_name_view.get_text()
             screen_iterated_followings += 1
 
+            if storage.is_user_in_whitelist(username):
+                print(f"@{username} is in whitelist. Skip.")
+                continue
+
             if unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT or \
                     unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS:
                 following_status = storage.get_following_status(username)
