@@ -80,12 +80,15 @@ def handle_hashtag(device,
                     screen_iterated_likers.append(username)
                     posts_end_detector.notify_username_iterated(username)
 
-                    if not storage.check_user_was_interacted(username):
-                        print("@" + username + ": interact")
-                        username_view.click()
-                    else:
+                    if storage.is_user_in_blacklist(username):
+                        print("@" + username + " is in blacklist. Skip.")
+                        continue
+                    elif storage.check_user_was_interacted(username):
                         print("@" + username + ": already interacted. Skip.")
                         continue
+                    else:
+                        print("@" + username + ": interact")
+                        username_view.click()
 
                     can_follow = not is_follow_limit_reached() \
                         and storage.get_following_status(username) == FollowingStatus.NONE
