@@ -3,7 +3,7 @@ import os
 import re
 import zlib
 
-HIDDEN_DIRECTORY = './insomniac/hidden/'
+HIDDEN_DIRECTORY = './insomniac/'
 EMPTY_REGEX = r'^\s*$'
 IMPORTS_REGEX = r'^from|import [\s\S]+$'
 
@@ -34,7 +34,8 @@ def encode():
 
             code_body_obfuscated = base64.b64encode(zlib.compress(code_body.encode('utf-8')))
 
-            final_code = f"{imports}import base64\nimport zlib\n\ncode = zlib.decompress(base64.b64decode({code_body_obfuscated}))\nexec(code)\n"
+            final_code = f"{imports}import base64\nimport zlib\n\ncode = " \
+                         f"zlib.decompress(base64.b64decode({code_body_obfuscated}))\nexec(code)\n"
             with open(f"{HIDDEN_DIRECTORY}{filename}", 'w') as file:
                 file.write(final_code)
 
