@@ -16,12 +16,13 @@ Liking and following automatically on your Android phone/tablet. No root require
 - [Get started](#get-started)
     * [Usage example](#usage-example)
     * [Full list of command line arguments](#full-list-of-command-line-arguments)
-    * [Filtering](#filtering)
     * [FAQ](#faq)
-- [Activation](#activation)
+- [Extra features](#extra-features)
+- [Source code](#source-code)
+- [Filtering](#filtering)
+- [Whitelist and Blacklist](#whitelist-and-blacklist)
 - [Analytics](#analytics)
 - [Features in progress](#features-in-progress)
-- [For developers](#for-developers)
 - [Why Insomniac?](#why-insomniac)
 - [Community](#community)
 
@@ -133,11 +134,43 @@ You can also see this list by running with no arguments: `python3 start.py`.
                         your followers. "Mass followers" are those who has
                         more than N followings, where N can be set via --max-
                         following
-  --max-following MAX_FOLLOWING
-                        Should be used together with --remove-mass-followers.
+  --max-following 1000  Should be used together with --remove-mass-followers.
                         Specifies max number of followings for any your
                         follower, 1000 by default
 ```
+
+### FAQ
+- How to stop the script?<br/>_Ctrl+C (control+C for Mac)_
+
+- Can I prevent my phone from falling asleep while the script is working?<br/>_Yes. Settings -> Developer Options -> Stay awake._
+
+- What to do if I got soft ban (cannot like/follow/comment)?<br/>_Clear Instagram application data. You'll have to login again and then it will work as usual. But it's **highly recommended** to lower your interactions count for the future and take a pause with the script._
+
+- [How to connect Android phone via WiFi?](https://www.patreon.com/posts/connect-android-43141956)
+
+- [How to run on 2 or more devices at once?](https://www.patreon.com/posts/running-script-43143021)
+
+- [Script crashes with **OSError: RPC server not started!** or **ReadTimeoutError**](https://www.patreon.com/posts/problems-with-to-43143682)
+
+### Extra features
+All core features in this project are free to use. But you may want to get more fine grained control over the bot via these features:
+- **Filtering** - skip unwanted accounts by various parameters, [more here](#filtering)
+- **Removing mass followers** - automate "cleaning" your account
+- **Analytics tool** - build presentation that shows your growth, [more here](#analytics)
+- **Scrapping (next release)** - will make interactions significantly safer and faster
+
+Activate these features by supporting our small team on Patreon: [https://insomniac-bot.com/activate/](https://insomniac-bot.com/activate/).
+
+### Source code
+Since core features are free to use, their code is right here in the [src folder](https://github.com/alexal1/Insomniac/tree/master/src). You can help the community by making a pull request. It will be added to the packaged version after successful review. To work with sources, please
+1. Clone the project: `git clone https://github.com/alexal1/Insomniac.git`
+2. Go to Insomniac folder: `cd Insomniac`
+3. Install required libraries: `python3 -m pip install -r requirements.txt`
+4. Launch the script via `python3 -m src.insomniac`
+
+Note that [src](https://github.com/alexal1/Insomniac/tree/master/src) code may differ from the packaged code. Generally, the packaged code is more stable.
+
+_2020-10-31: Right now there's quite big difference, but we will synchronize packaged and opensource version ASAP._
 
 ### Filtering
 You may want to ignore mass-followers (e.g. > 1000 followings) because they are most likely interested only in growing their audience. Or ignore too popular accounts (e.g. > 5000 followers) because they won't notice you. You can do this (and more) by using [filter.json](https://raw.githubusercontent.com/alexal1/Insomniac/master/filter.json).
@@ -155,27 +188,12 @@ You may want to ignore mass-followers (e.g. > 1000 followings) because they are 
 ```
 Save this file and replace values with ones that suit your needs. You can also delete any line if you don't need that limitation. Then put this file into a folder from which you launch the script and launch it as usual.
 
-### FAQ
-- How to stop the script?<br/>_Ctrl+C (control+C for Mac)_
+###Whitelist and Blacklist
+**Whitelist** – is used only for `--remove-mass-followers`. Users from this list will _never_ be removed from your followers.
 
-- Can I prevent my phone from falling asleep while the script is working?<br/>_Yes. Settings -> Developer Options -> Stay awake._
+**Blacklist** - is used for _all other actions_, including unfollowing. Users from this list will be skipped immediately: no interactions, no following, no unfollowing.
 
-- What to do if I got soft ban (cannot like/follow/comment)?<br/>_Clear Instagram application data. You'll have to login again and then it will work as usual. But it's **highly recommended** to lower your interactions count for the future and take a pause with the script._
-
-- [How to connect Android phone via WiFi?](https://www.patreon.com/posts/connect-android-43141956)
-
-- [How to run on 2 or more devices at once?](https://www.patreon.com/posts/running-script-43143021)
-
-- [Script crashes with **OSError: RPC server not started!** or **ReadTimeoutError**](https://www.patreon.com/posts/problems-with-to-43143682)
-
-### Activation
-You have to activate this bot to get access to the most valuable features:
-- **Interaction by #hashtags**
-- **Unfollowing**
-- **Filtering**
-- **Removing mass followers**
-
-Activation is pretty simple, it's described on out official site: [https://insomniac-bot.com/activate/](https://insomniac-bot.com/activate/).
+Go to Insomniac folder and create a folder named as your Instagram nickname (or open an existing one, as Insomniac creates such folder when launched). Create there a file `whitelist.txt` or `blacklist.txt` (or both of them). Write usernames in these files, one username per line, no `@`'s, no commas. Don't forget to save. That's it! 
 
 ### Analytics
 There also is an analytics tool for this bot. It is a script that builds a report in PDF format. The report contains account's followers growth graphs for different periods. Liking, following and unfollowing actions' amounts are on the same axis to determine bot effectiveness. The report also contains stats of sessions length for different configurations that you've used. All data is taken from `sessions.json` file that's generated during bot's execution.
@@ -191,9 +209,6 @@ To get access to the analytics tool you have to [join Patreon $10 tier](https://
 - [x] Interaction by hashtags
 - [ ] Add random actions to behave more like a human (watch your own feed, stories, etc.)
 - [ ] Commenting during interaction
-
-### For developers
-If you have ideas of how to improve the script, please have a look at sources in the [src/ folder](https://github.com/alexal1/Insomniac/tree/master/src). Pull requests are welcome! Note that the code there is `Insomniac v2`, which means that it's outdated and has less features.
 
 ### Why Insomniac?
 There already are Instagram automation tools that work either on Instagram web version or via Instagram private API. Unfortunately, both ways have become dangerous to use. Instagram bots detection system is very suspicious to browser actions now. And as for private API – you will be blocked forever if Instagram detects that you're using it.
