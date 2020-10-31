@@ -173,20 +173,20 @@ Note that [src](https://github.com/alexal1/Insomniac/tree/master/src) code may d
 _2020-10-31: Right now there's quite big difference, but we will synchronize packaged and opensource version ASAP._
 
 ### Filtering
-You may want to ignore mass-followers (e.g. > 1000 followings) because they are most likely interested only in growing their audience. Or ignore too popular accounts (e.g. > 5000 followers) because they won't notice you. You can do this (and more) by using [filter.json](https://raw.githubusercontent.com/alexal1/Insomniac/master/filter.json).
-```
-{
-    "skip_business": true,              // skip business accounts if true
-    "skip_non_business": false,         // skip non-business accounts if true
-    "min_followers": 100,               // skip accounts with less followers than given value
-    "max_followers": 5000,              // skip accounts with more followers than given value
-    "min_followings": 10,               // skip accounts with less followings than given value
-    "max_followings": 1000,             // skip accounts with more followings than given value
-    "min_potency_ratio": 1,             // skip accounts with ratio (followers/followings) less than given value (decimal values can be used too)
-    "follow_private_or_empty": false    // private/empty accounts also have a chance to be followed if true
-}
-```
-Save this file and replace values with ones that suit your needs. You can also delete any line if you don't need that limitation. Then put this file into a folder from which you launch the script and launch it as usual.
+You may want to ignore mass-followers (e.g. > 1000 followings) because they are most likely interested only in growing their audience. Or ignore too popular accounts (e.g. > 5000 followers) because they won't notice you. You can do this (and more) by using the filter:
+
+| Parameter                 | Value         | Description                                                                                            |
+| ------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
+| `skip_business`           | `true/false`  | skip business accounts if true                                                                         |
+| `skip_non_business`       | `true/false`  | skip non-business accounts if true                                                                     |
+| `min_followers`           | 100           | skip accounts with less followers than given value                                                     |
+| `max_followers`           | 5000          | skip accounts with more followers than given value                                                     |
+| `min_followings`          | 10            | skip accounts with less followings than given value                                                    |
+| `max_followings`          | 1000          | skip accounts with more followings than given value                                                    |
+| `min_potency_ratio`       | 1             | skip accounts with ratio (followers/followings) less than given value (decimal values can be used too) |
+| `follow_private_or_empty` | `true/false`  | private/empty accounts also have a chance to be followed if true                                       |
+
+You can read detailed explanation and instructions how to use it [in the Patreon post](https://www.patreon.com/posts/43362005) **(you'll have to join $10 tier)**.
 
 ###Whitelist and Blacklist
 **Whitelist** – affects `--remove-mass-followers`, `--unfollow` and all other unfollow actions. Users from this list will _never_ be removed from your followers or unfollowed.
