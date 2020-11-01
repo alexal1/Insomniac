@@ -13,6 +13,7 @@ TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
 
 def unfollow(device, count, on_unfollow, storage, unfollow_restriction, my_username):
     _open_my_followings(device)
+    random_sleep()
     _sort_followings_by_date(device)
     random_sleep()
     _iterate_over_followings(device, count, on_unfollow, storage, unfollow_restriction, my_username)
@@ -29,7 +30,7 @@ def _sort_followings_by_date(device):
     sort_button = device.find(resourceId='com.instagram.android:id/sorting_entry_row_icon',
                               className='android.widget.ImageView')
     if not sort_button.exists():
-        print(COLOR_FAIL + "Cannot find button to sort followings. Continue without sorting.")
+        print(COLOR_FAIL + "Cannot find button to sort followings. Continue without sorting." + COLOR_ENDC)
         return
     sort_button.click()
 
