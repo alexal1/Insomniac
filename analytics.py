@@ -1,14 +1,13 @@
 import argparse
 import json
-from datetime import timedelta
+import os
+from datetime import timedelta, datetime
 from enum import Enum, unique
 
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.dates import DateFormatter
-
-from src.utils import *
 
 A4_WIDTH_INCHES = 8.27
 A4_HEIGHT_INCHES = 11.69
@@ -36,7 +35,7 @@ def main():
         plot_duration_statistics(sessions_month, pdf, username, Period.LAST_MONTH)
         plot_duration_statistics(sessions, pdf, username, Period.ALL_TIME)
 
-    print_timeless("Report saved as " + filename)
+    print("Report saved as " + filename)
 
 
 def _parse_arguments():
@@ -56,7 +55,7 @@ def _parse_arguments():
         return False, None
 
     if unknown_args:
-        print_timeless(COLOR_FAIL + "Unknown arguments: " + ", ".join(str(arg) for arg in unknown_args) + COLOR_ENDC)
+        print("Unknown arguments: " + ", ".join(str(arg) for arg in unknown_args))
         parser.print_help()
         return False, None
 
@@ -70,16 +69,16 @@ def _load_sessions(username):
             json_array = json.load(json_file)
         return json_array
     else:
-        print_timeless(COLOR_FAIL + "No sessions.json file found for @" + username + COLOR_ENDC)
+        print("No sessions.json file found for @" + username)
         return None
 
 
 def plot_followers_growth(sessions, pdf, username, period):
-    followers_count = [session['profile']['followers'] for session in sessions]
+    followers_count = [int(session['profile']['followers']) for session in sessions]
     dates = [get_start_time(session) for session in sessions]
-    total_followed = [session['total_followed'] for session in sessions]
-    total_unfollowed = [-session['total_unfollowed'] for session in sessions]
-    total_likes = [session['total_likes'] for session in sessions]
+    total_followed = [int(session['total_followed']) for session in sessions]
+    total_unfollowed = [-int(session['total_unfollowed']) for session in sessions]
+    total_likes = [int(session['total_likes']) for session in sessions]
 
     fig, (axes1, axes2, axes3) = plt.subplots(ncols=1,
                                               nrows=3,
@@ -95,7 +94,7 @@ def plot_followers_growth(sessions, pdf, username, period):
     plt.gcf().autofmt_xdate()
     plt.gca().xaxis.set_major_formatter(formatter)
 
-    axes1.plot(dates, followers_count, marker='o')
+    axes1.plot(dates, followers_count, marker='.')
     axes1.set_ylabel('Followers')
     axes1.xaxis.grid(True, linestyle='--')
     axes1.set_title('Followers growth for account "@' + username + '".\nThis page shows correlation between '
