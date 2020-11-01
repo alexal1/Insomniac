@@ -1,9 +1,9 @@
 from functools import partial
 
-from insomniac.activation import print_activation_required_to
 from insomniac.device_facade import DeviceFacade
 from insomniac.interaction import is_follow_limit_reached_for_source, interact_with_user, is_in_interaction_rect
 from insomniac.navigation import search_for
+from insomniac.scroll_end_detector import ScrollEndDetector
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
@@ -50,7 +50,7 @@ def handle_hashtag(device,
 
     posts_list_view = device.find(resourceId='android:id/list',
                                   className='androidx.recyclerview.widget.RecyclerView')
-    posts_end_detector = PostsEndDetector()
+    posts_end_detector = ScrollEndDetector(repeats_to_end=2)
 
     while True:
         if not _open_likers(device):
@@ -59,7 +59,7 @@ def handle_hashtag(device,
             continue
 
         print("List of likers is opened.")
-        posts_end_detector.notify_likers_opened()
+        posts_end_detector.notify_new_page()
         random_sleep()
         likes_list_view = device.find(resourceId='android:id/list',
                                       className='android.widget.ListView')
@@ -118,8 +118,7 @@ def handle_hashtag(device,
             print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
             likes_list_view.scroll(DeviceFacade.Direction.BOTTOM)
 
-        if posts_end_detector.are_posts_ended():
-            print(COLOR_OKGREEN + f"Scrolled #{hashtag} to the end, finish." + COLOR_ENDC)
+        if posts_end_detector.is_the_end():
             break
         else:
             posts_list_view.scroll(DeviceFacade.Direction.BOTTOM)
@@ -135,25 +134,3 @@ def _open_likers(device):
         return True
     else:
         return False
-
-
-class PostsEndDetector:
-    prev_likers_first_screen_usernames = []
-    likers_first_screen_usernames = []
-    is_on_likers_first_screen = False
-
-    def notify_likers_opened(self):
-        self.is_on_likers_first_screen = True
-        self.prev_likers_first_screen_usernames.clear()
-        self.prev_likers_first_screen_usernames += self.likers_first_screen_usernames
-        self.likers_first_screen_usernames.clear()
-        pass
-
-    def notify_username_iterated(self, username):
-        if self.is_on_likers_first_screen:
-            self.likers_first_screen_usernames.append(username)
-        pass
-
-    def are_posts_ended(self):
-        self.is_on_likers_first_screen = False
-        return self.likers_first_screen_usernames == self.prev_likers_first_screen_usernames
