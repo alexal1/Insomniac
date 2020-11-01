@@ -50,6 +50,8 @@ Liking and following automatically on your Android phone/tablet. No root require
 3. Install insomniac: `python3 -m pip install insomniac`
 4. Save [start.py](https://raw.githubusercontent.com/alexal1/Insomniac/master/start.py) file
 
+_IMPORTANT: if you previously used v2.x.x, then insomniac.py file will conflict with insomniac package. So, save start.py in a separate folder_
+
 ### Get started
 1. Connect Android device to your computer with a USB cable
 2. Enable [Developer options](https://developer.android.com/studio/debug/dev-options#enable) on the device
