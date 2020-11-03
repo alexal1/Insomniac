@@ -1,9 +1,9 @@
 <img align="left" width="80" height="80" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/icon.jpg" alt="Insomniac">
 
 # Insomniac
-![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/alexal1/Insomniac?label=latest%20version)
-![Python](https://img.shields.io/badge/built%20with-Python3-red.svg)
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)
+![PyPI](https://img.shields.io/pypi/v/insomniac?label=latest%20version)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/insomniac)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/insomniac)
 
 
 [inglés](https://github.com/alexal1/Insomniac/blob/master/README.md) | [portugués](https://github.com/alexal1/Insomniac/blob/master/res/README_pt_BR.md)
