@@ -1,6 +1,6 @@
 from enum import Enum, unique
 
-from insomniac.utils import *
+from insomniac.utils import random_sleep, print_timeless, COLOR_FAIL, COLOR_ENDC, COLOR_OKGREEN, save_crash
 
 SEARCH_CONTENT_DESC_REGEX = '[Ss]earch and [Ee]xplore'
 

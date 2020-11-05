@@ -1,6 +1,6 @@
 from enum import Enum, unique
 
-from insomniac.utils import *
+from insomniac.utils import COLOR_FAIL, COLOR_ENDC
 
 # How long we're waiting until UI element appears (loading content + animation)
 UI_TIMEOUT_LONG = 5

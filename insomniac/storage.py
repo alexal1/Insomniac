@@ -1,8 +1,9 @@
 import json
-from datetime import timedelta
+import os
+from datetime import timedelta, datetime
 from enum import Enum, unique
 
-from insomniac.utils import *
+from insomniac.utils import COLOR_FAIL, COLOR_ENDC
 
 FILENAME_INTERACTED_USERS = "interacted_users.json"
 USER_LAST_INTERACTION = "last_interaction"
@@ -22,7 +23,8 @@ class Storage:
     targets = []
     account_followers = {}
 
-    def __init__(self, my_username, scrape_for_account):
+    def __init__(self, my_username, args):
+        scrape_for_account = args.__dict__.get('scrape_for_account', None)
         if my_username is None:
             print(COLOR_FAIL + "No username, thus the script won't get access to interacted users and sessions data" +
                   COLOR_ENDC)

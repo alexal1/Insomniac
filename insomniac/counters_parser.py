@@ -1,5 +1,5 @@
 from insomniac.navigation import switch_to_english, LanguageChangedException
-from insomniac.utils import *
+from insomniac.utils import COLOR_FAIL, COLOR_ENDC, save_crash, print_timeless
 
 
 def parse(device, text):

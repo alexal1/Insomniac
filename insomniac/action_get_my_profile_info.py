@@ -1,8 +1,8 @@
-from insomniac import DeviceFacade
-from insomniac.counters_parser import parse, LanguageChangedException
-from insomniac.interaction import update_interaction_rect
-from insomniac.navigation import navigate, Tabs
-from insomniac.utils import *
+from insomniac.actions_impl import update_interaction_rect
+from insomniac.counters_parser import parse
+from insomniac.device_facade import DeviceFacade
+from insomniac.navigation import navigate, Tabs, LanguageChangedException
+from insomniac.utils import random_sleep, COLOR_FAIL, save_crash, COLOR_ENDC
 
 TITLE_VIEW_ID_REGEX = 'com.instagram.android:id/title_view|com.instagram.android:id/action_bar_large_title'
 

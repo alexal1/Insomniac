@@ -9,7 +9,7 @@ from random import randint
 from time import sleep
 from urllib.error import URLError
 
-import insomniac
+from insomniac.__version__ import __version__
 
 COLOR_HEADER = '\033[95m'
 COLOR_OKBLUE = '\033[94m'
@@ -22,7 +22,7 @@ COLOR_UNDERLINE = '\033[4m'
 
 
 def print_version():
-    current_version = insomniac.__version__
+    current_version = __version__
     print_timeless(COLOR_HEADER + f"Insomniac v{current_version}" + COLOR_ENDC)
     latest_version = _get_latest_version('insomniac')
     if latest_version is not None and latest_version > current_version:
