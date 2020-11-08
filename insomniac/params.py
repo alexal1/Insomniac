@@ -44,7 +44,7 @@ def parse_arguments(all_args_dict):
 
 def refresh_args_by_conf_file(args):
     if args.config_file is not None:
-        with open(args.config_file) as json_file:
+        with open(args.config_file, encoding="utf-8") as json_file:
             params = json.load(json_file)
 
             for param in params:

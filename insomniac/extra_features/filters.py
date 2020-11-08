@@ -40,7 +40,7 @@ class FiltersManager(object):
         if args.filters:
             filters = args.filters
         elif os.path.exists(FILENAME_CONDITIONS):
-            with open(FILENAME_CONDITIONS) as json_file:
+            with open(FILENAME_CONDITIONS, encoding="utf-8") as json_file:
                 filters = json.load(json_file)
 
         for filter_key, value in filters.items():

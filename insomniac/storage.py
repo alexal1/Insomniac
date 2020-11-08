@@ -34,30 +34,30 @@ class Storage:
             os.makedirs(my_username)
         self.interacted_users_path = my_username + "/" + FILENAME_INTERACTED_USERS
         if os.path.exists(self.interacted_users_path):
-            with open(self.interacted_users_path) as json_file:
+            with open(self.interacted_users_path, encoding="utf-8") as json_file:
                 self.interacted_users = json.load(json_file)
         whitelist_path = my_username + "/" + FILENAME_WHITELIST
         if os.path.exists(whitelist_path):
-            with open(whitelist_path) as file:
+            with open(whitelist_path, encoding="utf-8") as file:
                 self.whitelist = [line.rstrip() for line in file]
         blacklist_path = my_username + "/" + FILENAME_BLACKLIST
         if os.path.exists(blacklist_path):
-            with open(blacklist_path) as file:
+            with open(blacklist_path, encoding="utf-8") as file:
                 self.blacklist = [line.rstrip() for line in file]
         targets_path = my_username + "/" + FILENAME_TARGETS
         if os.path.exists(targets_path):
-            with open(targets_path) as file:
+            with open(targets_path, encoding="utf-8") as file:
                 self.targets = [line.rstrip() for line in file]
 
         if scrape_for_account is not None:
             self.targets_path = scrape_for_account + "/" + FILENAME_TARGETS
             if os.path.exists(self.targets_path):
-                with open(self.targets_path) as file:
+                with open(self.targets_path, encoding="utf-8") as file:
                     self.targets = [line.rstrip() for line in file]
 
             self.followers_path = scrape_for_account + "/" + FILENAME_FOLLOWERS
             if os.path.exists(self.followers_path):
-                with open(self.followers_path) as json_file:
+                with open(self.followers_path, encoding="utf-8") as json_file:
                     self.account_followers = json.load(json_file)
 
     def check_user_was_interacted(self, username):
@@ -94,7 +94,7 @@ class Storage:
             return
 
         if self.targets_path is not None:
-            with open(self.targets_path, 'a') as outfile:
+            with open(self.targets_path, 'a', encoding="utf-8") as outfile:
                 outfile.write(username + '\n')
 
     def save_followers_for_today(self, followers_list, override=False):
@@ -106,7 +106,7 @@ class Storage:
         self.account_followers[curr_day] = followers_list
 
         if self.followers_path is not None:
-            with open(self.followers_path, 'w') as outfile:
+            with open(self.followers_path, 'w', encoding="utf-8") as outfile:
                 json.dump(self.account_followers, outfile, indent=4, sort_keys=False)
 
     def is_user_in_whitelist(self, username):
@@ -127,7 +127,7 @@ class Storage:
 
     def _update_file(self):
         if self.interacted_users_path is not None:
-            with open(self.interacted_users_path, 'w') as outfile:
+            with open(self.interacted_users_path, 'w', encoding="utf-8") as outfile:
                 json.dump(self.interacted_users, outfile, indent=4, sort_keys=False)
 
 
