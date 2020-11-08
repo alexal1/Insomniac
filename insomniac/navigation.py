@@ -96,9 +96,13 @@ def switch_to_english(device):
 
         list_view = device.find(resourceId='android:id/list',
                                 className='android.widget.ListView')
-        language_item = list_view.child(index=3)
+        if not list_view.exists():
+            print("Opened a wrong tab, going back")
+            device.back()
+            continue
+        language_item = list_view.child(index=4)
         if not language_item.exists():
-            print(COLOR_FAIL + "Oops, went the wrong way" + COLOR_ENDC)
+            print("Opened a wrong tab, going back")
             device.back()
             continue
         language_item.click()
@@ -106,7 +110,7 @@ def switch_to_english(device):
         search_edit_text = device.find(resourceId='com.instagram.android:id/search',
                                        className='android.widget.EditText')
         if not search_edit_text.exists():
-            print(COLOR_FAIL + "Oops, went the wrong way" + COLOR_ENDC)
+            print("Opened a wrong tab, going back")
             device.back()
             device.back()
             continue
