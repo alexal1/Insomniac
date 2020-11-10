@@ -22,7 +22,7 @@ class ActivationController:
                            f"{dot}{COLOR_BOLD}Filtering{COLOR_ENDC} - skip unwanted accounts by various parameters"
                            f"{dot}{COLOR_BOLD}Removing mass followers{COLOR_ENDC} - automate \"cleaning\" you account"
                            f"{dot}{COLOR_BOLD}Analytics tool{COLOR_ENDC} - build presentation that shows your growth"
-                           f"{dot}{COLOR_BOLD}Scrapping{COLOR_ENDC} - will make interactions "
+                           f"{dot}{COLOR_BOLD}Scrapping (next release){COLOR_ENDC} - will make interactions "
                            f"significantly safer and faster\n"
                            f"Activate by supporting our small team: {COLOR_BOLD}{HOST}{PATH_ACTIVATE}{COLOR_ENDC}\n")
 
