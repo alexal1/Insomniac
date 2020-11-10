@@ -50,9 +50,10 @@ class ExtendedInsomniacSession(InsomniacSession):
             sleep(time_till_next_execution_seconds)
 
     def run(self):
-        if not __debug_mode__:
-            print_version()
         args, device_wrapper = self.parse_args_and_get_device_wrapper()
+
+        if args is None or device_wrapper is None:
+            return
 
         while True:
             self.set_session_args(args)

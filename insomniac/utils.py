@@ -14,7 +14,7 @@ from insomniac.__version__ import __version__
 COLOR_HEADER = '\033[95m'
 COLOR_OKBLUE = '\033[94m'
 COLOR_OKGREEN = '\033[92m'
-COLOR_WARNING = '\033[93m'
+COLOR_REPORT = '\033[93m'
 COLOR_FAIL = '\033[91m'
 COLOR_ENDC = '\033[0m'
 COLOR_BOLD = '\033[1m'
@@ -58,8 +58,8 @@ def check_adb_connection(is_device_id_provided):
         is_ok = False
         message = "Use --device to specify a device."
 
-    print(("" if is_ok else COLOR_FAIL) + "Connected devices via adb: " + str(devices_count) + ". " + message +
-          COLOR_ENDC)
+    print_timeless(("" if is_ok else COLOR_FAIL) + "Connected devices via adb: " + str(devices_count) + ". " + message +
+                   COLOR_ENDC)
     return is_ok
 
 

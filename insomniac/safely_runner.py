@@ -19,7 +19,7 @@ def run_safely(device_wrapper):
             except KeyboardInterrupt:
                 close_instagram(device_wrapper.device_id)
                 print_copyright()
-                print_timeless(COLOR_WARNING + "-------- FINISH: " + str(datetime.now().time()) + " --------" +
+                print_timeless(COLOR_REPORT + "-------- FINISH: " + str(datetime.now().time()) + " --------" +
                                COLOR_ENDC)
                 print_full_report(sessions)
                 sessions.persist(directory=session_state.my_username)

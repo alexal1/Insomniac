@@ -135,7 +135,7 @@ def iterate_over_followers(device, is_myself, iteration_callback,
 
                 to_continue = iteration_callback(username, user_name_view)
                 if not to_continue:
-                    print(COLOR_WARNING + "Stopping followers iteration" + COLOR_ENDC)
+                    print(COLOR_OKBLUE + "Stopping followers iteration" + COLOR_ENDC)
                     return
 
         except IndexError:
