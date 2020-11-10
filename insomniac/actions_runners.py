@@ -155,6 +155,7 @@ class InteractBySourceActionRunner(CoreActionsRunner):
 
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
         from insomniac.action_handle_blogger import handle_blogger
+        from insomniac.action_handle_hashtag import handle_hashtag
 
         random.shuffle(self.interact)
 
@@ -188,17 +189,17 @@ class InteractBySourceActionRunner(CoreActionsRunner):
                                    is_limit_reached,
                                    is_passed_filters,
                                    self.action_status)
-                # elif source[0] == '#':
-                #     handle_hashtag(device_wrapper.get(),
-                #                    source[1:],  # drop "#"
-                #                    session_state,
-                #                    self.likes_count,
-                #                    self.follow_percentage,
-                #                    storage,
-                #                    on_action,
-                #                    is_limit_reached,
-                #                    is_passed_filters,
-                #                    self.action_status)
+                elif source[0] == '#':
+                    handle_hashtag(device_wrapper.get(),
+                                   source[1:],  # drop "#"
+                                   session_state,
+                                   likes_count,
+                                   self.follow_percentage,
+                                   storage,
+                                   on_action,
+                                   is_limit_reached,
+                                   is_passed_filters,
+                                   self.action_status)
 
                 self.action_status.set(ActionState.DONE)
 

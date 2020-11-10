@@ -42,6 +42,10 @@ def parse_arguments(all_args_dict):
 
 def refresh_args_by_conf_file(args):
     if args.config_file is not None:
+        if not os.path.exists(args.config_file):
+            print(COLOR_FAIL + "Config file {0} could not be found. Continue with previous args".format(args.config_file) + COLOR_ENDC)
+            return
+
         with open(args.config_file, encoding="utf-8") as json_file:
             params = json.load(json_file)
 

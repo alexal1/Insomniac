@@ -52,10 +52,10 @@ class ExtendedInsomniacSession(InsomniacSession):
     def run(self):
         args, device_wrapper = self.parse_args_and_get_device_wrapper()
 
-        if args is None or device_wrapper is None:
-            return
-
         while True:
+            if args is None or device_wrapper is None:
+                return
+
             self.set_session_args(args)
 
             action_runner = self.actions_mgr.select_action_runner(args)
@@ -89,7 +89,7 @@ class ExtendedInsomniacSession(InsomniacSession):
                     print_timeless(COLOR_FAIL + f"\nCaught an exception:\n{ex}" + COLOR_ENDC)
 
             if self.repeat is not None:
-                self.repeat()
+                self.repeat_session(args)
             else:
                 break
 
