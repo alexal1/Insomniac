@@ -1,14 +1,13 @@
 from insomniac.utils import *
 
-# Specify how many times we'll have to iterate over same users to decide that it's the end of the list
-REPEATS_TO_END = 5
-
 
 class ScrollEndDetector:
+    # Specify how many times we'll have to iterate over same users to decide that it's the end of the list
+    repeats_to_end = 0
     pages = []
 
-    def __init__(self):
-        pass
+    def __init__(self, repeats_to_end=5):
+        self.repeats_to_end = repeats_to_end
 
     def notify_new_page(self):
         self.pages.append([])
@@ -24,7 +23,7 @@ class ScrollEndDetector:
         is_the_end = True
         last_page = self.pages[-1]
         repeats = 1
-        for i in range(2, min(REPEATS_TO_END + 1, len(self.pages) + 1)):
+        for i in range(2, min(self.repeats_to_end + 1, len(self.pages) + 1)):
             page = self.pages[-i]
             if page != last_page:
                 is_the_end = False

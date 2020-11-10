@@ -1,6 +1,6 @@
 from functools import partial
 
-from insomniac.actions_impl import interact_with_user, PostsEndDetector, open_likers, iterate_over_likers, \
+from insomniac.actions_impl import interact_with_user, ScrollEndDetector, open_likers, iterate_over_likers, \
     is_private_account, InteractionStrategy
 from insomniac.actions_runners import ActionState
 from insomniac.actions_types import InteractAction, LikeAction, FollowAction
@@ -141,7 +141,7 @@ def extract_hashtag_likers_and_interact(device, hashtag, iteration_callback, ite
 
     posts_list_view = device.find(resourceId='android:id/list',
                                   className='androidx.recyclerview.widget.RecyclerView')
-    posts_end_detector = PostsEndDetector()
+    posts_end_detector = ScrollEndDetector(repeats_to_end=2)
 
     def pre_conditions(liker_username, liker_username_view):
         posts_end_detector.notify_username_iterated(liker_username)
@@ -154,13 +154,12 @@ def extract_hashtag_likers_and_interact(device, hashtag, iteration_callback, ite
             continue
 
         print("List of likers is opened.")
-        posts_end_detector.notify_likers_opened()
+        posts_end_detector.notify_new_page()
         random_sleep()
 
         iterate_over_likers(device, iteration_callback, pre_conditions)
 
-        if posts_end_detector.are_posts_ended():
-            print(COLOR_OKGREEN + f"Scrolled #{hashtag} to the end, finish." + COLOR_ENDC)
+        if posts_end_detector.is_the_end():
             break
         else:
             posts_list_view.scroll(DeviceFacade.Direction.BOTTOM)

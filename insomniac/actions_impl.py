@@ -1,4 +1,4 @@
-from random import shuffle, randint
+from random import shuffle
 
 from insomniac.actions_types import LikeAction, FollowAction
 from insomniac.device_facade import DeviceFacade
@@ -524,28 +524,6 @@ def open_likers(device):
         return True
     else:
         return False
-
-
-class PostsEndDetector:
-    prev_likers_first_screen_usernames = []
-    likers_first_screen_usernames = []
-    is_on_likers_first_screen = False
-
-    def notify_likers_opened(self):
-        self.is_on_likers_first_screen = True
-        self.prev_likers_first_screen_usernames.clear()
-        self.prev_likers_first_screen_usernames += self.likers_first_screen_usernames
-        self.likers_first_screen_usernames.clear()
-        pass
-
-    def notify_username_iterated(self, username):
-        if self.is_on_likers_first_screen:
-            self.likers_first_screen_usernames.append(username)
-        pass
-
-    def are_posts_ended(self):
-        self.is_on_likers_first_screen = False
-        return self.likers_first_screen_usernames == self.prev_likers_first_screen_usernames
 
 
 def _check_is_follower(device, username, my_username):

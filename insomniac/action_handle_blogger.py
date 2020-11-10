@@ -101,7 +101,6 @@ def handle_blogger(device,
                                                        follow_percentage=follow_percentage)
 
             is_liked, is_followed = interaction(username=follower_name, interaction_strategy=interaction_strategy)
-            storage.add_interacted_user(follower_name, followed=is_followed)
             if is_liked or is_followed:
                 storage.add_interacted_user(follower_name, followed=is_followed)
                 on_action(InteractAction(source=username, user=follower_name, succeed=True))
