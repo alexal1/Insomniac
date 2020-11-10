@@ -1,9 +1,9 @@
-from abc import ABC
 import random
+from abc import ABC
 from enum import unique, Enum
 
 from insomniac.safely_runner import run_safely
-from insomniac.utils import print_timeless, COLOR_FAIL, COLOR_ENDC, COLOR_WARNING, get_value, COLOR_BOLD
+from insomniac.utils import *
 
 
 class ActionRunnersManager(object):
@@ -223,29 +223,35 @@ class UnfollowActionRunner(CoreActionsRunner):
                     'be unfollowed. The order is from oldest to newest followings. '
                     'It can be a number (e.g. 100) or a range (e.g. 100-200)',
             "metavar": '100-200'
-        },
-        "min_following": {
-            "help": 'minimum amount of followings, after reaching this amount unfollow stops',
-            "metavar": '100',
-            "default": "0"
         }
     }
-
-    unfollow = 0
-    min_following = 0
 
     def is_action_selected(self, args):
         return args.unfollow is not None
 
     def set_params(self, args):
-        if args.unfollow is not None:
-            self.unfollow = get_value(args.unfollow, "Unfollow {}", 100)
-
-        if args.min_following is not None:
-            self.min_following = int(args.min_following)
+        pass
 
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
-        pass
+        from insomniac.action_unfollow import unfollow, UnfollowRestriction
+
+        self.action_status = ActionStatus(ActionState.PRE_RUN)
+
+        @run_safely(device_wrapper=device_wrapper)
+        def job():
+            self.action_status.set(ActionState.RUNNING)
+            unfollow(device=device_wrapper.get(),
+                     on_action=on_action,
+                     storage=storage,
+                     unfollow_restriction=UnfollowRestriction.FOLLOWED_BY_SCRIPT,
+                     session_state=session_state,
+                     is_limit_reached=is_limit_reached,
+                     action_status=self.action_status)
+            print("Unfollowed " + str(session_state.totalUnfollowed) + ", finish.")
+            self.action_status.set(ActionState.DONE)
+
+        while not self.action_status.get() == ActionState.DONE:
+            job()
 
 
 class UnfollowNonFollowersActionRunner(CoreActionsRunner):
@@ -256,29 +262,35 @@ class UnfollowNonFollowersActionRunner(CoreActionsRunner):
                     'by this script will be unfollowed. The order is from oldest to newest followings. '
                     'It can be a number (e.g. 100) or a range (e.g. 100-200)',
             "metavar": '100-200'
-        },
-        "min_following": {
-            "help": 'minimum amount of followings, after reaching this amount unfollow stops',
-            "metavar": '100',
-            "default": "0"
         }
     }
-
-    unfollow_non_followers = 0
-    min_following = 0
 
     def is_action_selected(self, args):
         return args.unfollow_non_followers is not None
 
     def set_params(self, args):
-        if args.unfollow_non_followers is not None:
-            self.unfollow_non_followers = get_value(args.unfollow_non_followers, "Unfollow {} non followers", 100)
-
-        if args.min_following is not None:
-            self.min_following = int(args.min_following)
+        pass
 
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
-        pass
+        from insomniac.action_unfollow import unfollow, UnfollowRestriction
+
+        self.action_status = ActionStatus(ActionState.PRE_RUN)
+
+        @run_safely(device_wrapper=device_wrapper)
+        def job():
+            self.action_status.set(ActionState.RUNNING)
+            unfollow(device=device_wrapper.get(),
+                     on_action=on_action,
+                     storage=storage,
+                     unfollow_restriction=UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS,
+                     session_state=session_state,
+                     is_limit_reached=is_limit_reached,
+                     action_status=self.action_status)
+            print("Unfollowed " + str(session_state.totalUnfollowed) + " non followers, finish.")
+            self.action_status.set(ActionState.DONE)
+
+        while not self.action_status.get() == ActionState.DONE:
+            job()
 
 
 class UnfollowAnyActionRunner(CoreActionsRunner):
@@ -288,29 +300,35 @@ class UnfollowAnyActionRunner(CoreActionsRunner):
             "help": 'unfollow at most given number of users. The order is from oldest to newest followings. '
                     'It can be a number (e.g. 100) or a range (e.g. 100-200)',
             "metavar": '100-200'
-        },
-        "min_following": {
-            "help": 'minimum amount of followings, after reaching this amount unfollow stops',
-            "metavar": '100',
-            "default": "0"
         }
     }
-
-    unfollow_any = 0
-    min_following = 0
 
     def is_action_selected(self, args):
         return args.unfollow_any is not None
 
     def set_params(self, args):
-        if args.unfollow_any is not None:
-            self.unfollow_any = get_value(args.unfollow_any, "Unfollow {} any", 100)
-
-        if args.min_following is not None:
-            self.min_following = int(args.min_following)
+        pass
 
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
-        pass
+        from insomniac.action_unfollow import unfollow, UnfollowRestriction
+
+        self.action_status = ActionStatus(ActionState.PRE_RUN)
+
+        @run_safely(device_wrapper=device_wrapper)
+        def job():
+            self.action_status.set(ActionState.RUNNING)
+            unfollow(device=device_wrapper.get(),
+                     on_action=on_action,
+                     storage=storage,
+                     unfollow_restriction=UnfollowRestriction.ANY,
+                     session_state=session_state,
+                     is_limit_reached=is_limit_reached,
+                     action_status=self.action_status)
+            print("Unfollowed any " + str(session_state.totalUnfollowed) + ", finish.")
+            self.action_status.set(ActionState.DONE)
+
+        while not self.action_status.get() == ActionState.DONE:
+            job()
 
 
 def get_core_action_runners_classes():

@@ -1,23 +1,22 @@
-import sys
-from datetime import datetime
 import random
-from time import sleep
+import sys
 
 import colorama
 
-from insomniac.persistent_list import PersistentList
-from insomniac.session_state import SessionStateEncoder, SessionState
+from insomniac.__version__ import __debug_mode__
 from insomniac.action_get_my_profile_info import get_my_profile_info
 from insomniac.actions_runners import ActionRunnersManager
 from insomniac.device import DeviceWrapper
 from insomniac.limits import LimitsManager
 from insomniac.params import parse_arguments
+from insomniac.persistent_list import PersistentList
 from insomniac.report import print_full_report
+from insomniac.session_state import SessionStateEncoder, SessionState
 from insomniac.storage import Storage
-from insomniac.utils import print_version, get_instagram_version, print_timeless, COLOR_WARNING, COLOR_ENDC, \
-    open_instagram, close_instagram, print_copyright, get_value
+from insomniac.utils import *
 
 sessions = PersistentList("sessions", SessionStateEncoder)
+
 
 class InsomniacSession(object):
     SESSION_ARGS = {
@@ -113,7 +112,8 @@ class InsomniacSession(object):
         self.limits_mgr.update_state(action)
 
     def run(self):
-        print_version()
+        if not __debug_mode__:
+            print_version()
         args, device_wrapper = self.parse_args_and_get_device_wrapper()
 
         while True:
@@ -139,7 +139,10 @@ class InsomniacSession(object):
 
                 self.end_session(device_wrapper)
             except Exception as ex:
-                print_timeless(COLOR_WARNING + "Catch an exception. Continue..." + COLOR_ENDC)
+                if __debug_mode__:
+                    raise ex
+                else:
+                    print_timeless(COLOR_FAIL + f"\nCaught an exception:\n{ex}" + COLOR_ENDC)
 
             if self.repeat is not None:
                 self.repeat_session()

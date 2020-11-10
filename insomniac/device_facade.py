@@ -1,6 +1,6 @@
 from enum import Enum, unique
 
-from insomniac.utils import COLOR_FAIL, COLOR_ENDC
+from insomniac.utils import *
 
 # How long we're waiting until UI element appears (loading content + animation)
 UI_TIMEOUT_LONG = 5
@@ -72,7 +72,7 @@ class DeviceFacade:
         else:
             xml_dump = self.deviceV2.dump_hierarchy()
         
-        with open(path, 'w') as outfile:
+        with open(path, 'w', encoding="utf-8") as outfile:
             outfile.write(xml_dump)
 
     class View:

@@ -1,8 +1,8 @@
-from abc import ABC
 import random
+from abc import ABC
 
 from insomniac.actions_runners import ActionRunnersManager, ActionsRunner
-from insomniac.utils import get_value
+from insomniac.utils import *
 
 
 class ExtendedActionRunnersManager(ActionRunnersManager):

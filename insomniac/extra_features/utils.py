@@ -1,7 +1,6 @@
-from datetime import datetime
 from croniter import croniter
 
-from insomniac.utils import get_left_right_values, COLOR_FAIL, COLOR_ENDC
+from insomniac.utils import *
 
 
 def is_at_working_hour(working_hours):

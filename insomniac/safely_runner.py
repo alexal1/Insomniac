@@ -1,14 +1,12 @@
 import sys
 import traceback
-from datetime import datetime
 from http.client import HTTPException
 from socket import timeout
 
 from insomniac.device_facade import DeviceFacade
 from insomniac.navigation import navigate, Tabs, LanguageChangedException
 from insomniac.report import print_full_report
-from insomniac.utils import close_instagram, print_copyright, print_timeless, COLOR_WARNING, COLOR_ENDC, COLOR_FAIL, \
-    save_crash, random_sleep, open_instagram
+from insomniac.utils import *
 
 
 def run_safely(device_wrapper):

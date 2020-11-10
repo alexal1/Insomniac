@@ -2,7 +2,8 @@ import uuid
 from datetime import datetime
 from json import JSONEncoder
 
-from insomniac.actions_types import LikeAction, InteractAction, FollowAction, GetProfileAction, ScrapeAction
+from insomniac.actions_types import LikeAction, InteractAction, FollowAction, GetProfileAction, ScrapeAction, \
+    UnfollowAction
 
 
 class SessionState:
@@ -67,6 +68,9 @@ class SessionState:
                 self.totalScraped[action.source] = 1
             else:
                 self.totalScraped[action.source] += 1
+
+        if type(action) == UnfollowAction:
+            self.totalUnfollowed += 1
 
     def is_finished(self):
         return self.finishTime is not None

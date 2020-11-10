@@ -1,6 +1,6 @@
-from datetime import timedelta, datetime
+from datetime import timedelta
 
-from insomniac.utils import COLOR_WARNING, COLOR_ENDC, print_timeless
+from insomniac.utils import *
 
 
 def print_full_report(sessions):

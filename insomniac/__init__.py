@@ -1,7 +1,7 @@
 from insomniac.activation import ActivationController
-from insomniac.session import InsomniacSession
 from insomniac.extra_features.session import ExtendedInsomniacSession
-from insomniac.utils import print_timeless
+from insomniac.session import InsomniacSession
+from insomniac.utils import *
 
 
 def run(activation_code=""):

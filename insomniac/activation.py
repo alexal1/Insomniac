@@ -1,8 +1,7 @@
-import ssl
 import urllib.request
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 
-from insomniac.utils import COLOR_BOLD, COLOR_ENDC, COLOR_FAIL, COLOR_OKGREEN, print_timeless
+from insomniac.utils import *
 
 HOST = "https://insomniac-bot.com"
 PATH_VALIDATE = "/validate"

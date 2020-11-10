@@ -2,7 +2,7 @@ from abc import ABC
 
 from insomniac.actions_types import ScrapeAction, GetProfileAction
 from insomniac.limits import LimitsManager, Limit, LimitType
-from insomniac.utils import get_value
+from insomniac.utils import *
 
 
 class ExtendedLimitsManager(LimitsManager):

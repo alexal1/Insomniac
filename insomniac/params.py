@@ -1,9 +1,7 @@
-import os
-import sys
 import argparse
-import json
+import sys
 
-from insomniac.utils import COLOR_FAIL, COLOR_ENDC
+from insomniac.utils import *
 
 
 def parse_arguments(all_args_dict):
@@ -44,7 +42,7 @@ def parse_arguments(all_args_dict):
 
 def refresh_args_by_conf_file(args):
     if args.config_file is not None:
-        with open(args.config_file) as json_file:
+        with open(args.config_file, encoding="utf-8") as json_file:
             params = json.load(json_file)
 
             for param in params:

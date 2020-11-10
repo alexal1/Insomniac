@@ -1,11 +1,9 @@
-import os
-import json
 from collections import defaultdict
 
 from insomniac.actions_impl import is_private_account
-from insomniac.extra_features.filters_impl import _has_business_category,\
+from insomniac.extra_features.filters_impl import _has_business_category, \
     _get_posts_count, _get_followers, _get_followings
-from insomniac.utils import get_count_of_nums_in_str, COLOR_OKGREEN, COLOR_ENDC
+from insomniac.utils import *
 
 FILENAME_CONDITIONS = "filter.json"
 
@@ -40,7 +38,7 @@ class FiltersManager(object):
         if args.filters:
             filters = args.filters
         elif os.path.exists(FILENAME_CONDITIONS):
-            with open(FILENAME_CONDITIONS) as json_file:
+            with open(FILENAME_CONDITIONS, encoding="utf-8") as json_file:
                 filters = json.load(json_file)
 
         for filter_key, value in filters.items():

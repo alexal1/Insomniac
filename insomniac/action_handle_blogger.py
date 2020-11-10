@@ -1,9 +1,9 @@
 from functools import partial
 
-from insomniac.actions_runners import ActionState
-from insomniac.actions_types import GetProfileAction, LikeAction, FollowAction, InteractAction
 from insomniac.actions_impl import interact_with_user, open_user_followers, \
     scroll_to_bottom, iterate_over_followers, InteractionStrategy, is_private_account
+from insomniac.actions_runners import ActionState
+from insomniac.actions_types import LikeAction, FollowAction, InteractAction
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
@@ -101,6 +101,7 @@ def handle_blogger(device,
                                                        follow_percentage=follow_percentage)
 
             is_liked, is_followed = interaction(username=follower_name, interaction_strategy=interaction_strategy)
+            storage.add_interacted_user(follower_name, followed=is_followed)
             if is_liked or is_followed:
                 on_action(InteractAction(source=username, user=follower_name, succeed=True))
             else:
@@ -109,7 +110,7 @@ def handle_blogger(device,
         can_continue = True
 
         if is_like_limit_reached and is_follow_limit_reached:
-            # If ont of the limits reached for source-limit, move to next source
+            # If one of the limits reached for source-limit, move to next source
             if like_reached_source_limit is not None or follow_reached_source_limit is not None:
                 can_continue = False
                 action_status.set_limit(ActionState.SOURCE_LIMIT_REACHED)

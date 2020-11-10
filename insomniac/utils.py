@@ -104,7 +104,7 @@ def save_crash(device):
     except RuntimeError:
         print(COLOR_FAIL + "Cannot save view hierarchy." + COLOR_ENDC)
 
-    with open("crashes/" + directory_name + "/logs.txt", 'w') as outfile:
+    with open("crashes/" + directory_name + "/logs.txt", 'w', encoding="utf-8") as outfile:
         outfile.write(print_log)
 
     shutil.make_archive("crashes/" + directory_name, 'zip', "crashes/" + directory_name + "/")
