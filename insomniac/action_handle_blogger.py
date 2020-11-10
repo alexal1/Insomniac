@@ -57,11 +57,11 @@ def handle_blogger(device,
         if is_interact_limit_reached:
             # Reached interaction session limit, stop the action
             if interact_reached_session_limit is not None:
-                print(COLOR_WARNING + "Interaction session-limit {0} has been reached. Stopping activity."
+                print(COLOR_OKBLUE + "Interaction session-limit {0} has been reached. Stopping activity."
                       .format(interact_reached_session_limit) + COLOR_ENDC)
                 action_status.set_limit(ActionState.SESSION_LIMIT_REACHED)
             else:
-                print(COLOR_WARNING + "Interaction source-limit {0} has been reached. Moving to next source."
+                print(COLOR_OKBLUE + "Interaction source-limit {0} has been reached. Moving to next source."
                       .format(interact_reached_session_limit) + COLOR_ENDC)
                 action_status.set_limit(ActionState.SOURCE_LIMIT_REACHED)
 

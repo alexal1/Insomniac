@@ -17,14 +17,14 @@ class ActivationController:
 
         if not self.is_activated:
             dot = '\n    - '
-            print_timeless(f"\nHi! Since of v3.1.0 all core features in this project are free to use.\n"
+            print_timeless(f"Hi! Since of v3.1.0 all core features in this project are free to use.\n"
                            f"You may want to get more fine grained control over the bot via these features:"
                            f"{dot}{COLOR_BOLD}Filtering{COLOR_ENDC} - skip unwanted accounts by various parameters"
                            f"{dot}{COLOR_BOLD}Removing mass followers{COLOR_ENDC} - automate \"cleaning\" you account"
                            f"{dot}{COLOR_BOLD}Analytics tool{COLOR_ENDC} - build presentation that shows your growth"
-                           f"{dot}{COLOR_BOLD}Scrapping (next release){COLOR_ENDC} - will make interactions "
+                           f"{dot}{COLOR_BOLD}Scrapping{COLOR_ENDC} - will make interactions "
                            f"significantly safer and faster\n"
-                           f"Activate by supporting our small team: {COLOR_BOLD}{HOST}{PATH_ACTIVATE}{COLOR_ENDC}")
+                           f"Activate by supporting our small team: {COLOR_BOLD}{HOST}{PATH_ACTIVATE}{COLOR_ENDC}\n")
 
 
 def print_activation_required_to(action):

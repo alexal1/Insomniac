@@ -39,9 +39,9 @@ class ActionRunnersManager(object):
             print_timeless(COLOR_FAIL + "Running Insomniac with two or more actions is not supported yet." + COLOR_ENDC)
             return None
 
-        print_timeless(COLOR_WARNING +
-                       "Running Insomniac with {0} action.".format(selected_action_runners[0].ACTION_ID) +
-                       COLOR_ENDC)
+        print(COLOR_BOLD +
+              "Running Insomniac with the \"{0}\" action.".format(selected_action_runners[0].ACTION_ID) +
+              COLOR_ENDC)
 
         return selected_action_runners[0]
 

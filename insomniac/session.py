@@ -81,7 +81,7 @@ class InsomniacSession(object):
         self.session_state.args = args.__dict__
         self.sessions.append(self.session_state)
 
-        print_timeless(COLOR_WARNING + "\n-------- START: " + str(self.session_state.startTime) + " --------" + COLOR_ENDC)
+        print_timeless(COLOR_REPORT + "\n-------- START: " + str(self.session_state.startTime) + " --------" + COLOR_ENDC)
         open_instagram(self.device)
         self.session_state.my_username, \
             self.session_state.my_followers_count, \
@@ -93,7 +93,7 @@ class InsomniacSession(object):
         close_instagram(device_wrapper.device_id)
         print_copyright()
         self.session_state.finishTime = datetime.now()
-        print_timeless(COLOR_WARNING + "-------- FINISH: " + str(self.session_state.finishTime) + " --------" + COLOR_ENDC)
+        print_timeless(COLOR_REPORT + "-------- FINISH: " + str(self.session_state.finishTime) + " --------" + COLOR_ENDC)
 
     def repeat_session(self):
         print_full_report(self.sessions)
@@ -112,9 +112,10 @@ class InsomniacSession(object):
         self.limits_mgr.update_state(action)
 
     def run(self):
-        if not __debug_mode__:
-            print_version()
         args, device_wrapper = self.parse_args_and_get_device_wrapper()
+
+        if args is None or device_wrapper is None:
+            return
 
         while True:
             self.set_session_args(args)

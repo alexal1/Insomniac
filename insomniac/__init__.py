@@ -5,6 +5,7 @@ from insomniac.utils import *
 
 
 def run(activation_code=""):
+    print_version()
     activation_controller = ActivationController()
     activation_controller.validate(activation_code)
 
