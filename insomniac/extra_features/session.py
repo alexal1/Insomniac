@@ -1,3 +1,4 @@
+from insomniac.__version__ import __debug_mode__
 from insomniac.extra_features.actions_runners import ExtendedActionRunnersManager
 from insomniac.extra_features.filters import FiltersManager
 from insomniac.extra_features.limits import ExtendedLimitsManager
@@ -49,7 +50,8 @@ class ExtendedInsomniacSession(InsomniacSession):
             sleep(time_till_next_execution_seconds)
 
     def run(self):
-        print_version()
+        if not __debug_mode__:
+            print_version()
         args, device_wrapper = self.parse_args_and_get_device_wrapper()
 
         while True:
@@ -80,7 +82,10 @@ class ExtendedInsomniacSession(InsomniacSession):
 
                 self.end_session(device_wrapper)
             except Exception as ex:
-                print_timeless(COLOR_WARNING + "Catch an exception. Continue..." + COLOR_ENDC)
+                if __debug_mode__:
+                    raise ex
+                else:
+                    print_timeless(COLOR_FAIL + f"\nCaught an exception:\n{ex}" + COLOR_ENDC)
 
             if self.repeat is not None:
                 self.repeat()
