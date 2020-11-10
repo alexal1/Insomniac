@@ -1,14 +1,11 @@
-from time import sleep
-
 from insomniac.extra_features.actions_runners import ExtendedActionRunnersManager
+from insomniac.extra_features.filters import FiltersManager
 from insomniac.extra_features.limits import ExtendedLimitsManager
 from insomniac.extra_features.utils import is_at_working_hour
 from insomniac.report import print_full_report
 from insomniac.session import InsomniacSession
-
-from insomniac.extra_features.filters import FiltersManager
 from insomniac.storage import Storage
-from insomniac.utils import print_version, print_timeless, COLOR_WARNING, COLOR_ENDC
+from insomniac.utils import *
 
 
 class ExtendedInsomniacSession(InsomniacSession):

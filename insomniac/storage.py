@@ -1,9 +1,7 @@
-import json
-import os
-from datetime import timedelta, datetime
+from datetime import timedelta
 from enum import Enum, unique
 
-from insomniac.utils import COLOR_FAIL, COLOR_ENDC
+from insomniac.utils import *
 
 FILENAME_INTERACTED_USERS = "interacted_users.json"
 USER_LAST_INTERACTION = "last_interaction"

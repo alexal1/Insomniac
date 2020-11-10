@@ -1,5 +1,5 @@
 from insomniac.device_facade import create_device
-from insomniac.utils import check_adb_connection
+from insomniac.utils import *
 
 
 class DeviceWrapper(object):

@@ -1,8 +1,8 @@
 from abc import ABC
 from enum import unique, Enum
 
-from insomniac.actions_types import LikeAction, InteractAction, FollowAction
-from insomniac.utils import get_value, COLOR_WARNING, COLOR_ENDC
+from insomniac.actions_types import LikeAction, InteractAction, FollowAction, UnfollowAction
+from insomniac.utils import *
 
 
 @unique
@@ -45,6 +45,12 @@ class LimitsManager(object):
                 limit.update_state(action)
 
     def is_limit_reached_for_action(self, action, session_state):
+        """
+        :return: three values: whether limit was reached,
+        LIMIT_ID of source limit if the reached limit is LimitType.SOURCE or None otherwise,
+        LIMIT_ID of session limit if the reached limit is LimitType.SESSION or None otherwise
+        """
+
         reached_source_limit = None
         reached_session_limit = None
         is_limit_reached = False
@@ -252,6 +258,69 @@ class SourceFollowLimit(CoreLimit):
 
         followed_count = session_state.totalFollowed.get(action.source)
         return followed_count is not None and followed_count >= self.follow_limit
+
+    def reset(self):
+        pass
+
+    def update_state(self, action):
+        pass
+
+
+class UnfollowingLimit(CoreLimit):
+    LIMIT_ID = "unfollowing_limit"
+    LIMIT_TYPE = LimitType.SESSION
+    LIMIT_ARGS = {}
+
+    unfollow_limit = None
+
+    def set_limit(self, args):
+        if args.unfollow is not None:
+            self.unfollow_limit = get_value(args.unfollow, "Unfollow: {}", 100)
+        elif args.unfollow_non_followers is not None:
+            self.unfollow_limit = get_value(args.unfollow_non_followers, "Unfollow non followers: {}", 100)
+        elif args.unfollow_any is not None:
+            self.unfollow_limit = get_value(args.unfollow_any, "Unfollow any: {}", 100)
+
+    def is_reached_for_action(self, action, session_state):
+        if self.unfollow_limit is None:
+            return False
+
+        if not type(action) == UnfollowAction:
+            return False
+
+        return session_state.totalUnfollowed >= self.unfollow_limit
+
+    def reset(self):
+        pass
+
+    def update_state(self, action):
+        pass
+
+
+class MinFollowing(CoreLimit):
+    LIMIT_ID = "min_following"
+    LIMIT_TYPE = LimitType.SESSION
+    LIMIT_ARGS = {
+        "min_following": {
+            "help": 'minimum amount of followings, after reaching this amount unfollow stops',
+            "metavar": '100',
+            "default": "0"
+        }
+    }
+
+    min_following_limit = 0
+
+    def set_limit(self, args):
+        self.min_following_limit = int(args.min_following)
+
+    def is_reached_for_action(self, action, session_state):
+        if not type(action) == UnfollowAction:
+            return False
+
+        initial_following = session_state.my_following_count
+        unfollowed_count = session_state.totalUnfollowed
+
+        return initial_following - unfollowed_count <= self.min_following_limit
 
     def reset(self):
         pass

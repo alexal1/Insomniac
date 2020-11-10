@@ -1,9 +1,7 @@
-import os
-import sys
 import argparse
-import json
+import sys
 
-from insomniac.utils import COLOR_FAIL, COLOR_ENDC
+from insomniac.utils import *
 
 
 def parse_arguments(all_args_dict):
