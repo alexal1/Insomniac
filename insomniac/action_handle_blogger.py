@@ -45,7 +45,7 @@ def handle_blogger(device,
             print("@" + follower_name + ": already interacted in the last week. Skip.")
             return False
         elif is_passed_filters is not None:
-            if not is_passed_filters(device, follower_name, ['NO_DEVICE']):
+            if not is_passed_filters(device, follower_name, ['BEFORE_PROFILE_CLICK']):
                 return False
 
         return True

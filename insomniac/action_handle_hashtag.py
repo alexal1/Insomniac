@@ -35,7 +35,7 @@ def handle_hashtag(device,
             print("@" + liker_username + ": already interacted. Skip.")
             return False
         elif is_passed_filters is not None:
-            if not is_passed_filters(device, liker_username, ['NO_DEVICE']):
+            if not is_passed_filters(device, liker_username, ['BEFORE_PROFILE_CLICK']):
                 return False
 
         return True
