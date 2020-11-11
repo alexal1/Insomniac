@@ -1,6 +1,7 @@
 from abc import ABC
 from enum import unique, Enum
 
+from insomniac.actions_runners import ActionState
 from insomniac.actions_types import LikeAction, InteractAction, FollowAction, UnfollowAction
 from insomniac.utils import *
 
@@ -333,3 +334,20 @@ class MinFollowing(CoreLimit):
 
 def get_core_limits_classes():
     return CoreLimit.__subclasses__()
+
+
+def process_limits(is_limit_reached, reached_session_limit, reached_source_limit, action_status, limit_display_name):
+    if is_limit_reached:
+        # Reached session limit, stop the action
+        if reached_session_limit is not None:
+            print(COLOR_OKBLUE + "{0} session-limit {1} has been reached. Stopping activity."
+                  .format(limit_display_name, reached_session_limit) + COLOR_ENDC)
+            action_status.set_limit(ActionState.SESSION_LIMIT_REACHED)
+        else:
+            print(COLOR_OKBLUE + "{0} source-limit {1} has been reached. Moving to next source."
+                  .format(limit_display_name, reached_source_limit) + COLOR_ENDC)
+            action_status.set_limit(ActionState.SOURCE_LIMIT_REACHED)
+
+        return False
+
+    return True

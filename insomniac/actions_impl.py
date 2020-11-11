@@ -1,6 +1,6 @@
 from random import shuffle
 
-from insomniac.actions_types import LikeAction, FollowAction
+from insomniac.actions_types import LikeAction, FollowAction, GetProfileAction
 from insomniac.device_facade import DeviceFacade
 from insomniac.navigation import switch_to_english, search_for, LanguageChangedException
 from insomniac.scroll_end_detector import ScrollEndDetector
@@ -82,16 +82,16 @@ def is_private_account(device):
     return not recycler_view.exists()
 
 
-def open_user(device, username, refresh=False):
-    return _open_user(device, username, False, refresh)
+def open_user(device, username, refresh=False, on_action=None):
+    return _open_user(device, username, False, refresh, on_action)
 
 
-def open_user_followers(device, username, refresh=False):
-    return _open_user(device, username, True, False, refresh)
+def open_user_followers(device, username, refresh=False, on_action=None):
+    return _open_user(device, username, True, False, refresh, on_action)
 
 
-def open_user_followings(device, username, refresh=False):
-    return _open_user(device, username, False, True, refresh)
+def open_user_followings(device, username, refresh=False, on_action=None):
+    return _open_user(device, username, False, True, refresh, on_action)
 
 
 def iterate_over_followers(device, is_myself, iteration_callback,
@@ -375,7 +375,7 @@ def _follow(device, username, follow_percentage):
     return True
 
 
-def _open_user(device, username, open_followers=False, open_followings=False, refresh=False):
+def _open_user(device, username, open_followers=False, open_followings=False, refresh=False, on_action=None):
     if refresh:
         print("Refreshing profile status...")
         coordinator_layout = device.find(resourceId='com.instagram.android:id/coordinator_root_layout')
@@ -393,7 +393,7 @@ def _open_user(device, username, open_followers=False, open_followings=False, re
             followings_button = device.find(resourceIdMatches=FOLLOWING_BUTTON_ID_REGEX)
             followings_button.click()
     else:
-        if not search_for(device, username=username):
+        if not search_for(device, username=username, on_action=on_action):
             return False
 
         if open_followers:
@@ -468,7 +468,7 @@ def sort_followings_by_date(device):
     sort_options_recycler_view.child(index=2).click()
 
 
-def do_unfollow(device, username, my_username, check_if_is_follower):
+def do_unfollow(device, username, my_username, check_if_is_follower, on_action):
     """
     :return: whether unfollow was successful
     """
@@ -479,6 +479,7 @@ def do_unfollow(device, username, my_username, check_if_is_follower):
         print(COLOR_FAIL + "Cannot find @" + username + ", skip." + COLOR_ENDC)
         return False
     username_view.click()
+    on_action(GetProfileAction(user=username))
 
     if check_if_is_follower and _check_is_follower(device, username, my_username):
         print("Skip @" + username + ". This user is following you.")
