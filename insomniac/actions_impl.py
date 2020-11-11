@@ -83,7 +83,7 @@ def is_private_account(device):
 
 
 def open_user(device, username, refresh=False, on_action=None):
-    return _open_user(device, username, False, refresh, on_action)
+    return _open_user(device, username, False, False, refresh, on_action)
 
 
 def open_user_followers(device, username, refresh=False, on_action=None):

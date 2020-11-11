@@ -1,7 +1,8 @@
 import random
 from abc import ABC
 
-from insomniac.actions_runners import ActionRunnersManager, ActionsRunner
+from insomniac.actions_runners import ActionRunnersManager, ActionsRunner, ActionStatus, ActionState
+from insomniac.safely_runner import run_safely
 from insomniac.utils import *
 
 
@@ -37,7 +38,6 @@ class InteractByTargetsActionRunner(ExtraActionsRunner):
         }
     }
 
-    interact_targets = False
     likes_count = 2
     follow_percentage = 0
 
@@ -45,17 +45,53 @@ class InteractByTargetsActionRunner(ExtraActionsRunner):
         return args.interact_targets is not None
 
     def set_params(self, args):
-        if args.interact_targets is not None:
-            self.interact_targets = True
-
         if args.likes_count is not None:
-            self.likes_count = get_value(args.likes_count, "Likes count: {}", 2)
+            self.likes_count = args.likes_count
 
         if args.follow_percentage is not None:
             self.follow_percentage = int(args.follow_percentage)
 
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
-        pass
+        from insomniac.extra_features.action_handle_target import handle_target
+
+        for target in storage.targets:
+            self.action_status = ActionStatus(ActionState.PRE_RUN)
+
+            likes_count = get_value(self.likes_count, "Likes count: {}", 2)
+            if likes_count > 12:
+                print(COLOR_FAIL + "Max number of likes per user is 12" + COLOR_ENDC)
+                likes_count = 12
+
+            print_timeless("")
+            print(COLOR_BOLD + "Handle @" + target + COLOR_ENDC)
+
+            @run_safely(device_wrapper=device_wrapper)
+            def job():
+                self.action_status.set(ActionState.RUNNING)
+                handle_target(device_wrapper.get(),
+                              target,
+                              session_state,
+                              likes_count,
+                              self.follow_percentage,
+                              storage,
+                              on_action,
+                              is_limit_reached,
+                              is_passed_filters,
+                              self.action_status)
+
+                self.action_status.set(ActionState.DONE)
+
+            while not self.action_status.get() == ActionState.DONE:
+                job()
+                if self.action_status.get_limit() == ActionState.SOURCE_LIMIT_REACHED or \
+                        self.action_status.get_limit() == ActionState.SESSION_LIMIT_REACHED:
+                    break
+
+            if self.action_status.get_limit() == ActionState.SOURCE_LIMIT_REACHED:
+                continue
+
+            if self.action_status.get_limit() == ActionState.SESSION_LIMIT_REACHED:
+                break
 
 
 class ScrapeBySourcesActionRunner(ExtraActionsRunner):
