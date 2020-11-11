@@ -3,8 +3,9 @@ from functools import partial
 from insomniac.actions_impl import interact_with_user, ScrollEndDetector, open_likers, iterate_over_likers, \
     is_private_account, InteractionStrategy
 from insomniac.actions_runners import ActionState
-from insomniac.actions_types import InteractAction, LikeAction, FollowAction
+from insomniac.actions_types import InteractAction, LikeAction, FollowAction, GetProfileAction
 from insomniac.device_facade import DeviceFacade
+from insomniac.limits import process_limits
 from insomniac.navigation import search_for
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
@@ -44,25 +45,27 @@ def handle_hashtag(device,
         is_interact_limit_reached, interact_reached_source_limit, interact_reached_session_limit = \
             is_limit_reached(InteractAction(source=interaction_source, user=liker_username, succeed=True), session_state)
 
-        if is_interact_limit_reached:
-            # Reached interaction session limit, stop the action
-            if interact_reached_session_limit is not None:
-                print(COLOR_OKBLUE + "Interaction session-limit {0} has been reached. Stopping activity."
-                      .format(interact_reached_session_limit) + COLOR_ENDC)
-                action_status.set_limit(ActionState.SESSION_LIMIT_REACHED)
-            else:
-                print(COLOR_OKBLUE + "Interaction source-limit {0} has been reached. Moving to next source."
-                      .format(interact_reached_session_limit) + COLOR_ENDC)
-                action_status.set_limit(ActionState.SOURCE_LIMIT_REACHED)
+        if not process_limits(is_interact_limit_reached, interact_reached_session_limit,
+                              interact_reached_source_limit, action_status, "Interaction"):
+            return False
 
+        is_get_profile_limit_reached, get_profile_reached_source_limit, get_profile_reached_session_limit = \
+            is_limit_reached(GetProfileAction(user=liker_username), session_state)
+
+        if not process_limits(is_get_profile_limit_reached, get_profile_reached_session_limit,
+                              get_profile_reached_source_limit, action_status, "Get-Profile"):
             return False
 
         print("@" + liker_username + ": interact")
         liker_username_view.click()
+        on_action(GetProfileAction(user=liker_username))
 
         if is_passed_filters is not None:
             if not is_passed_filters(device, liker_username):
-                return False
+                # Continue to next follower
+                print("Back to followers list")
+                device.back()
+                return True
 
         is_like_limit_reached, like_reached_source_limit, like_reached_session_limit = \
             is_limit_reached(LikeAction(source=interaction_source, user=liker_username), session_state)
@@ -115,13 +118,13 @@ def handle_hashtag(device,
 
         return can_continue
 
-    extract_hashtag_likers_and_interact(device, hashtag, interact_with_liker, pre_conditions)
+    extract_hashtag_likers_and_interact(device, hashtag, interact_with_liker, pre_conditions, on_action)
 
 
-def extract_hashtag_likers_and_interact(device, hashtag, iteration_callback, iteration_callback_pre_conditions):
+def extract_hashtag_likers_and_interact(device, hashtag, iteration_callback, iteration_callback_pre_conditions, on_action):
     print("Interacting with #{0} recent-likers".format(hashtag))
 
-    if not search_for(device, hashtag=hashtag):
+    if not search_for(device, hashtag=hashtag, on_action=on_action):
         return
 
     # Switch to Recent tab

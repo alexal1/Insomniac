@@ -67,7 +67,7 @@ class TotalGetProfileLimit(ExtraLimit):
 
     def set_limit(self, args):
         if args.total_get_profile_limit is not None:
-            self.total_get_profile_limit = get_value(args.total_get_profile_limit, "Total get-profile limit: {}", 100)
+            self.total_get_profile_limit = get_value(args.total_get_profile_limit, "Total get-profile limit: {}", 1000)
 
     def is_reached_for_action(self, action, session_state):
         if self.total_get_profile_limit is None:

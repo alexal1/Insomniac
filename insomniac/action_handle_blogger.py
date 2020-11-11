@@ -3,7 +3,8 @@ from functools import partial
 from insomniac.actions_impl import interact_with_user, open_user_followers, \
     scroll_to_bottom, iterate_over_followers, InteractionStrategy, is_private_account
 from insomniac.actions_runners import ActionState
-from insomniac.actions_types import LikeAction, FollowAction, InteractAction
+from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction
+from insomniac.limits import process_limits
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
@@ -28,7 +29,7 @@ def handle_blogger(device,
                           my_username=session_state.my_username,
                           on_action=on_action)
 
-    if not open_user_followers(device, username):
+    if not open_user_followers(device=device, username=username, on_action=on_action):
         return
 
     if is_myself:
@@ -54,25 +55,27 @@ def handle_blogger(device,
         is_interact_limit_reached, interact_reached_source_limit, interact_reached_session_limit = \
             is_limit_reached(InteractAction(source=username, user=follower_name, succeed=True), session_state)
 
-        if is_interact_limit_reached:
-            # Reached interaction session limit, stop the action
-            if interact_reached_session_limit is not None:
-                print(COLOR_OKBLUE + "Interaction session-limit {0} has been reached. Stopping activity."
-                      .format(interact_reached_session_limit) + COLOR_ENDC)
-                action_status.set_limit(ActionState.SESSION_LIMIT_REACHED)
-            else:
-                print(COLOR_OKBLUE + "Interaction source-limit {0} has been reached. Moving to next source."
-                      .format(interact_reached_session_limit) + COLOR_ENDC)
-                action_status.set_limit(ActionState.SOURCE_LIMIT_REACHED)
+        if not process_limits(is_interact_limit_reached, interact_reached_session_limit,
+                              interact_reached_source_limit, action_status, "Interaction"):
+            return False
 
+        is_get_profile_limit_reached, get_profile_reached_source_limit, get_profile_reached_session_limit = \
+            is_limit_reached(GetProfileAction(user=follower_name), session_state)
+
+        if not process_limits(is_get_profile_limit_reached, get_profile_reached_session_limit,
+                              get_profile_reached_source_limit, action_status, "Get-Profile"):
             return False
 
         print("@" + follower_name + ": interact")
         follower_name_view.click()
+        on_action(GetProfileAction(user=follower_name))
 
         if is_passed_filters is not None:
             if not is_passed_filters(device, follower_name):
-                return False
+                # Continue to next follower
+                print("Back to followers list")
+                device.back()
+                return True
 
         is_like_limit_reached, like_reached_source_limit, like_reached_session_limit = \
             is_limit_reached(LikeAction(source=username, user=follower_name), session_state)

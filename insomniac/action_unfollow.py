@@ -2,7 +2,8 @@ from enum import unique, Enum
 
 from insomniac.actions_impl import open_user_followings, sort_followings_by_date, iterate_over_followings, do_unfollow
 from insomniac.actions_runners import ActionState
-from insomniac.actions_types import UnfollowAction
+from insomniac.actions_types import UnfollowAction, GetProfileAction
+from insomniac.limits import process_limits
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
@@ -12,7 +13,7 @@ TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
 
 
 def unfollow(device, on_action, storage, unfollow_restriction, session_state, is_limit_reached, action_status):
-    if not open_user_followings(device, None):
+    if not open_user_followings(device=device, username=None, on_action=on_action):
         return
 
     sort_followings_by_date(device)
@@ -51,23 +52,22 @@ def unfollow(device, on_action, storage, unfollow_restriction, session_state, is
         """
         print("Unfollow @" + following_name)
 
-        is_interact_limit_reached, interact_reached_source_limit, interact_reached_session_limit = \
+        is_unfollow_limit_reached, unfollow_reached_source_limit, unfollow_reached_session_limit = \
             is_limit_reached(UnfollowAction(user=following_name), session_state)
 
-        if is_interact_limit_reached:
-            # Reached interaction session limit, stop the action
-            if interact_reached_session_limit is not None:
-                print(COLOR_OKBLUE + "Unfollowing session-limit {0} has been reached. Stopping activity."
-                      .format(interact_reached_session_limit) + COLOR_ENDC)
-                action_status.set_limit(ActionState.SESSION_LIMIT_REACHED)
-            else:
-                print(COLOR_OKBLUE + "Unfollowing source-limit {0} has been reached. Stopping activity."
-                      .format(interact_reached_session_limit) + COLOR_ENDC)
-                action_status.set_limit(ActionState.SOURCE_LIMIT_REACHED)
+        if not process_limits(is_unfollow_limit_reached, unfollow_reached_session_limit,
+                              unfollow_reached_source_limit, action_status, "Unfollowing"):
+            return False
+
+        is_get_profile_limit_reached, get_profile_reached_source_limit, get_profile_reached_session_limit = \
+            is_limit_reached(GetProfileAction(user=following_name), session_state)
+
+        if not process_limits(is_get_profile_limit_reached, get_profile_reached_session_limit,
+                              get_profile_reached_source_limit, action_status, "Get-Profile"):
             return False
 
         check_if_is_follower = unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS
-        unfollowed = do_unfollow(device, following_name, session_state.my_username, check_if_is_follower)
+        unfollowed = do_unfollow(device, following_name, session_state.my_username, check_if_is_follower, on_action)
 
         if unfollowed:
             storage.add_interacted_user(following_name, unfollowed=True)

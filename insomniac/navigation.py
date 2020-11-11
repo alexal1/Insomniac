@@ -1,5 +1,6 @@
 from enum import Enum, unique
 
+from insomniac.actions_types import GetProfileAction
 from insomniac.utils import *
 
 SEARCH_CONTENT_DESC_REGEX = '[Ss]earch and [Ee]xplore'
@@ -22,7 +23,7 @@ def navigate(device, tab):
     button.click()
 
 
-def search_for(device, username=None, hashtag=None):
+def search_for(device, username=None, hashtag=None, on_action=None):
     navigate(device, Tabs.SEARCH)
     search_edit_text = device.find(resourceId='com.instagram.android:id/action_bar_search_edit_text',
                                    className='android.widget.EditText')
@@ -41,6 +42,10 @@ def search_for(device, username=None, hashtag=None):
             return False
 
         username_view.click()
+
+        if on_action is not None:
+            on_action(GetProfileAction(user=username))
+
         return True
 
     if hashtag is not None:
