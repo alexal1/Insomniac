@@ -1,17 +1,23 @@
+import base64
 import urllib.request
+import zlib
 from urllib.error import HTTPError
 
+from insomniac.__version__ import __version__
 from insomniac.utils import *
 
 HOST = "https://insomniac-bot.com"
 PATH_VALIDATE = "/validate"
 PATH_ACTIVATE = "/activate/"
+PATH_EXTRA_FEATURE = "/extra-feature/"
 
 
 class ActivationController:
+    activation_code = ""
     is_activated = False
 
     def validate(self, activation_code):
+        self.activation_code = activation_code
         if not activation_code == "" and _validate(activation_code):
             self.is_activated = True
 
@@ -25,6 +31,33 @@ class ActivationController:
                            f"{dot}{COLOR_BOLD}Scrapping (next release){COLOR_ENDC} - will make interactions "
                            f"significantly safer and faster\n"
                            f"Activate by supporting our small team: {COLOR_BOLD}{HOST}{PATH_ACTIVATE}{COLOR_ENDC}\n")
+
+    def get_extra_feature(self, module):
+        reason = None
+        file = None
+        try:
+            with urllib.request.urlopen(f"{HOST}{PATH_EXTRA_FEATURE}{module}"
+                                        f"?activation_code={self.activation_code}"
+                                        f"&version={__version__}",
+                                        context=ssl.SSLContext()) as response:
+                code = response.code
+                if code == 200:
+                    file = response.read()
+        except HTTPError as e:
+            code = e.code
+            reason = e.reason
+        except URLError as e:
+            code = -1
+            reason = e.reason
+
+        if file is not None:
+            return base64.b64decode(zlib.decompress(file))
+
+        if reason is None:
+            reason = "Unknown response code"
+
+        print(COLOR_FAIL + f"Cannot get module {module} from v{__version__}: {code} ({reason})" + COLOR_ENDC)
+        return None
 
 
 def print_activation_required_to(action):
@@ -58,3 +91,6 @@ def _validate(activation_code):
 
 class ActivationRequiredException(Exception):
     pass
+
+
+activation_controller = ActivationController()

@@ -11,7 +11,7 @@ def get_my_profile_info(device):
     navigate(device, Tabs.PROFILE)
     random_sleep()
 
-    print("Refreshing you profile status...")
+    print("Refreshing your profile status...")
     coordinator_layout = device.find(resourceId='com.instagram.android:id/coordinator_root_layout')
     if coordinator_layout.exists():
         coordinator_layout.scroll(DeviceFacade.Direction.TOP)
