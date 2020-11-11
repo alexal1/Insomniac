@@ -187,6 +187,49 @@ def iterate_over_followers(device, is_myself, iteration_callback,
             return
 
 
+def iterate_over_likers(device, iteration_callback, iteration_callback_pre_conditions):
+    likes_list_view = device.find(resourceId='android:id/list',
+                                  className='android.widget.ListView')
+    prev_screen_iterated_likers = []
+    while True:
+        print("Iterate over visible likers.")
+        screen_iterated_likers = []
+
+        try:
+            for item in device.find(resourceId='com.instagram.android:id/row_user_container_base',
+                                    className='android.widget.LinearLayout'):
+                user_name_view = item.child(resourceId='com.instagram.android:id/row_user_primary_name',
+                                            className='android.widget.TextView')
+                if not user_name_view.exists(quick=True):
+                    print(COLOR_OKGREEN + "Next item not found: probably reached end of the screen." + COLOR_ENDC)
+                    break
+
+                username = user_name_view.get_text()
+                screen_iterated_likers.append(username)
+
+                if not iteration_callback_pre_conditions(username, user_name_view):
+                    continue
+
+                to_continue = iteration_callback(username, user_name_view)
+                if not to_continue:
+                    print(COLOR_OKBLUE + "Stopping hashtag-likers iteration" + COLOR_ENDC)
+                    return
+        except IndexError:
+            print(COLOR_FAIL + "Cannot get next item: probably reached end of the screen." + COLOR_ENDC)
+
+        if screen_iterated_likers == prev_screen_iterated_likers:
+            print(COLOR_OKGREEN + "Iterated exactly the same likers twice, finish." + COLOR_ENDC)
+            print(f"Going back")
+            device.back()
+            break
+
+        prev_screen_iterated_likers.clear()
+        prev_screen_iterated_likers += screen_iterated_likers
+
+        print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
+        likes_list_view.scroll(DeviceFacade.Direction.BOTTOM)
+
+
 def interact_with_user(device,
                        user_source,
                        username,
@@ -394,7 +437,7 @@ def iterate_over_followings(device, iteration_callback, iteration_callback_pre_c
             if to_continue:
                 random_sleep()
             else:
-                print(COLOR_WARNING + "Stopping unfollowing" + COLOR_ENDC)
+                print(COLOR_OKBLUE + "Stopping unfollowing" + COLOR_ENDC)
                 return
 
         if screen_iterated_followings > 0:
@@ -469,6 +512,18 @@ def do_unfollow(device, username, my_username, check_if_is_follower):
     print("Back to the followings list.")
     device.back()
     return True
+
+
+def open_likers(device):
+    likes_view = device.find(resourceId='com.instagram.android:id/row_feed_textview_likes',
+                             className='android.widget.TextView')
+    if likes_view.exists(quick=True) and is_in_interaction_rect(likes_view):
+        print("Opening post likers")
+        random_sleep()
+        likes_view.click()
+        return True
+    else:
+        return False
 
 
 def _check_is_follower(device, username, my_username):

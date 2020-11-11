@@ -8,8 +8,8 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="insomniac",
     version=__version__,
-    author="Alexander Mishchenko",
-    author_email="5740235@gmail.com",
+    author="Insomniac Team",
+    author_email="info@insomniac-bot.com",
     description="Insomniac: Instagram bot for automated Instagram interaction using Android device via ADB",
     long_description=long_description,
     long_description_content_type="text/markdown",

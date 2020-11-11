@@ -8,7 +8,7 @@ from insomniac.action_get_my_profile_info import get_my_profile_info
 from insomniac.actions_runners import ActionRunnersManager
 from insomniac.device import DeviceWrapper
 from insomniac.limits import LimitsManager
-from insomniac.params import parse_arguments
+from insomniac.params import parse_arguments, refresh_args_by_conf_file
 from insomniac.persistent_list import PersistentList
 from insomniac.report import print_full_report
 from insomniac.session_state import SessionStateEncoder, SessionState
@@ -95,13 +95,14 @@ class InsomniacSession(object):
         self.session_state.finishTime = datetime.now()
         print_timeless(COLOR_REPORT + "-------- FINISH: " + str(self.session_state.finishTime) + " --------" + COLOR_ENDC)
 
-    def repeat_session(self):
+    def repeat_session(self, args):
         print_full_report(self.sessions)
         print_timeless("")
         self.sessions.persist(directory=self.session_state.my_username)
         print("Sleep for {} minutes".format(self.repeat))
         try:
             sleep(60 * self.repeat)
+            refresh_args_by_conf_file(args)
         except KeyboardInterrupt:
             print_full_report(self.sessions)
             self.sessions.persist(directory=self.session_state.my_username)
@@ -114,10 +115,10 @@ class InsomniacSession(object):
     def run(self):
         args, device_wrapper = self.parse_args_and_get_device_wrapper()
 
-        if args is None or device_wrapper is None:
-            return
-
         while True:
+            if args is None or device_wrapper is None:
+                return
+
             self.set_session_args(args)
 
             action_runner = self.actions_mgr.select_action_runner(args)
@@ -146,7 +147,7 @@ class InsomniacSession(object):
                     print_timeless(COLOR_FAIL + f"\nCaught an exception:\n{ex}" + COLOR_ENDC)
 
             if self.repeat is not None:
-                self.repeat_session()
+                self.repeat_session(args)
             else:
                 break
 

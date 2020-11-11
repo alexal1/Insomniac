@@ -45,7 +45,7 @@ def handle_blogger(device,
             print("@" + follower_name + ": already interacted in the last week. Skip.")
             return False
         elif is_passed_filters is not None:
-            if not is_passed_filters(device, follower_name, ['NO_DEVICE']):
+            if not is_passed_filters(device, follower_name, ['BEFORE_PROFILE_CLICK']):
                 return False
 
         return True
@@ -101,8 +101,8 @@ def handle_blogger(device,
                                                        follow_percentage=follow_percentage)
 
             is_liked, is_followed = interaction(username=follower_name, interaction_strategy=interaction_strategy)
-            storage.add_interacted_user(follower_name, followed=is_followed)
             if is_liked or is_followed:
+                storage.add_interacted_user(follower_name, followed=is_followed)
                 on_action(InteractAction(source=username, user=follower_name, succeed=True))
             else:
                 on_action(InteractAction(source=username, user=follower_name, succeed=False))

@@ -256,7 +256,7 @@ class MinPotencyRatioFilter(Filter):
 
 class MaxDigitsInProfileNameFilter(Filter):
     FILTER_ID = "max_digits_in_profile_name"
-    FILTER_TAGS = ['NO_DEVICE']
+    FILTER_TAGS = ['BEFORE_PROFILE_CLICK']
 
     def __init__(self):
         self.max_digits_in_profile_name = None
