@@ -126,7 +126,7 @@ class ScrapeBySourcesActionRunner(ExtraActionsRunner):
     dump_profile_followers = False
 
     def is_action_selected(self, args):
-        return args.scrape is not None and len(args.scrape) > 0
+        return args.scrape is not None and len(args.scrape) > 0 and args.scrape_for_account is not None
 
     def set_params(self, args):
         if args.scrape_for_account is not None:
@@ -152,7 +152,57 @@ class ScrapeBySourcesActionRunner(ExtraActionsRunner):
                         self.scrape.remove(random.choice(self.scrape))
 
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
-        pass
+        from insomniac.extra_features.action_handle_blogger_scrape import handle_blogger_scrape
+        from insomniac.extra_features.action_handle_hashtag_scrape import handle_hashtag_scrape
+
+        random.shuffle(self.scrape)
+
+        for source in self.scrape:
+            self.action_status = ActionStatus(ActionState.PRE_RUN)
+
+            if source[0] == '@':
+                is_myself = source[1:] == session_state.my_username
+                print_timeless("")
+                print(COLOR_BOLD + "Handle " + source + (is_myself and " (it\'s you)" or "") + COLOR_ENDC)
+            elif source[0] == '#':
+                print_timeless("")
+                print(COLOR_BOLD + "Handle " + source + COLOR_ENDC)
+
+            @run_safely(device_wrapper=device_wrapper)
+            def job():
+                self.action_status.set(ActionState.RUNNING)
+                if source[0] == '@':
+                    handle_blogger_scrape(device_wrapper.get(),
+                                          source[1:],  # drop "@"
+                                          session_state,
+                                          storage,
+                                          on_action,
+                                          is_limit_reached,
+                                          is_passed_filters,
+                                          self.action_status)
+                elif source[0] == '#':
+                    handle_hashtag_scrape(device_wrapper.get(),
+                                          source[1:],  # drop "#"
+                                          session_state,
+                                          storage,
+                                          on_action,
+                                          is_limit_reached,
+                                          is_passed_filters,
+                                          self.action_status)
+
+                self.action_status.set(ActionState.DONE)
+
+            while not self.action_status.get() == ActionState.DONE:
+                job()
+                if self.action_status.get_limit() == ActionState.SOURCE_LIMIT_REACHED or \
+                        self.action_status.get_limit() == ActionState.SESSION_LIMIT_REACHED:
+                    break
+
+            if self.action_status.get_limit() == ActionState.SOURCE_LIMIT_REACHED:
+                continue
+
+            if self.action_status.get_limit() == ActionState.SESSION_LIMIT_REACHED:
+                break
 
 
 class RemoveMassFollowersActionRunner(ExtraActionsRunner):

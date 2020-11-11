@@ -4,8 +4,10 @@ from enum import Enum, unique
 from insomniac.utils import *
 
 FILENAME_INTERACTED_USERS = "interacted_users.json"
+FILENAME_SCRAPPED_USERS = "scrapped_users.json"
 USER_LAST_INTERACTION = "last_interaction"
 USER_FOLLOWING_STATUS = "following_status"
+USER_SCRAPPING_STATUS = "scrapping_status"
 
 FILENAME_WHITELIST = "whitelist.txt"
 FILENAME_BLACKLIST = "blacklist.txt"
@@ -16,6 +18,7 @@ FILENAME_FOLLOWERS = "followers.txt"
 class Storage:
     interacted_users_path = None
     interacted_users = {}
+    scrapped_users = {}
     whitelist = []
     blacklist = []
     targets = []
@@ -34,6 +37,10 @@ class Storage:
         if os.path.exists(self.interacted_users_path):
             with open(self.interacted_users_path, encoding="utf-8") as json_file:
                 self.interacted_users = json.load(json_file)
+        self.scrapped_users_path = my_username + "/" + FILENAME_SCRAPPED_USERS
+        if os.path.exists(self.scrapped_users_path):
+            with open(self.scrapped_users_path, encoding="utf-8") as json_file:
+                self.scrapped_users = json.load(json_file)
         whitelist_path = my_username + "/" + FILENAME_WHITELIST
         if os.path.exists(whitelist_path):
             with open(whitelist_path, encoding="utf-8") as file:
@@ -69,6 +76,9 @@ class Storage:
         last_interaction = datetime.strptime(user[USER_LAST_INTERACTION], '%Y-%m-%d %H:%M:%S.%f')
         return datetime.now() - last_interaction <= timedelta(days=3)
 
+    def check_user_was_scrapped(self, username):
+        return not self.scrapped_users.get(username) is None
+
     def get_following_status(self, username):
         user = self.interacted_users.get(username)
         return user is None and FollowingStatus.NONE or FollowingStatus[user[USER_FOLLOWING_STATUS].upper()]
@@ -86,6 +96,18 @@ class Storage:
 
         self.interacted_users[username] = user
         self._update_file()
+
+    def add_scrapped_user(self, username, success=False):
+        user = self.scrapped_users.get(username, {})
+        user[USER_LAST_INTERACTION] = str(datetime.now())
+
+        if success:
+            user[USER_SCRAPPING_STATUS] = ScrappingStatus.SCRAPED.name.lower()
+        else:
+            user[USER_FOLLOWING_STATUS] = ScrappingStatus.NOT_SCRAPED.name.lower()
+
+        self.scrapped_users[username] = user
+        self._update_scrapped_file()
 
     def add_target_user(self, username):
         if username in self.targets:
@@ -128,9 +150,20 @@ class Storage:
             with open(self.interacted_users_path, 'w', encoding="utf-8") as outfile:
                 json.dump(self.interacted_users, outfile, indent=4, sort_keys=False)
 
+    def _update_scrapped_file(self):
+        if self.scrapped_users_path is not None:
+            with open(self.scrapped_users_path, 'w', encoding="utf-8") as outfile:
+                json.dump(self.scrapped_users, outfile, indent=4, sort_keys=False)
+
 
 @unique
 class FollowingStatus(Enum):
     NONE = 0
     FOLLOWED = 1
     UNFOLLOWED = 2
+
+
+@unique
+class ScrappingStatus(Enum):
+    SCRAPED = 0
+    NOT_SCRAPED = 1
