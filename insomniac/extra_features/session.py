@@ -46,7 +46,7 @@ class ExtendedInsomniacSession(InsomniacSession):
         can_continue, time_till_next_execution_seconds = is_at_working_hour(self.working_hours)
 
         if not can_continue:
-            print("Going to sleep until working time ({0} minutes)...".format(time_till_next_execution_seconds / 60))
+            print("Going to sleep until working time ({0} minutes)...".format(int(time_till_next_execution_seconds / 60)))
             sleep(time_till_next_execution_seconds)
 
     def run(self):

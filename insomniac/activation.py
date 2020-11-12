@@ -21,9 +21,11 @@ class ActivationController:
                            f"You may want to get more fine grained control over the bot via these features:"
                            f"{dot}{COLOR_BOLD}Filtering{COLOR_ENDC} - skip unwanted accounts by various parameters"
                            f"{dot}{COLOR_BOLD}Removing mass followers{COLOR_ENDC} - automate \"cleaning\" you account"
-                           f"{dot}{COLOR_BOLD}Analytics tool{COLOR_ENDC} - build presentation that shows your growth"
-                           f"{dot}{COLOR_BOLD}Scrapping (next release){COLOR_ENDC} - will make interactions "
-                           f"significantly safer and faster\n"
+                           f"{dot}{COLOR_BOLD}Scrapping{COLOR_ENDC} - technique that makes interactions "
+                           f"significantly safer and faster"
+                           f"{dot}{COLOR_BOLD}Targeted interaction session{COLOR_ENDC} - interaction mode that let you "
+                           f"interact with specific profiles according to your choice"
+                           f"{dot}{COLOR_BOLD}Analytics tool{COLOR_ENDC} - build presentation that shows your growth\n"
                            f"Activate by supporting our small team: {COLOR_BOLD}{HOST}{PATH_ACTIVATE}{COLOR_ENDC}\n")
 
 
