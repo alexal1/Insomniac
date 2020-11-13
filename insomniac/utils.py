@@ -9,12 +9,12 @@ from random import randint
 from time import sleep
 from urllib.error import URLError
 
-import insomniac
+from insomniac.__version__ import __version__
 
 COLOR_HEADER = '\033[95m'
 COLOR_OKBLUE = '\033[94m'
 COLOR_OKGREEN = '\033[92m'
-COLOR_WARNING = '\033[93m'
+COLOR_REPORT = '\033[93m'
 COLOR_FAIL = '\033[91m'
 COLOR_ENDC = '\033[0m'
 COLOR_BOLD = '\033[1m'
@@ -22,7 +22,7 @@ COLOR_UNDERLINE = '\033[4m'
 
 
 def print_version():
-    current_version = insomniac.__version__
+    current_version = __version__
     print_timeless(COLOR_HEADER + f"Insomniac v{current_version}" + COLOR_ENDC)
     latest_version = _get_latest_version('insomniac')
     if latest_version is not None and latest_version > current_version:
@@ -58,8 +58,8 @@ def check_adb_connection(is_device_id_provided):
         is_ok = False
         message = "Use --device to specify a device."
 
-    print(("" if is_ok else COLOR_FAIL) + "Connected devices via adb: " + str(devices_count) + ". " + message +
-          COLOR_ENDC)
+    print_timeless(("" if is_ok else COLOR_FAIL) + "Connected devices via adb: " + str(devices_count) + ". " + message +
+                   COLOR_ENDC)
     return is_ok
 
 
@@ -104,7 +104,7 @@ def save_crash(device):
     except RuntimeError:
         print(COLOR_FAIL + "Cannot save view hierarchy." + COLOR_ENDC)
 
-    with open("crashes/" + directory_name + "/logs.txt", 'w') as outfile:
+    with open("crashes/" + directory_name + "/logs.txt", 'w', encoding="utf-8") as outfile:
         outfile.write(print_log)
 
     shutil.make_archive("crashes/" + directory_name, 'zip', "crashes/" + directory_name + "/")
@@ -184,6 +184,43 @@ def get_value(count, name, default):
         value = default
         print_error()
     return value
+
+
+def get_left_right_values(left_right_str, name, default):
+    def print_error():
+        print(COLOR_FAIL + name.format(default) + f". Using default value instead of \"{left_right_str}\", because it "
+                                                  "must be either a number (e.g. 2) or a range (e.g. 2-4)." + COLOR_ENDC)
+
+    parts = left_right_str.split("-")
+    if len(parts) <= 0:
+        value = default
+        print_error()
+    elif len(parts) == 1:
+        try:
+            value = (int(left_right_str), int(left_right_str))
+            print(COLOR_BOLD + name.format(value) + COLOR_ENDC)
+        except ValueError:
+            value = default
+            print_error()
+    elif len(parts) == 2:
+        try:
+            value = (int(parts[0]), int(parts[1]))
+            print(COLOR_BOLD + name.format(value) + COLOR_ENDC)
+        except ValueError:
+            value = default
+            print_error()
+    else:
+        value = default
+        print_error()
+    return value
+
+
+def get_count_of_nums_in_str(string):
+    count = 0
+    for i in range(0, 10):
+        count += string.count(str(i))
+
+    return count
 
 
 print_log = ""

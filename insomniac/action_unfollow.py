@@ -1,190 +1,76 @@
 from enum import unique, Enum
 
-from insomniac.activation import print_activation_required_to
-from insomniac.device_facade import DeviceFacade
-from insomniac.navigation import switch_to_english, LanguageChangedException
+from insomniac.actions_impl import open_user_followings, sort_followings_by_date, iterate_over_followings, do_unfollow
+from insomniac.actions_types import UnfollowAction, GetProfileAction
+from insomniac.limits import process_limits
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
-FOLLOWING_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_following_container' \
-                            '|com.instagram.android:id/row_profile_header_container_following'
-TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
 
-
-def unfollow(device, count, on_unfollow, storage, unfollow_restriction, my_username):
-    _open_my_followings(device)
-    random_sleep()
-    _sort_followings_by_date(device)
-    random_sleep()
-    _iterate_over_followings(device, count, on_unfollow, storage, unfollow_restriction, my_username)
-
-
-def _open_my_followings(device):
-    print("Open my followings")
-    followings_button = device.find(resourceIdMatches=FOLLOWING_BUTTON_ID_REGEX)
-    followings_button.click()
-
-
-def _sort_followings_by_date(device):
-    print("Sort followings by date: from oldest to newest.")
-    sort_button = device.find(resourceId='com.instagram.android:id/sorting_entry_row_icon',
-                              className='android.widget.ImageView')
-    if not sort_button.exists():
-        print(COLOR_FAIL + "Cannot find button to sort followings. Continue without sorting." + COLOR_ENDC)
+def unfollow(device, on_action, storage, unfollow_restriction, session_state, is_limit_reached, action_status):
+    if not open_user_followings(device=device, username=None, on_action=on_action):
         return
-    sort_button.click()
-
-    sort_options_recycler_view = device.find(
-        resourceId='com.instagram.android:id/follow_list_sorting_options_recycler_view')
-    if not sort_options_recycler_view.exists():
-        print(COLOR_FAIL + "Cannot find options to sort followings. Continue without sorting." + COLOR_ENDC)
-        return
-
-    sort_options_recycler_view.child(index=2).click()
-
-
-def _iterate_over_followings(device, count, on_unfollow, storage, unfollow_restriction, my_username):
-    # Wait until list is rendered
-    device.find(resourceId='com.instagram.android:id/follow_list_container',
-                className='android.widget.LinearLayout').wait()
-
-    unfollowed_count = 0
-    while True:
-        print("Iterate over visible followings")
-        random_sleep()
-        screen_iterated_followings = 0
-
-        for item in device.find(resourceId='com.instagram.android:id/follow_list_container',
-                                className='android.widget.LinearLayout'):
-            user_info_view = item.child(index=1)
-            user_name_view = user_info_view.child(index=0).child()
-            if not user_name_view.exists(quick=True):
-                print(COLOR_OKGREEN + "Next item not found: probably reached end of the screen." + COLOR_ENDC)
-                break
-
-            username = user_name_view.get_text()
-            screen_iterated_followings += 1
-
-            if storage.is_user_in_whitelist(username):
-                print(f"@{username} is in whitelist. Skip.")
-                continue
-
-            if unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT or \
-                    unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS:
-                following_status = storage.get_following_status(username)
-                if not following_status == FollowingStatus.FOLLOWED:
-                    print("Skip @" + username + ". Following status: " + following_status.name + ".")
-                    continue
-
-            if unfollow_restriction == UnfollowRestriction.ANY:
-                following_status = storage.get_following_status(username)
-                if following_status == FollowingStatus.UNFOLLOWED:
-                    print("Skip @" + username + ". Following status: " + following_status.name + ".")
-                    continue
-
-            print("Unfollow @" + username)
-            unfollowed = _do_unfollow(device,
-                                      username,
-                                      my_username,
-                                      unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS)
-            if unfollowed:
-                storage.add_interacted_user(username, unfollowed=True)
-                on_unfollow()
-                unfollowed_count += 1
-
-            random_sleep()
-            if unfollowed_count >= count:
-                return
-
-        if screen_iterated_followings > 0:
-            print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
-            list_view = device.find(resourceId='android:id/list',
-                                    className='android.widget.ListView')
-            list_view.scroll(DeviceFacade.Direction.BOTTOM)
-        else:
-            print(COLOR_OKGREEN + "No followings were iterated, finish." + COLOR_ENDC)
-            return
-
-
-def _do_unfollow(device, username, my_username, check_if_is_follower):
-    """
-    :return: whether unfollow was successful
-    """
-    username_view = device.find(resourceId='com.instagram.android:id/follow_list_username',
-                                className='android.widget.TextView',
-                                text=username)
-    if not username_view.exists():
-        print(COLOR_FAIL + "Cannot find @" + username + ", skip." + COLOR_ENDC)
-        return False
-    username_view.click()
-
-    if check_if_is_follower and _check_is_follower(device, username, my_username):
-        print("Skip @" + username + ". This user is following you.")
-        print("Back to the followings list.")
-        device.back()
-        return False
-
-    unfollow_button = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
-                                  clickable=True,
-                                  text='Following')
-    if not unfollow_button.exists():
-        print(COLOR_FAIL + "Cannot find Following button. Maybe not English language is set?" + COLOR_ENDC)
-        save_crash(device)
-        switch_to_english(device)
-        raise LanguageChangedException()
-    unfollow_button.click()
-
-    confirm_unfollow_button = device.find(resourceId='com.instagram.android:id/follow_sheet_unfollow_row',
-                                          className='android.widget.TextView')
-    if not confirm_unfollow_button.exists():
-        print(COLOR_FAIL + "Cannot confirm unfollow." + COLOR_ENDC)
-        save_crash(device)
-        device.back()
-        return False
-    confirm_unfollow_button.click()
-
     random_sleep()
-    _close_confirm_dialog_if_shown(device)
-    detect_block(device)
-
-    print("Back to the followings list.")
-    device.back()
-    return True
-
-
-def _check_is_follower(device, username, my_username):
-    print(COLOR_OKGREEN + "Check if @" + username + " is following you." + COLOR_ENDC)
-    following_container = device.find(resourceIdMatches=FOLLOWING_BUTTON_ID_REGEX)
-    following_container.click()
-
+    sort_followings_by_date(device)
     random_sleep()
 
-    my_username_view = device.find(resourceId='com.instagram.android:id/follow_list_username',
-                                   className='android.widget.TextView',
-                                   text=my_username)
-    result = my_username_view.exists()
-    print("Back to the profile.")
-    device.back()
-    return result
+    # noinspection PyUnusedLocal
+    # following_name_view is a standard callback argument
+    def iteration_callback_pre_conditions(following_name, following_name_view):
+        """
+        :return: True to start unfollowing for given user, False to skip
+        """
+        if storage.is_user_in_whitelist(following_name):
+            print(f"@{following_name} is in whitelist. Skip.")
+            return False
 
+        if unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT or \
+                unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS:
+            following_status = storage.get_following_status(following_name)
+            if not following_status == FollowingStatus.FOLLOWED:
+                print("Skip @" + following_name + ". Following status: " + following_status.name + ".")
+                return False
 
-def _close_confirm_dialog_if_shown(device):
-    dialog_root_view = device.find(resourceId='com.instagram.android:id/dialog_root_view',
-                                   className='android.widget.FrameLayout')
-    if not dialog_root_view.exists():
-        return
+        if unfollow_restriction == UnfollowRestriction.ANY:
+            following_status = storage.get_following_status(following_name)
+            if following_status == FollowingStatus.UNFOLLOWED:
+                print("Skip @" + following_name + ". Following status: " + following_status.name + ".")
+                return False
 
-    # Avatar existence is the way to distinguish confirm dialog from block dialog
-    user_avatar_view = device.find(resourceId='com.instagram.android:id/circular_image',
-                                   className='android.widget.ImageView')
-    if not user_avatar_view.exists():
-        return
+        return True
 
-    print(COLOR_OKGREEN + "Dialog shown, confirm unfollowing." + COLOR_ENDC)
-    random_sleep()
-    unfollow_button = dialog_root_view.child(resourceId='com.instagram.android:id/primary_button',
-                                             className='android.widget.TextView')
-    unfollow_button.click()
+    # noinspection PyUnusedLocal
+    # following_name_view is a standard callback argument
+    def iteration_callback(following_name, following_name_view):
+        """
+        :return: True to continue unfollowing after given user, False to stop
+        """
+        print("Unfollow @" + following_name)
+
+        is_unfollow_limit_reached, unfollow_reached_source_limit, unfollow_reached_session_limit = \
+            is_limit_reached(UnfollowAction(user=following_name), session_state)
+
+        if not process_limits(is_unfollow_limit_reached, unfollow_reached_session_limit,
+                              unfollow_reached_source_limit, action_status, "Unfollowing"):
+            return False
+
+        is_get_profile_limit_reached, get_profile_reached_source_limit, get_profile_reached_session_limit = \
+            is_limit_reached(GetProfileAction(user=following_name), session_state)
+
+        if not process_limits(is_get_profile_limit_reached, get_profile_reached_session_limit,
+                              get_profile_reached_source_limit, action_status, "Get-Profile"):
+            return False
+
+        check_if_is_follower = unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS
+        unfollowed = do_unfollow(device, following_name, session_state.my_username, check_if_is_follower, on_action)
+
+        if unfollowed:
+            storage.add_interacted_user(following_name, unfollowed=True)
+            on_action(UnfollowAction(user=following_name))
+
+        return True
+
+    iterate_over_followings(device, iteration_callback, iteration_callback_pre_conditions)
 
 
 @unique

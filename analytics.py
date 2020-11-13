@@ -65,7 +65,7 @@ def _parse_arguments():
 def _load_sessions(username):
     path = username + "/sessions.json"
     if os.path.exists(path):
-        with open(path) as json_file:
+        with open(path, encoding="utf-8") as json_file:
             json_array = json.load(json_file)
         return json_array
     else:
