@@ -10,7 +10,7 @@ from insomniac.utils import *
 def unfollow(device, on_action, storage, unfollow_restriction, session_state, is_limit_reached, action_status):
     if not open_user_followings(device=device, username=None, on_action=on_action):
         return
-
+    random_sleep()
     sort_followings_by_date(device)
     random_sleep()
 
