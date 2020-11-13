@@ -1,6 +1,6 @@
 from abc import ABC
 
-from insomniac.actions_types import ScrapeAction, GetProfileAction
+from insomniac.actions_types import ScrapeAction, GetProfileAction, RemoveMassFollowerAction
 from insomniac.limits import LimitsManager, Limit, LimitType
 from insomniac.utils import *
 
@@ -111,6 +111,33 @@ class SourceScrapeLimit(ExtraLimit):
 
         scraped_count = session_state.totalScraped.get(action.source)
         return scraped_count is not None and scraped_count >= self.scrape_count
+
+    def reset(self):
+        pass
+
+    def update_state(self, action):
+        pass
+
+
+class RemoveMassFollowersLimit(ExtraLimit):
+    LIMIT_ID = "remove_mass_followers_limit"
+    LIMIT_TYPE = LimitType.SESSION
+    LIMIT_ARGS = {}
+
+    remove_mass_followers_limit = None
+
+    def set_limit(self, args):
+        if args.remove_mass_followers is not None:
+            self.remove_mass_followers_limit = int(args.remove_mass_followers)
+
+    def is_reached_for_action(self, action, session_state):
+        if self.remove_mass_followers_limit is None:
+            return False
+
+        if not type(action) == RemoveMassFollowerAction:
+            return False
+
+        return len(session_state.removedMassFollowers) >= self.remove_mass_followers_limit
 
     def reset(self):
         pass

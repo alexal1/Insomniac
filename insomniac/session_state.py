@@ -3,7 +3,7 @@ from datetime import datetime
 from json import JSONEncoder
 
 from insomniac.actions_types import LikeAction, InteractAction, FollowAction, GetProfileAction, ScrapeAction, \
-    UnfollowAction
+    UnfollowAction, RemoveMassFollowerAction
 
 
 class SessionState:
@@ -71,6 +71,9 @@ class SessionState:
 
         if type(action) == UnfollowAction:
             self.totalUnfollowed += 1
+
+        if type(action) == RemoveMassFollowerAction:
+            self.removedMassFollowers.append(action.user)
 
     def is_finished(self):
         return self.finishTime is not None

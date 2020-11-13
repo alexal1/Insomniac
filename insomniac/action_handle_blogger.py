@@ -8,9 +8,6 @@ from insomniac.limits import process_limits
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
-FOLLOWERS_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_followers_container' \
-                            '|com.instagram.android:id/row_profile_header_container_followers'
-
 
 def handle_blogger(device,
                    username,

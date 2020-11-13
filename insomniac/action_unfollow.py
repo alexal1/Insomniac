@@ -1,15 +1,10 @@
 from enum import unique, Enum
 
 from insomniac.actions_impl import open_user_followings, sort_followings_by_date, iterate_over_followings, do_unfollow
-from insomniac.actions_runners import ActionState
 from insomniac.actions_types import UnfollowAction, GetProfileAction
 from insomniac.limits import process_limits
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
-
-FOLLOWING_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_following_container' \
-                            '|com.instagram.android:id/row_profile_header_container_following'
-TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
 
 
 def unfollow(device, on_action, storage, unfollow_restriction, session_state, is_limit_reached, action_status):

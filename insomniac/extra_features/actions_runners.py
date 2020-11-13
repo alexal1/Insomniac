@@ -2,6 +2,7 @@ import random
 from abc import ABC
 
 from insomniac.actions_runners import ActionRunnersManager, ActionsRunner, ActionStatus, ActionState
+from insomniac.extra_features.action_remove_mass_followers import remove_mass_followers
 from insomniac.safely_runner import run_safely
 from insomniac.utils import *
 
@@ -230,13 +231,31 @@ class RemoveMassFollowersActionRunner(ExtraActionsRunner):
 
     def set_params(self, args):
         if args.remove_mass_followers is not None:
-            self.remove_mass_followers = get_value(args.remove_mass_followers, "Removing {} mass followers", 40)
+            self.remove_mass_followers = get_value(args.remove_mass_followers, "Removing {} mass followers", 10)
 
         if args.max_following is not None:
             self.max_following = int(args.max_following)
 
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
-        pass
+        self.action_status = ActionStatus(ActionState.PRE_RUN)
+
+        @run_safely(device_wrapper=device_wrapper)
+        def job():
+            self.action_status.set(ActionState.RUNNING)
+            remove_mass_followers(device_wrapper.get(),
+                                  storage,
+                                  is_limit_reached,
+                                  session_state,
+                                  self.action_status,
+                                  self.max_following,
+                                  on_action)
+            self.action_status.set(ActionState.DONE)
+
+        while not self.action_status.get() == ActionState.DONE:
+            job()
+            if self.action_status.get_limit() == ActionState.SOURCE_LIMIT_REACHED or \
+                    self.action_status.get_limit() == ActionState.SESSION_LIMIT_REACHED:
+                break
 
 
 def get_extra_action_runners_classes():
