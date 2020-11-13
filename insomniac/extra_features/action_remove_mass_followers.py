@@ -1,6 +1,6 @@
 from insomniac.action_get_my_profile_info import get_following_count
 from insomniac.actions_impl import open_user_followers, iterate_over_followers, scroll_to_bottom
-from insomniac.actions_types import RemoveMassFollowerAction
+from insomniac.actions_types import RemoveMassFollowerAction, GetProfileAction
 from insomniac.extra_features.actions_impl import remove_mass_follower
 from insomniac.limits import process_limits
 from insomniac.utils import *
@@ -41,8 +41,16 @@ def remove_mass_followers(device,
                               interact_reached_source_limit, action_status, "Removing mass followers"):
             return False
 
+        is_get_profile_limit_reached, get_profile_reached_source_limit, get_profile_reached_session_limit = \
+            is_limit_reached(GetProfileAction(user=follower_name), session_state)
+
+        if not process_limits(is_get_profile_limit_reached, get_profile_reached_session_limit,
+                              get_profile_reached_source_limit, action_status, "Get-Profile"):
+            return False
+
         print("Open @" + follower_name)
         follower_name_view.click()
+        on_action(GetProfileAction(user=follower_name))
         random_sleep()
         is_mass_follower = _is_mass_follower(device, follower_name, max_following)
         device.back()

@@ -2,7 +2,6 @@ import random
 from abc import ABC
 
 from insomniac.actions_runners import ActionRunnersManager, ActionsRunner, ActionStatus, ActionState
-from insomniac.extra_features.action_remove_mass_followers import remove_mass_followers
 from insomniac.safely_runner import run_safely
 from insomniac.utils import *
 
@@ -237,6 +236,7 @@ class RemoveMassFollowersActionRunner(ExtraActionsRunner):
             self.max_following = int(args.max_following)
 
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
+        from insomniac.extra_features.action_remove_mass_followers import remove_mass_followers
         self.action_status = ActionStatus(ActionState.PRE_RUN)
 
         @run_safely(device_wrapper=device_wrapper)
