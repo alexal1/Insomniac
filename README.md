@@ -5,7 +5,11 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/insomniac)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/insomniac)
 
-Liking and following automatically on your Android phone/tablet. No root required: it works on [UI Automator](https://developer.android.com/training/testing/ui-automator), which is an official Android UI testing framework.
+[español](https://github.com/alexal1/Insomniac/blob/master/res/README_es.md) | [português](https://github.com/alexal1/Insomniac/blob/master/res/README_pt_BR.md)
+
+Liking and following automatically on your Android phone/emulator. No root required: it works on [UI Automator](https://developer.android.com/training/testing/ui-automator), which is an official Android UI testing framework.
+
+**No Android device?** Follow instructions to setup Insomniac on a free emultor: [Windows](https://www.patreon.com/posts/how-to-install-43543116), [macOS](https://www.patreon.com/posts/how-to-install-43485861), [Linux](https://www.patreon.com/posts/how-to-install-43485861).
 
 <img src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/demo.gif">
 
@@ -39,14 +43,12 @@ Liking and following automatically on your Android phone/tablet. No root require
 📈 Using these methods altogether gives the best result.
 
 ### How to install
-1. Run `python3 -m pip install insomniac` in Terminal / Command Prompt<br/><sub><sup>Provided **python** and **pip** are installed already. Learn <a href="https://github.com/alexal1/Insomniac/wiki/Install-Python">how to check it</a>.</sup></sub>
-2. Save [start.py](https://raw.githubusercontent.com/alexal1/Insomniac/master/start.py) file which launches the script
-2. Download and unzip [Android platform tools](https://developer.android.com/studio/releases/platform-tools), move them to a folder where you won't delete them accidentally, e.g.
-```
-mkdir -p ~/Library/Android/sdk
-mv <path-to-downloads>/platform-tools/ ~/Library/Android/sdk
-```
+1. Install **insomniac** package: run `python3 -m pip install insomniac` in Terminal / Command Prompt<br/><sub><sup>Provided **python** and **pip** are installed already. Learn <a href="https://github.com/alexal1/Insomniac/wiki/Install-Python">how to check it</a>.</sup></sub>
+2. Save launcher [start.py](https://raw.githubusercontent.com/alexal1/Insomniac/master/start.py) to a directory where you're going to launch the script from (right-click on the link, then Save As / Download Linked File As)
+2. Download and unzip [Android platform tools](https://developer.android.com/studio/releases/platform-tools), move them to a folder where you won't delete them accidentally. Standard place is `C:\android-sdk\` (Windows), `~/Library/Android/sdk/` (Linux/macOS)
 3. [Add platform-tools path to the PATH environment variable](https://github.com/alexal1/Insomniac/wiki/Adding-platform-tools-to-the-PATH-environment-variable). If you do it correctly, Terminal / Command Prompt command `adb devices` will print `List of devices attached`
+
+_IMPORTANT: if you previously used v2.x.x, then insomniac.py file will conflict with insomniac package. So, save start.py in a separate folder_
 
 ### How to install on Raspberry Pi OS
 1. Update apt-get: `sudo apt-get update`
