@@ -1,6 +1,6 @@
 import setuptools
 
-from insomniac import __version__
+from insomniac.__version__ import __version__
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
