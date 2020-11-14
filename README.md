@@ -7,7 +7,9 @@
 
 [español](https://github.com/alexal1/Insomniac/blob/master/res/README_es.md) | [português](https://github.com/alexal1/Insomniac/blob/master/res/README_pt_BR.md)
 
-Liking and following automatically on your Android phone/tablet. No root required: it works on [UI Automator](https://developer.android.com/training/testing/ui-automator), which is an official Android UI testing framework.
+Liking and following automatically on your Android phone/emulator. No root required: it works on [UI Automator](https://developer.android.com/training/testing/ui-automator), which is an official Android UI testing framework.
+
+**No Android device?** Follow instructions to setup Insomniac on a free emultor: [Windows](https://www.patreon.com/posts/how-to-install-43543116), [macOS](https://www.patreon.com/posts/how-to-install-43485861), [Linux](https://www.patreon.com/posts/how-to-install-43485861).
 
 <img src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/demo.gif">
 
