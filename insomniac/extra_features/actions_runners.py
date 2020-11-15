@@ -23,7 +23,7 @@ class ScrapeBySourcesActionRunner(ExtraActionsRunner):
     ACTION_ARGS = {
         "scrape_for_account": {
             "help": "add this argument in order to just scrape targeted profiles for an account. "
-                    "The scraped profiles names will be added to targets.json file at target account directory",
+                    "The scraped profiles names will be added to targets.txt file at target account directory",
             "metavar": 'your_profile'
         },
         "scrape": {
