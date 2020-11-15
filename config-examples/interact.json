@@ -1,7 +1,7 @@
 [
   {
     "parameter-name": "device",
-    "enabled": true,
+    "enabled": false,
     "value": "emulator-5554",
     "description" : "device identifier. Should be used only when multiple devices are connected at once"
   },
@@ -34,7 +34,7 @@
     "enabled": true,
     "value": [
       "@netgeo",
-      "morning"
+      "amazingtrips"
     ],
     "description" : "list of hashtags and usernames. Usernames should start with \\\"@\\\" symbol. The script will interact with hashtags\\' posts likers and with users\\' followers"
   },

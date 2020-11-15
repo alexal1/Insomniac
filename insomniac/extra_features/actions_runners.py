@@ -37,17 +37,11 @@ class ScrapeBySourcesActionRunner(ExtraActionsRunner):
             "help": 'add this argument to select an amount of users from the scraping-list '
                     '(users are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)',
             'metavar': '3-8'
-        },
-        "dump_profile_followers": {
-            "help": 'add this argument in dump your profile followers as a part of a scrapping session into '
-                    'followers.json file under your real account directory',
-            'metavar': 'True / False'
         }
     }
 
     scrape_for_account = None
     scrape = []
-    dump_profile_followers = False
 
     def is_action_selected(self, args):
         return args.scrape is not None and len(args.scrape) > 0 and args.scrape_for_account is not None
@@ -59,9 +53,6 @@ class ScrapeBySourcesActionRunner(ExtraActionsRunner):
         if args.scrape is not None:
             self.scrape = args.scrape.copy()
             self.scrape = [source if source[0] == '@' else ('#' + source) for source in self.scrape]
-
-        if args.dump_profile_followers is not None:
-            self.dump_profile_followers = True
 
         if args.scrape_users_amount is not None:
             if len(self.scrape) > 0:

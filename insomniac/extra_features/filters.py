@@ -14,7 +14,7 @@ class FiltersManager(object):
     FILTERS_ARGS = {
         "filters": {
             "help": 'add this argument if you want to pass filters as an argument and not from '
-                    'filters.txt file'
+                    'filters.json file'
         }
     }
 

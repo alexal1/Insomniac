@@ -16,7 +16,7 @@ def parse_arguments(all_args_dict):
 
     parser.add_argument('--config-file',
                         help='add this argument if you want to load your configuration from a config file. '
-                             'Example can be found in conf_example.json file')
+                             'Example can be found in config-examples folder')
 
     if not len(sys.argv) > 1:
         parser.print_help()
