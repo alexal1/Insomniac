@@ -1,11 +1,7 @@
-from functools import partial
-
-from insomniac.actions_impl import interact_with_user, open_user_followers, \
-    scroll_to_bottom, iterate_over_followers, InteractionStrategy, is_private_account
-from insomniac.actions_runners import ActionState
-from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, ScrapeAction
+from insomniac.actions_impl import open_user_followers, \
+    scroll_to_bottom, iterate_over_followers
+from insomniac.actions_types import GetProfileAction, ScrapeAction
 from insomniac.limits import process_limits
-from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
 

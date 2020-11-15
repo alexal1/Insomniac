@@ -1,13 +1,8 @@
-from functools import partial
-
-from insomniac.actions_impl import interact_with_user, ScrollEndDetector, open_likers, iterate_over_likers, \
-    is_private_account, InteractionStrategy
-from insomniac.actions_runners import ActionState
-from insomniac.actions_types import InteractAction, LikeAction, FollowAction, GetProfileAction, ScrapeAction
+from insomniac.actions_impl import ScrollEndDetector, open_likers, iterate_over_likers
+from insomniac.actions_types import GetProfileAction, ScrapeAction
 from insomniac.device_facade import DeviceFacade
 from insomniac.limits import process_limits
 from insomniac.navigation import search_for
-from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
 
