@@ -55,6 +55,8 @@ class Storage:
                 self.targets = [line.rstrip() for line in file]
 
         if scrape_for_account is not None:
+            if not os.path.isdir(scrape_for_account):
+                os.makedirs(scrape_for_account)
             self.targets_path = scrape_for_account + "/" + FILENAME_TARGETS
             if os.path.exists(self.targets_path):
                 with open(self.targets_path, encoding="utf-8") as file:
