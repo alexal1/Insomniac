@@ -26,11 +26,11 @@ class ActivationController:
             print_timeless(f"Hi! Since of v3.1.0 all core features in this project are free to use.\n"
                            f"You may want to get more fine grained control over the bot via these features:"
                            f"{dot}{COLOR_BOLD}Filtering{COLOR_ENDC} - skip unwanted accounts by various parameters"
-                           f"{dot}{COLOR_BOLD}Removing mass followers{COLOR_ENDC} - automate \"cleaning\" you account"
                            f"{dot}{COLOR_BOLD}Scrapping{COLOR_ENDC} - technique that makes interactions "
                            f"significantly safer and faster"
-                           f"{dot}{COLOR_BOLD}Targeted interaction session{COLOR_ENDC} - interaction mode that let you "
-                           f"interact with specific profiles according to your choice"
+                           f"{dot}{COLOR_BOLD}Working hours{COLOR_ENDC} - the script will wait till specified hours "
+                           f"before each session"
+                           f"{dot}{COLOR_BOLD}Removing mass followers{COLOR_ENDC} - automate \"cleaning\" you account"
                            f"{dot}{COLOR_BOLD}Analytics tool{COLOR_ENDC} - build presentation that shows your growth\n"
                            f"Activate by supporting our small team: {COLOR_BOLD}{HOST}{PATH_ACTIVATE}{COLOR_ENDC}\n")
 
