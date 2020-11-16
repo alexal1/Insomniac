@@ -1,7 +1,7 @@
 [
   {
     "parameter-name": "device",
-    "enabled": true,
+    "enabled": false,
     "value": "emulator-5554",
     "description" : "device identifier. Should be used only when multiple devices are connected at once"
   },
@@ -19,40 +19,40 @@
   },
   {
     "parameter-name": "likes_count",
-    "enabled": false,
+    "enabled": true,
     "value": "1-2",
     "description" : "number of likes for each interacted user, 2 by default. It can be a number (e.g. 2) or a range (e.g. 2-4)"
   },
   {
     "parameter-name": "follow_percentage",
-    "enabled": false,
+    "enabled": true,
     "value": "80",
     "description" : "follow given percentage of interacted users, 0 by default"
   },
   {
     "parameter-name": "interact",
-    "enabled": false,
+    "enabled": true,
     "value": [
       "@netgeo",
-      "morning"
+      "amazingtrips"
     ],
     "description" : "list of hashtags and usernames. Usernames should start with \\\"@\\\" symbol. The script will interact with hashtags\\' posts likers and with users\\' followers"
   },
   {
     "parameter-name": "interaction_users_amount",
-    "enabled": false,
+    "enabled": true,
     "value": "6-8",
     "description" : "add this argument to select an amount of users from the interact-list (users are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)"
   },
   {
     "parameter-name": "unfollow",
-    "enabled": true,
+    "enabled": false,
     "value": "20-40",
     "description" : "unfollow at most given number of users. Only users followed by this script will be unfollowed. The order is from oldest to newest followings. It can be a number (e.g. 100) or a range (e.g. 100-200)"
   },
   {
     "parameter-name": "min_following",
-    "enabled": true,
+    "enabled": false,
     "value": "150",
     "description" : "minimum amount of followings, after reaching this amount unfollow stops"
   },
@@ -70,31 +70,31 @@
   },
   {
     "parameter-name": "total_likes_limit",
-    "enabled": false,
+    "enabled": true,
     "value": "50-60",
     "description" : "limit on total amount of likes during the session, 300 by default. It can be a number presenting specific limit (e.g. 300) or a range (e.g. 100-120)"
   },
   {
     "parameter-name": "total_interactions_limit",
-    "enabled": false,
+    "enabled": true,
     "value": "50-60",
     "description" : "number of total interactions per session, disabled by default. It can be a number (e.g. 70) or a range (e.g. 60-80). Only successful interactions count"
   },
   {
     "parameter-name": "total_follow_limit",
-    "enabled": false,
+    "enabled": true,
     "value": "15-20",
     "description" : "limit on total amount of follows during the session, disabled by default. It can be a number (e.g. 27) or a range (e.g. 20-30)"
   },
   {
     "parameter-name": "interactions_count",
-    "enabled": false,
+    "enabled": true,
     "value": "6-8",
     "description" : "number of interactions per each blogger/hashtag, 70 by default. It can be a number (e.g. 70) or a range (e.g. 60-80). Only successful interactions count"
   },
   {
     "parameter-name": "follow_limit",
-    "enabled": false,
+    "enabled": true,
     "value": "1-2",
     "description" : "limit on amount of follows during interaction with each one user's followers, disabled by default. It can be a number (e.g. 10) or a range (e.g. 6-9)"
   }
