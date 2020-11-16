@@ -60,14 +60,12 @@ class LimitsManager(object):
             if limit.is_reached_for_action(action, session_state):
                 reached_source_limit = limit.LIMIT_ID
                 is_limit_reached = True
-                print(COLOR_OKBLUE + "Reached source-limit {} for action type {} ".format(reached_source_limit, type(action).__name__) + COLOR_ENDC)
                 break
 
         for limit_id, limit in self.limits[str(LimitType.SESSION)].items():
             if limit.is_reached_for_action(action, session_state):
                 reached_session_limit = limit.LIMIT_ID
                 is_limit_reached = True
-                print(COLOR_OKBLUE + "Reached session-limit {} for action type {} ".format(reached_session_limit, type(action).__name__) + COLOR_ENDC)
                 break
 
         return is_limit_reached, reached_source_limit, reached_session_limit
@@ -112,7 +110,7 @@ class TotalLikesLimit(CoreLimit):
     total_likes_limit = 1000
 
     def set_limit(self, args):
-        is_interact_action_enabled = args.interact is not None and len(args.interact) > 0
+        is_interact_action_enabled = (args.interact is not None and len(args.interact) > 0) or args.interact_targets is not None
         if is_interact_action_enabled and args.total_likes_limit is not None:
             self.total_likes_limit = get_value(args.total_likes_limit, "Total likes limit: {}", 1000)
 
@@ -142,8 +140,6 @@ class TotalInteractionsLimit(CoreLimit):
     }
 
     total_interactions_limit = None
-
-    is_reached = False
 
     def set_limit(self, args):
         if args.total_interactions_limit is not None:
@@ -176,18 +172,13 @@ class TotalFollowLimit(CoreLimit):
         }
     }
 
-    total_follow_limit = None
-
-    is_reached = False
+    total_follow_limit = 0
 
     def set_limit(self, args):
         if args.total_follow_limit is not None:
             self.total_follow_limit = get_value(args.total_follow_limit, "Total follow limit: {}", 70)
 
     def is_reached_for_action(self, action, session_state):
-        if self.total_follow_limit is None:
-            return False
-
         if not type(action) == FollowAction:
             return False
 
@@ -216,7 +207,7 @@ class SourceInteractionsLimit(CoreLimit):
     interactions_count = 70
 
     def set_limit(self, args):
-        is_interact_action_enabled = args.interact is not None and len(args.interact) > 0
+        is_interact_action_enabled = (args.interact is not None and len(args.interact) > 0) or args.interact_targets is not None
         if is_interact_action_enabled and args.interactions_count is not None:
             self.interactions_count = get_value(args.interactions_count, "Interactions count: {}", 70)
 
