@@ -1,6 +1,7 @@
 from enum import Enum, unique
 
-from src.utils import *
+from insomniac.actions_types import GetProfileAction
+from insomniac.utils import *
 
 SEARCH_CONTENT_DESC_REGEX = '[Ss]earch and [Ee]xplore'
 
@@ -20,6 +21,56 @@ def navigate(device, tab):
     # Two clicks to reset tab content
     button.click()
     button.click()
+
+
+def search_for(device, username=None, hashtag=None, on_action=None):
+    navigate(device, Tabs.SEARCH)
+    search_edit_text = device.find(resourceId='com.instagram.android:id/action_bar_search_edit_text',
+                                   className='android.widget.EditText')
+    search_edit_text.click()
+
+    if username is not None:
+        print("Open user @" + username)
+        search_edit_text.set_text(username)
+        username_view = device.find(resourceId='com.instagram.android:id/row_search_user_username',
+                                    className='android.widget.TextView',
+                                    text=username)
+
+        random_sleep()
+        if not username_view.exists():
+            print_timeless(COLOR_FAIL + "Cannot find user @" + username + ", abort." + COLOR_ENDC)
+            return False
+
+        username_view.click()
+
+        if on_action is not None:
+            on_action(GetProfileAction(user=username))
+
+        return True
+
+    if hashtag is not None:
+        print("Open hashtag #" + hashtag)
+        tab_layout = device.find(resourceId='com.instagram.android:id/fixed_tabbar_tabs_container',
+                                 className='android.widget.LinearLayout')
+        if not tab_layout.exists():
+            print(COLOR_FAIL + "Cannot find tabs." + COLOR_ENDC)
+            return False
+        tab_layout.child(index=2).click()
+
+        search_edit_text.set_text(hashtag)
+        hashtag_view = device.find(resourceId='com.instagram.android:id/row_hashtag_textview_tag_name',
+                                   className='android.widget.TextView',
+                                   text=f"#{hashtag}")
+
+        random_sleep()
+        if not hashtag_view.exists():
+            print_timeless(COLOR_FAIL + "Cannot find hashtag #" + hashtag + ", abort." + COLOR_ENDC)
+            return False
+
+        hashtag_view.click()
+        return True
+
+    return False
 
 
 def switch_to_english(device):
@@ -50,9 +101,13 @@ def switch_to_english(device):
 
         list_view = device.find(resourceId='android:id/list',
                                 className='android.widget.ListView')
-        language_item = list_view.child(index=3)
+        if not list_view.exists():
+            print("Opened a wrong tab, going back")
+            device.back()
+            continue
+        language_item = list_view.child(index=4)
         if not language_item.exists():
-            print(COLOR_FAIL + "Oops, went the wrong way" + COLOR_ENDC)
+            print("Opened a wrong tab, going back")
             device.back()
             continue
         language_item.click()
@@ -60,7 +115,7 @@ def switch_to_english(device):
         search_edit_text = device.find(resourceId='com.instagram.android:id/search',
                                        className='android.widget.EditText')
         if not search_edit_text.exists():
-            print(COLOR_FAIL + "Oops, went the wrong way" + COLOR_ENDC)
+            print("Opened a wrong tab, going back")
             device.back()
             device.back()
             continue

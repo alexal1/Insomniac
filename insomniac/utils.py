@@ -1,33 +1,34 @@
-import hashlib
+import json
 import os
 import re
 import shutil
+import ssl
+import urllib.request
 from datetime import datetime
 from random import randint
 from time import sleep
+from urllib.error import URLError
+
+from insomniac.__version__ import __version__
 
 COLOR_HEADER = '\033[95m'
 COLOR_OKBLUE = '\033[94m'
 COLOR_OKGREEN = '\033[92m'
-COLOR_WARNING = '\033[93m'
+COLOR_REPORT = '\033[93m'
 COLOR_FAIL = '\033[91m'
 COLOR_ENDC = '\033[0m'
 COLOR_BOLD = '\033[1m'
 COLOR_UNDERLINE = '\033[4m'
 
-COPYRIGHT_BLACKLIST = (
-    '2a978d696a5bbc8536fe2859a61ee01d86e7a20f',
-    'ab1d65a93ec9b6fb90a67dec1ca1480ff71ef725'
-)
 
-
-def get_version():
-    stream = os.popen('git describe --tags')
-    output = stream.read()
-    version_match = re.match('(v\\d+.\\d+.\\d+)', output)
-    version = (version_match is None) and "(Work In Progress)" or version_match.group(1)
-    stream.close()
-    return version
+def print_version():
+    current_version = __version__
+    print_timeless(COLOR_HEADER + f"Insomniac v{current_version}" + COLOR_ENDC)
+    latest_version = _get_latest_version('insomniac')
+    if latest_version is not None and latest_version > current_version:
+        print_timeless(COLOR_HEADER + f"Newer version is available (v{latest_version}). Please run" + COLOR_ENDC)
+        print_timeless(COLOR_HEADER + COLOR_BOLD + "python3 -m pip install insomniac --upgrade" + COLOR_ENDC)
+    print_timeless("")
 
 
 def get_instagram_version():
@@ -57,8 +58,8 @@ def check_adb_connection(is_device_id_provided):
         is_ok = False
         message = "Use --device to specify a device."
 
-    print(("" if is_ok else COLOR_FAIL) + "Connected devices via adb: " + str(devices_count) + ". " + message +
-          COLOR_ENDC)
+    print_timeless(("" if is_ok else COLOR_FAIL) + "Connected devices via adb: " + str(devices_count) + ". " + message +
+                   COLOR_ENDC)
     return is_ok
 
 
@@ -103,7 +104,7 @@ def save_crash(device):
     except RuntimeError:
         print(COLOR_FAIL + "Cannot save view hierarchy." + COLOR_ENDC)
 
-    with open("crashes/" + directory_name + "/logs.txt", 'w') as outfile:
+    with open("crashes/" + directory_name + "/logs.txt", 'w', encoding="utf-8") as outfile:
         outfile.write(print_log)
 
     shutil.make_archive("crashes/" + directory_name, 'zip', "crashes/" + directory_name + "/")
@@ -129,12 +130,6 @@ def print_copyright():
     print_timeless(COLOR_BOLD + "https://github.com/alexal1/Insomniac\n" + COLOR_ENDC)
 
 
-def print_blocked_feature(username, feature_name):
-    if hashlib.sha1(username.encode('utf-8')).hexdigest() not in COPYRIGHT_BLACKLIST:
-        print_timeless(COLOR_FAIL + "Sorry, " + feature_name + " is available for Patrons only!" + COLOR_ENDC)
-        print_timeless(COLOR_FAIL + "Please visit https://www.patreon.com/insomniac_bot\n" + COLOR_ENDC)
-
-
 def _print_with_time_decorator(standard_print, print_time):
     def wrapper(*args, **kwargs):
         global print_log
@@ -147,6 +142,19 @@ def _print_with_time_decorator(standard_print, print_time):
             return standard_print(*args, **kwargs)
 
     return wrapper
+
+
+def _get_latest_version(package):
+    latest_version = None
+    try:
+        with urllib.request.urlopen(f"https://pypi.python.org/pypi/{package}/json",
+                                    context=ssl.SSLContext()) as response:
+            if response.code == 200:
+                json_package = json.loads(response.read())
+                latest_version = json_package['info']['version']
+    except URLError:
+        return None
+    return latest_version
 
 
 def get_value(count, name, default):
@@ -176,6 +184,43 @@ def get_value(count, name, default):
         value = default
         print_error()
     return value
+
+
+def get_left_right_values(left_right_str, name, default):
+    def print_error():
+        print(COLOR_FAIL + name.format(default) + f". Using default value instead of \"{left_right_str}\", because it "
+                                                  "must be either a number (e.g. 2) or a range (e.g. 2-4)." + COLOR_ENDC)
+
+    parts = left_right_str.split("-")
+    if len(parts) <= 0:
+        value = default
+        print_error()
+    elif len(parts) == 1:
+        try:
+            value = (int(left_right_str), int(left_right_str))
+            print(COLOR_BOLD + name.format(value) + COLOR_ENDC)
+        except ValueError:
+            value = default
+            print_error()
+    elif len(parts) == 2:
+        try:
+            value = (int(parts[0]), int(parts[1]))
+            print(COLOR_BOLD + name.format(value) + COLOR_ENDC)
+        except ValueError:
+            value = default
+            print_error()
+    else:
+        value = default
+        print_error()
+    return value
+
+
+def get_count_of_nums_in_str(string):
+    count = 0
+    for i in range(0, 10):
+        count += string.count(str(i))
+
+    return count
 
 
 print_log = ""
