@@ -76,6 +76,8 @@ def handle_target(device,
 
         if not can_interact:
             print("@" + target_name + ": Cant be interacted (due to limits / already followed). Skip.")
+            storage.add_interacted_user(target_name, followed=False)
+            on_action(InteractAction(source=target_name, user=target_name, succeed=False))
         else:
             print("@" + target_name + "interaction: going to {}{}{}.".format("like" if can_like else "",
                                                                              " and " if can_like and can_follow else "",
@@ -91,6 +93,7 @@ def handle_target(device,
                 storage.add_interacted_user(target_name, followed=is_followed)
                 on_action(InteractAction(source=target_name, user=target_name, succeed=True))
             else:
+                storage.add_interacted_user(target_name, followed=False)
                 on_action(InteractAction(source=target_name, user=target_name, succeed=False))
 
         if is_like_limit_reached and is_follow_limit_reached:
