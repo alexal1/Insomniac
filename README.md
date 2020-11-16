@@ -113,7 +113,7 @@ You can view the same list in Terminal / Command Prompt by running with no argum
 All core features in this project are free to use. But you may want to get more fine grained control over the bot via these features:
 - **Filtering** - skip unwanted accounts by various parameters, [read more](https://www.patreon.com/posts/43362005)
 - **Removing mass followers** - automate "cleaning" your account, [read more](https://www.patreon.com/posts/automate-mass-43899353)
-- **Scrapping** - technique that makes interactions significantly safer and faster, [read more](TODO)
+- **Scrapping** - technique that makes interactions significantly safer and faster, [read more](https://www.patreon.com/posts/scrapping-what-43902968)
 - **Analytics tool** - build presentation that shows your growth, [read more](https://www.patreon.com/posts/analytics-tool-43148835)
 
 Activate these features by supporting our small team on Patreon: [https://insomniac-bot.com/activate/](https://insomniac-bot.com/activate/).
