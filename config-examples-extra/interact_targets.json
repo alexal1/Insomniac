@@ -1,0 +1,176 @@
+[
+  {
+    "parameter-name": "device",
+    "enabled": false,
+    "value": "emulator-5554",
+    "description" : "device identifier. Should be used only when multiple devices are connected at once"
+  },
+  {
+    "parameter-name": "old",
+    "enabled": false,
+    "value": "",
+    "description" : "add this flag to use an old version of uiautomator. Use it only if you experience problems with the default version"
+  },
+  {
+    "parameter-name": "repeat",
+    "enabled": true,
+    "value": "160-220",
+    "description" : "repeat the same session again after N minutes after completion, disabled by default. It can be a number of minutes (e.g. 180) or a range (e.g. 120-180)"
+  },
+  {
+    "parameter-name": "working_hours",
+    "enabled": true,
+    "value": "8-21",
+    "description" : "set working hours to the script, disabled by default. It can be a number presenting specific hour (e.g. 13) or a range (e.g. 9-21)"
+  },
+  {
+    "parameter-name": "likes_count",
+    "enabled": true,
+    "value": "1-2",
+    "description" : "number of likes for each interacted user, 2 by default. It can be a number (e.g. 2) or a range (e.g. 2-4)"
+  },
+  {
+    "parameter-name": "follow_percentage",
+    "enabled": true,
+    "value": "80",
+    "description" : "follow given percentage of interacted users, 0 by default"
+  },
+  {
+    "parameter-name": "interact",
+    "enabled": false,
+    "value": [
+      "@netgeo",
+      "amazingtrips"
+    ],
+    "description" : "list of hashtags and usernames. Usernames should start with \\\"@\\\" symbol. The script will interact with hashtags\\' posts likers and with users\\' followers"
+  },
+  {
+    "parameter-name": "interaction_users_amount",
+    "enabled": false,
+    "value": "6-8",
+    "description" : "add this argument to select an amount of users from the interact-list (users are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)"
+  },
+  {
+    "parameter-name": "unfollow",
+    "enabled": false,
+    "value": "20-40",
+    "description" : "unfollow at most given number of users. Only users followed by this script will be unfollowed. The order is from oldest to newest followings. It can be a number (e.g. 100) or a range (e.g. 100-200)"
+  },
+  {
+    "parameter-name": "min_following",
+    "enabled": false,
+    "value": "150",
+    "description" : "minimum amount of followings, after reaching this amount unfollow stops"
+  },
+  {
+    "parameter-name": "unfollow_non_followers",
+    "enabled": false,
+    "value": "20-40",
+    "description" : "unfollow at most given number of users, that don\\'t follow you back. Only users followed by this script will be unfollowed. The order is from oldest to newest followings. It can be a number (e.g. 100) or a range (e.g. 100-200)"
+  },
+  {
+    "parameter-name": "unfollow_any",
+    "enabled": false,
+    "value": "20-40",
+    "description" : "unfollow at most given number of users. The order is from oldest to newest followings. It can be a number (e.g. 100) or a range (e.g. 100-200)"
+  },
+  {
+    "parameter-name": "interact_targets",
+    "enabled": true,
+    "value": "True",
+    "description" : "use this argument in order to interact with profiles from targets.txt"
+  },
+  {
+    "parameter-name": "scrape_for_account",
+    "enabled": false,
+    "value": "real_account",
+    "description" : "add this argument in order to just scrape targeted profiles for an account. The scraped profiles names will be added to targets.txt file at target account directory"
+  },
+  {
+    "parameter-name": "scrape",
+    "enabled": false,
+    "value": [
+      "@netgeo",
+      "morning"
+    ],
+    "description" : "list of hashtags and usernames. Usernames should start with \\\"@\\\" symbol. The script will scrape with hashtags\\' posts likers and with users\\' followers"
+  },
+  {
+    "parameter-name": "remove_mass_followers",
+    "enabled": false,
+    "value": "1-2",
+    "description" : "Remove given number of mass followers from the list of your followers. \"Mass followers\" are those who has more than N followings, where N can be set via --max-following"
+  },
+  {
+    "parameter-name": "max_following",
+    "enabled": false,
+    "value": "1-2",
+    "description" : "Should be used together with --remove-mass-followers. Specifies max number of followings for any your follower, 1000 by default"
+  },
+  {
+    "parameter-name": "total_scrape_limit",
+    "enabled": false,
+    "value": "60-70",
+    "description" : "limit on total amount of profiles-scrapping during the session, disabled by default. It can be a number (e.g. 100) or a range (e.g. 90-120)"
+  },
+  {
+    "parameter-name": "total_get_profile_limit",
+    "enabled": false,
+    "value": "300-400",
+    "description" : "limit on total amount of get-profile actions during the session, disabled by default. It can be a number (e.g. 600) or a range (e.g. 500-700)"
+  },
+  {
+    "parameter-name": "scrape_count",
+    "enabled": false,
+    "value": "5-7",
+    "description" : "number of profiles-scrapping per each blogger/hashtag, disabled by default. It can be a number (e.g. 70) or a range (e.g. 50-80)"
+  },
+  {
+    "parameter-name": "total_likes_limit",
+    "enabled": true,
+    "value": "50-60",
+    "description" : "limit on total amount of likes during the session, 300 by default. It can be a number presenting specific limit (e.g. 300) or a range (e.g. 100-120)"
+  },
+  {
+    "parameter-name": "total_interactions_limit",
+    "enabled": true,
+    "value": "50-60",
+    "description" : "number of total interactions per session, disabled by default. It can be a number (e.g. 70) or a range (e.g. 60-80). Only successful interactions count"
+  },
+  {
+    "parameter-name": "total_follow_limit",
+    "enabled": true,
+    "value": "15-20",
+    "description" : "limit on total amount of follows during the session, disabled by default. It can be a number (e.g. 27) or a range (e.g. 20-30)"
+  },
+  {
+    "parameter-name": "interactions_count",
+    "enabled": false,
+    "value": "6-8",
+    "description" : "number of interactions per each blogger/hashtag, 70 by default. It can be a number (e.g. 70) or a range (e.g. 60-80). Only successful interactions count"
+  },
+  {
+    "parameter-name": "follow_limit",
+    "enabled": false,
+    "value": "1-2",
+    "description" : "limit on amount of follows during interaction with each one user's followers, disabled by default. It can be a number (e.g. 10) or a range (e.g. 6-9)"
+  },
+  {
+    "parameter-name": "filters",
+    "enabled": false,
+    "value": {
+      "skip_business": false,
+      "skip_non_business": false,
+      "min_followers": 150,
+      "max_followers": 100000,
+      "min_followings": 10,
+      "max_followings": 10000,
+      "min_potency_ratio": 0.45,
+      "min_posts": 7,
+      "max_digits_in_profile_name": 4,
+      "follow_private_or_empty": true
+    },
+    "description" : "add this argument if you want to pass filters as an argument and not from filters.json file"
+  }
+]
+

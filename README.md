@@ -4,6 +4,7 @@
 ![PyPI](https://img.shields.io/pypi/v/insomniac?label=latest%20version)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/insomniac)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/insomniac)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)
 
 [español](https://github.com/alexal1/Insomniac/blob/master/res/README_es.md) | [português](https://github.com/alexal1/Insomniac/blob/master/res/README_pt_BR.md)
 
@@ -76,70 +77,24 @@ python3 start.py --interact @natgeo
 Make sure that the screen is turned on and device is unblocked. You don't have to open Instagram app, script opens it and closes when it's finished. Just make sure that Instagram app is installed. If everything's fine, script will open `@natgeo`'s followers and like their posts.
 
 ### Usage example
-Let's say you have a travel blog. Then you may want to use such setup:
+Say you have a travel blog. Then you may want to use such setup:
 ```
-python3 start.py --interact @natgeo amazingtrips beautifuldestinations --interactions-count 20-30 --likes-count 1-3 --follow-percentage 20 --repeat 120-180
+python3 start.py --interact @natgeo amazingtrips --interactions-count 20-30 --likes-count 1-2 --follow-percentage 80 --repeat 160-220
 ```
-The script will sequentially interact with 20-30 `@natgeo`'s followers, 20-30 `#amazingtrips` posts likers, and 20-30 `#beautifuldestinations` posts likers. During each interaction it will like 1-3 random posts and also follow 20% of interacted users. After finished it will close Instagram app and wait for 120-180 minutes. Then the script will repeat the same (and will repeat infinitely), but already interacted users will be ignored. The list of sources (`@natgeo`, `#amazingtrips` and `#beutifuldestinations`) will be shuffled each time.
+Or just download a config file [interact.json](https://raw.githubusercontent.com/alexal1/Insomniac/master/config-examples/interact.json) and put it near `start.py`. Then run:
+```
+python3 start.py --config-file interact.json
+```
+The script will sequentially interact with 20-30 `@natgeo`'s followers and 20-30 `#amazingtrips` posts likers. During each interaction it will like 1-2 random posts and also follow 80% of interacted users. When finished it will close Instagram app and wait for 160-220 minutes. Then the script will repeat the same (and will repeat infinitely), but already interacted users will be ignored. The list of sources (`@natgeo` and `#amazingtrips`) will be shuffled each time.
 
 All this randomness makes it very hard for Instagram to detect that you're using a bot. However, be careful with number of interactions, because even a human can be banned for violating limits.
 
 ### Full list of command line arguments
-You can also see this list by running with no arguments: `python3 start.py`.
-```
-  --interact hashtag [@username ...]
-                        list of hashtags and usernames. Usernames should start
-                        with "@" symbol. The script will interact with
-                        hashtags' posts likers and with users' followers
-  --likes-count 2-4     number of likes for each interacted user, 2 by
-                        default. It can be a number (e.g. 2) or a range (e.g.
-                        2-4)
-  --total-likes-limit 300
-                        limit on total amount of likes during the session, 300
-                        by default
-  --interactions-count 60-80
-                        number of interactions per each blogger, 70 by
-                        default. It can be a number (e.g. 70) or a range (e.g.
-                        60-80). Only successful interactions count
-  --repeat 120-180      repeat the same session again after N minutes after
-                        completion, disabled by default. It can be a number of
-                        minutes (e.g. 180) or a range (e.g. 120-180)
-  --follow-percentage 50
-                        follow given percentage of interacted users, 0 by
-                        default
-  --follow-limit 50     limit on amount of follows during interaction with
-                        each one user's followers, disabled by default
-  --unfollow 100-200    unfollow at most given number of users. Only users
-                        followed by this script will be unfollowed. The order
-                        is from oldest to newest followings. It can be a
-                        number (e.g. 100) or a range (e.g. 100-200)
-  --unfollow-non-followers 100-200
-                        unfollow at most given number of users, that don't
-                        follow you back. Only users followed by this script
-                        will be unfollowed. The order is from oldest to newest
-                        followings. It can be a number (e.g. 100) or a range
-                        (e.g. 100-200)
-  --unfollow-any 100-200
-                        unfollow at most given number of users. The order is
-                        from oldest to newest followings. It can be a number
-                        (e.g. 100) or a range (e.g. 100-200)
-  --min-following 100   minimum amount of followings, after reaching this
-                        amount unfollow stops
-  --device 2443de990e017ece
-                        device identifier. Should be used only when multiple
-                        devices are connected at once
-  --old                 add this flag to use an old version of uiautomator.
-                        Use it only if you experience problems with the
-                        default version
-  --remove-mass-followers 10
-                        Remove given number of mass followers from the list of
-                        your followers. "Mass followers" are those who has
-                        more than N followings, where N can be set via --max-
-                        following
-  --max-following 1000  Should be used together with --remove-mass-followers.
-                        Specifies max number of followings for any your
-                        follower, 1000 by default
-```
+All arguments are listed on our wiki pages:
+- [Full list of command line arguments](https://github.com/alexal1/Insomniac/wiki/Full-list-of-command-line-arguments) – arguments available for free
+- [Full list of command line arguments (including extra features)](https://github.com/alexal1/Insomniac/wiki/Full-list-of-command-line-arguments-(including-extra-features)) – arguments available after [activation](https://insomniac-bot.com/activate/)
+
+You can view the same list in Terminal / Command Prompt by running with no arguments: `python3 start.py`.
 
 ### FAQ
 - How to stop the script?<br/>_Ctrl+C (control+C for Mac)_
@@ -156,39 +111,38 @@ You can also see this list by running with no arguments: `python3 start.py`.
 
 ### Extra features
 All core features in this project are free to use. But you may want to get more fine grained control over the bot via these features:
-- **Filtering** - skip unwanted accounts by various parameters, [more here](#filtering)
-- **Removing mass followers** - automate "cleaning" your account
-- **Analytics tool** - build presentation that shows your growth, [more here](#analytics)
-- **Scrapping (next release)** - will make interactions significantly safer and faster
+- **Filtering** - skip unwanted accounts by various parameters, [read more](https://www.patreon.com/posts/43362005)
+- **Removing mass followers** - automate "cleaning" your account, [read more](https://www.patreon.com/posts/automate-mass-43899353)
+- **Scrapping** - technique that makes interactions significantly safer and faster, [read more](https://www.patreon.com/posts/scrapping-what-43902968)
+- **Analytics tool** - build presentation that shows your growth, [read more](https://www.patreon.com/posts/analytics-tool-43148835)
 
 Activate these features by supporting our small team on Patreon: [https://insomniac-bot.com/activate/](https://insomniac-bot.com/activate/).
 
 ### Source code
-Since core features are free to use, their code is right here in the [src folder](https://github.com/alexal1/Insomniac/tree/master/src). You can help the community by making a pull request. It will be added to the packaged version after successful review. To work with sources, please
+You can see contents of the `insomniac` PyPi package in the [insomniac](https://github.com/alexal1/Insomniac/tree/master/insomniac) folder. So, you can work with the source code directly.
 1. Clone the project: `git clone https://github.com/alexal1/Insomniac.git`
-2. Go to Insomniac folder: `cd Insomniac`
-3. Install required libraries: `python3 -m pip install -r requirements.txt`
-4. Launch the script via `python3 -m src.insomniac`
+2. Install required libraries: `python3 -m pip install -r requirements.txt`
+3. Launch the script the same way `python3 start.py --interact @natgeo`
 
-Note that [src](https://github.com/alexal1/Insomniac/tree/master/src) code may differ from the packaged code. Generally, the packaged code is more stable.
-
-_2020-10-31: Right now there's quite big difference, but we will synchronize packaged and opensource version ASAP._
+Pull requests are welcome! Any feature you implement will be included in the Insomniac PyPi package after review. Features implemented by contributors are always free and available for everyone. Only _some_ of features implemented _exclusively_ by Insomniac Team are declared extra features and are stored on [our server](https://insomniac-bot.com/). This is our way to monetize the project in order to keep the code always clean and working.
 
 ### Filtering
-You may want to ignore mass-followers (e.g. > 1000 followings) because they are most likely interested only in growing their audience. Or ignore too popular accounts (e.g. > 5000 followers) because they won't notice you. You can do this (and more) by using the filter:
+You may want to ignore mass-followers (e.g. > 1000 followings) because they are most likely interested only in growing their audience. Or ignore too popular accounts (e.g. > 5000 followers) because they won't notice you. You can do this (and more) by using `filter.json` file. List of available parameters:
 
-| Parameter                 | Value         | Description                                                                                            |
-| ------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
-| `skip_business`           | `true/false`  | skip business accounts if true                                                                         |
-| `skip_non_business`       | `true/false`  | skip non-business accounts if true                                                                     |
-| `min_followers`           | 100           | skip accounts with less followers than given value                                                     |
-| `max_followers`           | 5000          | skip accounts with more followers than given value                                                     |
-| `min_followings`          | 10            | skip accounts with less followings than given value                                                    |
-| `max_followings`          | 1000          | skip accounts with more followings than given value                                                    |
-| `min_potency_ratio`       | 1             | skip accounts with ratio (followers/followings) less than given value (decimal values can be used too) |
-| `follow_private_or_empty` | `true/false`  | private/empty accounts also have a chance to be followed if true                                       |
+| Parameter                    | Value         | Description                                                                                            |
+| ---------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
+| `skip_business`              | `true/false`  | skip business accounts if true                                                                         |
+| `skip_non_business`          | `true/false`  | skip non-business accounts if true                                                                     |
+| `min_followers`              | 100           | skip accounts with less followers than given value                                                     |
+| `max_followers`              | 5000          | skip accounts with more followers than given value                                                     |
+| `min_followings`             | 10            | skip accounts with less followings than given value                                                    |
+| `max_followings`             | 1000          | skip accounts with more followings than given value                                                    |
+| `min_potency_ratio`          | 1             | skip accounts with ratio (followers/followings) less than given value (decimal values can be used too) |
+| `follow_private_or_empty`    | `true/false`  | private/empty accounts also have a chance to be followed if true                                       |
+| `min_posts`                  | 7             | minimum posts in profile in order to interact                                                          |
+| `max_digits_in_profile_name` | 4             | maximum amount of digits in profile name (more than that - won't be interacted)                        |
 
-You can read detailed explanation and instructions how to use it [in the Patreon post](https://www.patreon.com/posts/43362005) **(you'll have to join $10 tier)**.
+Please read detailed explanation and instructions how to use it [in this post](https://www.patreon.com/posts/43362005).
 
 ### Whitelist and Blacklist
 **Whitelist** – affects `--remove-mass-followers`, `--unfollow` and all other unfollow actions. Users from this list will _never_ be removed from your followers or unfollowed.

@@ -1,21 +1,33 @@
-from src.counters_parser import parse, LanguageChangedException
-from src.interaction_rect_checker import update_interaction_rect
-from src.navigation import navigate, Tabs
-from src.utils import *
+from insomniac.actions_impl import update_interaction_rect
+from insomniac.counters_parser import parse
+from insomniac.device_facade import DeviceFacade
+from insomniac.navigation import navigate, Tabs, LanguageChangedException
+from insomniac.utils import *
+
+TITLE_VIEW_ID_REGEX = 'com.instagram.android:id/title_view|com.instagram.android:id/action_bar_large_title'
 
 
 def get_my_profile_info(device):
     navigate(device, Tabs.PROFILE)
     random_sleep()
+
+    print("Refreshing your profile status...")
+    coordinator_layout = device.find(resourceId='com.instagram.android:id/coordinator_root_layout')
+    if coordinator_layout.exists():
+        coordinator_layout.scroll(DeviceFacade.Direction.TOP)
+
+    random_sleep()
+
     update_interaction_rect(device)
 
     username = None
-    title_view = device.find(resourceId='com.instagram.android:id/title_view',
+    title_view = device.find(resourceIdMatches=TITLE_VIEW_ID_REGEX,
                              className='android.widget.TextView')
     if title_view.exists():
         username = title_view.get_text()
     else:
         print(COLOR_FAIL + "Failed to get username" + COLOR_ENDC)
+        save_crash(device)
 
     try:
         followers = _get_followers_count(device)
