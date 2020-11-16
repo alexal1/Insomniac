@@ -5,6 +5,9 @@ from insomniac.__version__ import __version__
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+with open("requirements.txt", "r") as file:
+    install_requires = [line.rstrip() for line in file]
+
 setuptools.setup(
     name="insomniac",
     version=__version__,
@@ -15,7 +18,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/alexal1/Insomniac",
     packages=setuptools.find_packages(),
-    install_requires=['colorama', 'uiautomator', 'uiautomator2', 'croniter'],
+    install_requires=install_requires,
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",

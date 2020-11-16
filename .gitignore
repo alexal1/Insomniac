@@ -1,7 +1,9 @@
 /venv*
 /.idea
 interacted_users.*
+scrapped_users.json
 sessions.json
+targets.txt
 *.pyc
 .DS_Store
 screenshots
