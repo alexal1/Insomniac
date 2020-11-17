@@ -33,7 +33,7 @@
     "parameter-name": "interact",
     "enabled": false,
     "value": [
-      "@netgeo",
+      "@natgeo",
       "amazingtrips"
     ],
     "description" : "list of hashtags and usernames. Usernames should start with \\\"@\\\" symbol. The script will interact with hashtags\\' posts likers and with users\\' followers"
