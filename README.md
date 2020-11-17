@@ -8,7 +8,7 @@
 
 [español](https://github.com/alexal1/Insomniac/blob/master/res/README_es.md) | [português](https://github.com/alexal1/Insomniac/blob/master/res/README_pt_BR.md)
 
-Liking and following automatically on your Android phone/emulator. No root required: it works on [UI Automator](https://developer.android.com/training/testing/ui-automator), which is an official Android UI testing framework.
+**Liking**, **following** and **watching stories** automatically on your Android phone/emulator. No root required: it works on [UI Automator](https://developer.android.com/training/testing/ui-automator), which is an official Android UI testing framework.
 
 **No Android device?** Follow instructions to setup Insomniac on a free emultor: [Windows](https://www.patreon.com/posts/how-to-install-43543116), [macOS](https://www.patreon.com/posts/how-to-install-43485861), [Linux](https://www.patreon.com/posts/how-to-install-43485861).
 
@@ -122,7 +122,7 @@ Activate these features by supporting our small team on Patreon: [https://insomn
 You can see contents of the `insomniac` PyPi package in the [insomniac](https://github.com/alexal1/Insomniac/tree/master/insomniac) folder. So, you can work with the source code directly.
 1. Clone the project: `git clone https://github.com/alexal1/Insomniac.git`
 2. Install required libraries: `python3 -m pip install -r requirements.txt`
-3. Launch the script the same way `python3 start.py --interact @natgeo`
+3. Launch the script the same way: `python3 start.py --interact @natgeo`
 
 Pull requests are welcome! Any feature you implement will be included in the Insomniac PyPi package after review. Features implemented by contributors are always free and available for everyone. Only _some_ of features implemented _exclusively_ by Insomniac Team are declared extra features and are stored on [our server](https://insomniac-bot.com/). This is our way to monetize the project in order to keep the code always clean and working.
 
