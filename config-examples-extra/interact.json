@@ -8,7 +8,7 @@
   {
     "parameter-name": "old",
     "enabled": false,
-    "value": "",
+    "value": "True",
     "description" : "add this flag to use an old version of uiautomator. Use it only if you experience problems with the default version"
   },
   {
