@@ -73,6 +73,9 @@ def print_full_report(sessions):
     total_unfollowed = sum(session.totalUnfollowed for session in sessions)
     print_timeless(COLOR_REPORT + "Total unfollowed: " + str(total_unfollowed) + COLOR_ENDC)
 
+    total_story_watches = sum(session.totalStoriesWatched for session in sessions)
+    print_timeless(COLOR_REPORT + "Total stories watches: " + str(total_story_watches) + COLOR_ENDC)
+
     print_timeless(COLOR_REPORT + "Removed mass followers: "
                    + _stringify_removed_mass_followers(total_removed_mass_followers) + COLOR_ENDC)
 
@@ -81,8 +84,10 @@ def print_short_report(source, session_state):
     total_likes = session_state.totalLikes
     total_followed = sum(session_state.totalFollowed.values())
     interactions = session_state.successfulInteractions.get(source, 0)
+    total_story_views = session_state.totalStoriesWatched
     print(COLOR_REPORT + "Session progress: " + str(total_likes) + " likes, " + str(total_followed) + " followed, " +
-          str(interactions) + " successful " + ("interaction" if interactions == 1 else "interactions") +
+          str(total_story_views) + " stories watched, " + str(interactions) + " successful " +
+          ("interaction" if interactions == 1 else "interactions") +
           " for " + source + COLOR_ENDC)
 
 

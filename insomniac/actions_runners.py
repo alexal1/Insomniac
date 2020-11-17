@@ -120,12 +120,18 @@ class InteractBySourceActionRunner(CoreActionsRunner):
             "help": 'add this argument to select an amount of users from the interact-list '
                     '(users are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)',
             'metavar': '3-8'
+        },
+        "stories_count": {
+            "help": 'number of stories to watch for each user, disabled by default. '
+                    'It can be a number (e.g. 2) or a range (e.g. 2-4)',
+            'metavar': '3-8'
         }
     }
 
-    likes_count = 2
+    likes_count = '2'
     follow_percentage = 0
     interact = []
+    stories_count = None
 
     def is_action_selected(self, args):
         return args.interact is not None and len(args.interact) > 0
@@ -133,6 +139,9 @@ class InteractBySourceActionRunner(CoreActionsRunner):
     def set_params(self, args):
         if args.likes_count is not None:
             self.likes_count = args.likes_count
+
+        if args.stories_count is not None:
+            self.stories_count = args.stories_count
 
         if args.interact is not None:
             self.interact = args.interact.copy()
@@ -167,6 +176,14 @@ class InteractBySourceActionRunner(CoreActionsRunner):
                 print(COLOR_FAIL + "Max number of likes per user is 12" + COLOR_ENDC)
                 likes_count = 12
 
+            if self.stories_count is not None:
+                stories_count = get_value(self.stories_count, "Stories count: {}", 2)
+                if stories_count > 6:
+                    print(COLOR_FAIL + "Max number of stories count per user is 6" + COLOR_ENDC)
+                    stories_count = 6
+            else:
+                stories_count = 0
+
             if source[0] == '@':
                 is_myself = source[1:] == session_state.my_username
                 print_timeless("")
@@ -183,6 +200,7 @@ class InteractBySourceActionRunner(CoreActionsRunner):
                                    source[1:],  # drop "@"
                                    session_state,
                                    likes_count,
+                                   stories_count,
                                    self.follow_percentage,
                                    storage,
                                    on_action,
@@ -194,6 +212,7 @@ class InteractBySourceActionRunner(CoreActionsRunner):
                                    source[1:],  # drop "#"
                                    session_state,
                                    likes_count,
+                                   stories_count,
                                    self.follow_percentage,
                                    storage,
                                    on_action,
@@ -349,11 +368,18 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
             "help": "follow given percentage of interacted users, 0 by default",
             "metavar": '50',
             "default": '0'
+        },
+        "stories_count": {
+            "help": 'number of stories to watch for each user, disabled by default. '
+                    'It can be a number (e.g. 2) or a range (e.g. 2-4)',
+            'metavar': '3-8',
+            'default': '1-2'
         }
     }
 
-    likes_count = 2
+    likes_count = '2'
     follow_percentage = 0
+    stories_count = None
 
     def is_action_selected(self, args):
         return args.interact_targets is not None
@@ -361,6 +387,9 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
     def set_params(self, args):
         if args.likes_count is not None:
             self.likes_count = args.likes_count
+
+        if args.stories_count is not None:
+            self.stories_count = args.stories_count
 
         if args.follow_percentage is not None:
             self.follow_percentage = int(args.follow_percentage)
@@ -376,6 +405,14 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
                 print(COLOR_FAIL + "Max number of likes per user is 12" + COLOR_ENDC)
                 likes_count = 12
 
+            if self.stories_count is not None:
+                stories_count = get_value(self.stories_count, "Stories count: {}", 2)
+                if stories_count > 6:
+                    print(COLOR_FAIL + "Max number of stories count per user is 6" + COLOR_ENDC)
+                    stories_count = 6
+            else:
+                stories_count = 0
+
             print_timeless("")
             print(COLOR_BOLD + "Handle @" + target + COLOR_ENDC)
 
@@ -386,6 +423,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
                               target,
                               session_state,
                               likes_count,
+                              stories_count,
                               self.follow_percentage,
                               storage,
                               on_action,
