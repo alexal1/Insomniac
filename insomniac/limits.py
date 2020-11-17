@@ -2,7 +2,7 @@ from abc import ABC
 from enum import unique, Enum
 
 from insomniac.actions_runners import ActionState
-from insomniac.actions_types import LikeAction, InteractAction, FollowAction, UnfollowAction
+from insomniac.actions_types import LikeAction, InteractAction, FollowAction, UnfollowAction, StoryWatchAction
 from insomniac.utils import *
 
 
@@ -110,8 +110,7 @@ class TotalLikesLimit(CoreLimit):
     total_likes_limit = 1000
 
     def set_limit(self, args):
-        is_interact_action_enabled = (args.interact is not None and len(args.interact) > 0) or args.interact_targets is not None
-        if is_interact_action_enabled and args.total_likes_limit is not None:
+        if args.total_likes_limit is not None:
             self.total_likes_limit = get_value(args.total_likes_limit, "Total likes limit: {}", 1000)
 
     def is_reached_for_action(self, action, session_state):
@@ -191,6 +190,39 @@ class TotalFollowLimit(CoreLimit):
         pass
 
 
+class TotalStoryWatchLimit(CoreLimit):
+    LIMIT_ID = "total_story_limit"
+    LIMIT_TYPE = LimitType.SESSION
+    LIMIT_ARGS = {
+        "total_story_limit": {
+            "help": "limit on total amount of stories watches during the session, disabled by default. "
+                    "It can be a number (e.g. 27) or a range (e.g. 20-30)",
+            "metavar": "300",
+        }
+    }
+
+    total_story_limit = None
+
+    def set_limit(self, args):
+        if args.total_story_limit is not None:
+            self.total_story_limit = get_value(args.total_story_limit, "Total story-watches limit: {}", 1000)
+
+    def is_reached_for_action(self, action, session_state):
+        if not type(action) == StoryWatchAction:
+            return False
+
+        if self.total_story_limit is None:
+            return False
+
+        return session_state.totalStoriesWatched >= self.total_story_limit
+
+    def reset(self):
+        pass
+
+    def update_state(self, action):
+        pass
+
+
 class SourceInteractionsLimit(CoreLimit):
     LIMIT_ID = "interactions_count"
     LIMIT_TYPE = LimitType.SOURCE
@@ -207,8 +239,7 @@ class SourceInteractionsLimit(CoreLimit):
     interactions_count = 70
 
     def set_limit(self, args):
-        is_interact_action_enabled = (args.interact is not None and len(args.interact) > 0) or args.interact_targets is not None
-        if is_interact_action_enabled and args.interactions_count is not None:
+        if args.interactions_count is not None:
             self.interactions_count = get_value(args.interactions_count, "Interactions count: {}", 70)
 
     def is_reached_for_action(self, action, session_state):
@@ -241,7 +272,7 @@ class SourceFollowLimit(CoreLimit):
 
     def set_limit(self, args):
         if args.follow_limit is not None:
-            self.follow_limit = get_value(args.interactions_count, "Follow limit: {}", 10)
+            self.follow_limit = get_value(args.follow_limit, "Follow limit: {}", 10)
 
     def is_reached_for_action(self, action, session_state):
         if self.follow_limit is None:

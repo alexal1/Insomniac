@@ -3,7 +3,7 @@ from datetime import datetime
 from json import JSONEncoder
 
 from insomniac.actions_types import LikeAction, InteractAction, FollowAction, GetProfileAction, ScrapeAction, \
-    UnfollowAction, RemoveMassFollowerAction
+    UnfollowAction, RemoveMassFollowerAction, StoryWatchAction
 
 
 class SessionState:
@@ -17,6 +17,7 @@ class SessionState:
     totalFollowed = {}
     totalLikes = 0
     totalUnfollowed = 0
+    totalStoriesWatched = 0
     removedMassFollowers = []
     startTime = None
     finishTime = None
@@ -34,6 +35,7 @@ class SessionState:
         self.totalLikes = 0
         self.totalGetProfile = 0
         self.totalUnfollowed = 0
+        self.totalStoriesWatched = 0
         self.removedMassFollowers = []
         self.startTime = datetime.now()
         self.finishTime = None
@@ -44,6 +46,9 @@ class SessionState:
 
         if type(action) == GetProfileAction:
             self.totalGetProfile += 1
+
+        if type(action) == StoryWatchAction:
+            self.totalStoriesWatched += 1
 
         if type(action) == InteractAction:
             if self.totalInteractions.get(action.source) is None:
@@ -89,6 +94,7 @@ class SessionStateEncoder(JSONEncoder):
             "total_followed": sum(session_state.totalFollowed.values()),
             "total_likes": session_state.totalLikes,
             "total_unfollowed": session_state.totalUnfollowed,
+            "total_stories_watched": session_state.totalStoriesWatched,
             "total_get_profile": session_state.totalGetProfile,
             "total_scraped": session_state.totalScraped,
             "removed_mass_followers": session_state.removedMassFollowers,

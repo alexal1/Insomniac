@@ -8,7 +8,7 @@
   {
     "parameter-name": "old",
     "enabled": false,
-    "value": "",
+    "value": "True",
     "description" : "add this flag to use an old version of uiautomator. Use it only if you experience problems with the default version"
   },
   {
@@ -30,6 +30,12 @@
     "description" : "number of likes for each interacted user, 2 by default. It can be a number (e.g. 2) or a range (e.g. 2-4)"
   },
   {
+    "parameter-name": "stories_count",
+    "enabled": true,
+    "value": "1-2",
+    "description" : "number of stories to watch for each user, disabled by default. It can be a number (e.g. 2) or a range (e.g. 2-4)"
+  },
+  {
     "parameter-name": "follow_percentage",
     "enabled": true,
     "value": "80",
@@ -39,7 +45,7 @@
     "parameter-name": "interact",
     "enabled": true,
     "value": [
-      "@netgeo",
+      "@natgeo",
       "amazingtrips"
     ],
     "description" : "list of hashtags and usernames. Usernames should start with \\\"@\\\" symbol. The script will interact with hashtags\\' posts likers and with users\\' followers"
@@ -90,7 +96,7 @@
     "parameter-name": "scrape",
     "enabled": false,
     "value": [
-      "@netgeo",
+      "@natgeo",
       "morning"
     ],
     "description" : "list of hashtags and usernames. Usernames should start with \\\"@\\\" symbol. The script will scrape with hashtags\\' posts likers and with users\\' followers"
@@ -156,6 +162,12 @@
     "description" : "limit on amount of follows during interaction with each one user's followers, disabled by default. It can be a number (e.g. 10) or a range (e.g. 6-9)"
   },
   {
+    "parameter-name": "total_story_limit",
+    "enabled": true,
+    "value": "50-60",
+    "description" : "limit on total amount of stories watches during the session, disabled by default. It can be a number (e.g. 27) or a range (e.g. 20-30)"
+  },
+  {
     "parameter-name": "filters",
     "enabled": true,
     "value": {
@@ -168,7 +180,8 @@
       "min_potency_ratio": 0.45,
       "min_posts": 7,
       "max_digits_in_profile_name": 4,
-      "follow_private_or_empty": true
+      "follow_private_or_empty": true,
+      "skip_profiles_without_stories": false
     },
     "description" : "add this argument if you want to pass filters as an argument and not from filters.json file"
   }

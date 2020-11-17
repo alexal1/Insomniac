@@ -1,6 +1,6 @@
 from random import shuffle
 
-from insomniac.actions_types import LikeAction, FollowAction, GetProfileAction
+from insomniac.actions_types import LikeAction, FollowAction, GetProfileAction, StoryWatchAction
 from insomniac.device_facade import DeviceFacade
 from insomniac.navigation import switch_to_english, search_for, LanguageChangedException
 from insomniac.scroll_end_detector import ScrollEndDetector
@@ -22,11 +22,14 @@ is_followed = False
 
 
 class InteractionStrategy(object):
-    def __init__(self, do_like=False, do_follow=False, likes_count=2, follow_percentage=0):
+    def __init__(self, do_like=False, do_follow=False, do_story_watch=False,
+                 likes_count=2, follow_percentage=0, stories_count=2):
         self.do_like = do_like
         self.do_follow = do_follow
+        self.do_story_watch = do_story_watch
         self.likes_count = likes_count
         self.follow_percentage = follow_percentage
+        self.stories_count = stories_count
 
 
 def update_interaction_rect(device):
@@ -242,12 +245,16 @@ def interact_with_user(device,
     global liked_count, is_followed
     liked_count = 0
     is_followed = False
+    is_watched = False
 
     if username == my_username:
         print("It's you, skip.")
         return liked_count == interaction_strategy.likes_count, is_followed
 
     random_sleep()
+
+    if interaction_strategy.do_story_watch:
+        is_watched = _watch_stories(device, username, interaction_strategy.stories_count, on_action)
 
     coordinator_layout = device.find(resourceId='com.instagram.android:id/coordinator_root_layout')
     if coordinator_layout.exists():
@@ -284,7 +291,7 @@ def interact_with_user(device,
             print(COLOR_OKGREEN + "Following @{}.".format(username) + COLOR_ENDC)
             on_action(FollowAction(source=user_source, user=username))
 
-    return liked_count == interaction_strategy.likes_count, is_followed
+    return liked_count == interaction_strategy.likes_count, is_followed, is_watched
 
 
 def _open_photo_and_like(device, row, column, on_like):
@@ -373,6 +380,57 @@ def _follow(device, username, follow_percentage):
     print(COLOR_OKGREEN + "Followed @" + username + COLOR_ENDC)
     random_sleep()
     return True
+
+
+def do_have_story(device):
+    return device.find(resourceId="com.instagram.android:id/reel_ring",
+                       className="android.view.View").exists()
+
+
+def _watch_stories(device, username, stories_value, on_action):
+    if stories_value == 0:
+        return False
+
+    if do_have_story(device):
+        profile_picture = device.find(
+            resourceId="com.instagram.android:id/row_profile_header_imageview",
+            className="android.widget.ImageView"
+        )
+
+        if profile_picture.exists():
+            print(COLOR_OKGREEN + f"Watching @" + username + f" stories, at most {stories_value}" + COLOR_ENDC)
+
+            profile_picture.click()  # Open the first story
+            on_action(StoryWatchAction(user=username))
+            random_sleep()
+
+            for i in range(1, stories_value):
+                if _skip_story(device):
+                    print("Watching next story...")
+                    random_sleep()
+                else:
+                    print(COLOR_OKGREEN + "Watched all stories" + COLOR_ENDC)
+                    break
+
+            if not _get_action_bar(device).exists():
+                print("Back to profile")
+                device.back()
+            return True
+    return False
+
+
+def _skip_story(device):
+    if _is_story_opened(device):
+        device.screen_click(DeviceFacade.Place.RIGHT)
+        return True
+    else:
+        return False
+
+
+def _is_story_opened(device):
+    reel_viewer = device.find(resourceId="com.instagram.android:id/reel_viewer_root",
+                              className="android.widget.FrameLayout")
+    return reel_viewer.exists()
 
 
 def _open_user(device, username, open_followers=False, open_followings=False, refresh=False, on_action=None):
@@ -560,3 +618,22 @@ def _close_confirm_dialog_if_shown(device):
     unfollow_button = dialog_root_view.child(resourceId='com.instagram.android:id/primary_button',
                                              className='android.widget.TextView')
     unfollow_button.click()
+
+
+def _get_action_bar(device):
+    tab_bar = device.find(
+        resourceIdMatches=case_insensitive_re(
+            "com.instagram.android:id/action_bar_container"
+        ),
+        className="android.widget.FrameLayout",
+    )
+    return tab_bar
+
+
+def case_insensitive_re(str_list):
+    if isinstance(str_list, str):
+        strings = str_list
+    else:
+        strings = "|".join(str_list)
+    re_str = f"(?i)({strings})"
+    return re_str
