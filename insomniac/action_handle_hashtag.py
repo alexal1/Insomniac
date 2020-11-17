@@ -83,6 +83,8 @@ def handle_hashtag(device,
 
         if not can_interact:
             print("@" + liker_username + ": Cant be interacted (due to limits / already followed). Skip.")
+            storage.add_interacted_user(liker_username, followed=False)
+            on_action(InteractAction(source=interaction_source, user=liker_username, succeed=False))
         else:
             print("@" + liker_username + "interaction: going to {}{}{}.".format("like" if can_like else "",
                                                                                 " and " if can_like and can_follow else "",
@@ -98,6 +100,7 @@ def handle_hashtag(device,
                 storage.add_interacted_user(liker_username, followed=is_followed)
                 on_action(InteractAction(source=interaction_source, user=liker_username, succeed=True))
             else:
+                storage.add_interacted_user(liker_username, followed=False)
                 on_action(InteractAction(source=interaction_source, user=liker_username, succeed=False))
 
         can_continue = True

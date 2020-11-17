@@ -90,6 +90,8 @@ def handle_blogger(device,
 
         if not can_interact:
             print("@" + follower_name + ": Cant be interacted (due to limits / already followed). Skip.")
+            storage.add_interacted_user(follower_name, followed=False)
+            on_action(InteractAction(source=username, user=follower_name, succeed=False))
         else:
             print("@" + follower_name + "interaction: going to {}{}{}.".format("like" if can_like else "",
                                                                                " and " if can_like and can_follow else "",
@@ -105,6 +107,7 @@ def handle_blogger(device,
                 storage.add_interacted_user(follower_name, followed=is_followed)
                 on_action(InteractAction(source=username, user=follower_name, succeed=True))
             else:
+                storage.add_interacted_user(follower_name, followed=False)
                 on_action(InteractAction(source=username, user=follower_name, succeed=False))
 
         can_continue = True
