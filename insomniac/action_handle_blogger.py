@@ -1,12 +1,11 @@
 from functools import partial
 
-from insomniac.report import print_short_report
-
 from insomniac.actions_impl import interact_with_user, open_user_followers, \
     scroll_to_bottom, iterate_over_followers, InteractionStrategy, is_private_account, do_have_story
 from insomniac.actions_runners import ActionState
 from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, StoryWatchAction
 from insomniac.limits import process_limits
+from insomniac.report import print_short_report, print_interaction_types
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
@@ -94,9 +93,12 @@ def handle_blogger(device,
         if not do_have_stories:
             print("@" + follower_name + ": seems there are no stories to be watched.")
 
-        can_like = not is_like_limit_reached and not is_private and likes_count > 0
+        likes_value = get_value(likes_count, "Likes count: {}", 2, max_count=12)
+        stories_value = get_value(stories_count, "Stories to watch: {}", 1)
+
+        can_like = not is_like_limit_reached and not is_private and likes_value > 0
         can_follow = (not is_follow_limit_reached) and storage.get_following_status(username) == FollowingStatus.NONE and follow_percentage > 0
-        can_watch = (not is_watch_limit_reached) and do_have_stories and stories_count > 0
+        can_watch = (not is_watch_limit_reached) and do_have_stories and stories_value > 0
         can_interact = can_like or can_follow or can_watch
 
         if not can_interact:
@@ -104,16 +106,13 @@ def handle_blogger(device,
             storage.add_interacted_user(follower_name, followed=False)
             on_action(InteractAction(source=username, user=follower_name, succeed=False))
         else:
-            print("@" + follower_name + "interaction: going to {}{}{}.".format("like," if can_like else "",
-                                                                               " follow," if can_follow else "",
-                                                                               " watch" if can_watch else ""))
-
+            print_interaction_types(follower_name, can_like, can_follow, can_watch)
             interaction_strategy = InteractionStrategy(do_like=can_like,
                                                        do_follow=can_follow,
                                                        do_story_watch=can_watch,
-                                                       likes_count=likes_count,
+                                                       likes_count=likes_value,
                                                        follow_percentage=follow_percentage,
-                                                       stories_count=stories_count)
+                                                       stories_count=stories_value)
 
             is_liked, is_followed, is_watch = interaction(username=follower_name, interaction_strategy=interaction_strategy)
             if is_liked or is_followed or is_watch:

@@ -131,7 +131,7 @@ class InteractBySourceActionRunner(CoreActionsRunner):
     likes_count = '2'
     follow_percentage = 0
     interact = []
-    stories_count = None
+    stories_count = 0
 
     def is_action_selected(self, args):
         return args.interact is not None and len(args.interact) > 0
@@ -171,19 +171,6 @@ class InteractBySourceActionRunner(CoreActionsRunner):
         for source in self.interact:
             self.action_status = ActionStatus(ActionState.PRE_RUN)
 
-            likes_count = get_value(self.likes_count, "Likes count: {}", 2)
-            if likes_count > 12:
-                print(COLOR_FAIL + "Max number of likes per user is 12" + COLOR_ENDC)
-                likes_count = 12
-
-            if self.stories_count is not None:
-                stories_count = get_value(self.stories_count, "Stories count: {}", 2)
-                if stories_count > 6:
-                    print(COLOR_FAIL + "Max number of stories count per user is 6" + COLOR_ENDC)
-                    stories_count = 6
-            else:
-                stories_count = 0
-
             if source[0] == '@':
                 is_myself = source[1:] == session_state.my_username
                 print_timeless("")
@@ -199,8 +186,8 @@ class InteractBySourceActionRunner(CoreActionsRunner):
                     handle_blogger(device_wrapper.get(),
                                    source[1:],  # drop "@"
                                    session_state,
-                                   likes_count,
-                                   stories_count,
+                                   self.likes_count,
+                                   self.stories_count,
                                    self.follow_percentage,
                                    storage,
                                    on_action,
@@ -211,8 +198,8 @@ class InteractBySourceActionRunner(CoreActionsRunner):
                     handle_hashtag(device_wrapper.get(),
                                    source[1:],  # drop "#"
                                    session_state,
-                                   likes_count,
-                                   stories_count,
+                                   self.likes_count,
+                                   self.stories_count,
                                    self.follow_percentage,
                                    storage,
                                    on_action,
@@ -379,7 +366,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
 
     likes_count = '2'
     follow_percentage = 0
-    stories_count = None
+    stories_count = 0
 
     def is_action_selected(self, args):
         return args.interact_targets is not None
@@ -400,19 +387,6 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
         for target in storage.targets:
             self.action_status = ActionStatus(ActionState.PRE_RUN)
 
-            likes_count = get_value(self.likes_count, "Likes count: {}", 2)
-            if likes_count > 12:
-                print(COLOR_FAIL + "Max number of likes per user is 12" + COLOR_ENDC)
-                likes_count = 12
-
-            if self.stories_count is not None:
-                stories_count = get_value(self.stories_count, "Stories count: {}", 2)
-                if stories_count > 6:
-                    print(COLOR_FAIL + "Max number of stories count per user is 6" + COLOR_ENDC)
-                    stories_count = 6
-            else:
-                stories_count = 0
-
             print_timeless("")
             print(COLOR_BOLD + "Handle @" + target + COLOR_ENDC)
 
@@ -422,8 +396,8 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
                 handle_target(device_wrapper.get(),
                               target,
                               session_state,
-                              likes_count,
-                              stories_count,
+                              self.likes_count,
+                              self.stories_count,
                               self.follow_percentage,
                               storage,
                               on_action,

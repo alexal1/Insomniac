@@ -91,6 +91,17 @@ def print_short_report(source, session_state):
           " for " + source + COLOR_ENDC)
 
 
+def print_interaction_types(username, can_like, can_follow, can_watch):
+    interaction_types = []
+    if can_like:
+        interaction_types.append("like")
+    if can_follow:
+        interaction_types.append("follow")
+    if can_watch:
+        interaction_types.append("watch stories")
+    print(f"@{username} interaction: going to {', '.join(interaction_types)}")
+
+
 def _stringify_interactions(interactions):
     if len(interactions) == 0:
         return "0"
