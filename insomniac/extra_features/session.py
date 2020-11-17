@@ -87,6 +87,7 @@ class ExtendedInsomniacSession(InsomniacSession):
                     raise ex
                 else:
                     print_timeless(COLOR_FAIL + f"\nCaught an exception:\n{ex}" + COLOR_ENDC)
+                    save_crash(device_wrapper.get())
 
             if self.repeat is not None:
                 self.repeat_session(args)
