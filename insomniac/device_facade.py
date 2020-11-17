@@ -19,6 +19,8 @@ def create_device(is_old, device_id):
 class DeviceFacade:
     deviceV1 = None  # uiautomator
     deviceV2 = None  # uiautomator2
+    width = None
+    height = None
 
     def __init__(self, is_old, device_id):
         if is_old:
@@ -59,21 +61,46 @@ class DeviceFacade:
         else:
             self.deviceV2.press("back")
 
+    def screen_click(self, place):
+        w, h = self._get_screen_size()
+        if place == DeviceFacade.Place.RIGHT:
+            left = int(w * 3 / 4)
+            top = int(h / 2)
+        else:
+            return
+
+        if self.deviceV1 is not None:
+            self.deviceV1.click(left, top)
+        else:
+            self.deviceV2.click(left, top)
+
     def screenshot(self, path):
         if self.deviceV1 is not None:
             self.deviceV1.screenshot(path)
         else:
             self.deviceV2.screenshot(path)
-    
+
     def dump_hierarchy(self, path):
-        xml_dump = ''
         if self.deviceV1 is not None:
             xml_dump = self.deviceV1.dump()
         else:
             xml_dump = self.deviceV2.dump_hierarchy()
-        
+
         with open(path, 'w', encoding="utf-8") as outfile:
             outfile.write(xml_dump)
+
+    def _get_screen_size(self):
+        if self.width is not None and self.height is not None:
+            return self.width, self.height
+
+        if self.deviceV1 is not None:
+            self.width = self.deviceV1.info['displayWidth']
+            self.height = self.deviceV1.info['displayHeight']
+        else:
+            self.width = self.deviceV2.info['displayWidth']
+            self.height = self.deviceV2.info['displayHeight']
+
+        return self.width, self.height
 
     class View:
         deviceV1 = None  # uiautomator
@@ -297,6 +324,11 @@ class DeviceFacade:
     class Direction(Enum):
         TOP = 0
         BOTTOM = 1
+
+    @unique
+    class Place(Enum):
+        # TODO: add more places
+        RIGHT = 0
 
     class JsonRpcError(Exception):
         pass

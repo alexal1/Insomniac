@@ -1,6 +1,4 @@
-from datetime import timedelta
 from random import shuffle
-import re
 
 from insomniac.actions_types import LikeAction, FollowAction, GetProfileAction, StoryWatchAction
 from insomniac.device_facade import DeviceFacade
@@ -394,30 +392,45 @@ def _watch_stories(device, username, stories_value, on_action):
         return False
 
     if do_have_story(device):
-        stories_to_watch = randint(1, stories_value)
-        print("This user have a stories, going to watch {0}/or max stories".format(stories_to_watch))
-
         profile_picture = device.find(
             resourceId="com.instagram.android:id/row_profile_header_imageview",
             className="android.widget.ImageView"
         )
 
         if profile_picture.exists():
-            print(COLOR_OKGREEN + "Watching @" + username + " stories" + COLOR_ENDC)
+            print(COLOR_OKGREEN + f"Watching @" + username + f" stories, at most {stories_value}" + COLOR_ENDC)
 
             profile_picture.click()  # Open the first story
             on_action(StoryWatchAction(user=username))
             random_sleep()
 
-            if stories_to_watch > 1:
-                for i in range(1, stories_to_watch):
+            for i in range(1, stories_value):
+                if _skip_story(device):
+                    print("Watching next story...")
                     random_sleep()
+                else:
+                    print(COLOR_OKGREEN + "Watched all stories" + COLOR_ENDC)
+                    break
 
-            if _get_user_name(device) != username:
+            if not _get_action_bar(device).exists():
+                print("Back to profile")
                 device.back()
-                random_sleep()
             return True
     return False
+
+
+def _skip_story(device):
+    if _is_story_opened(device):
+        device.screen_click(DeviceFacade.Place.RIGHT)
+        return True
+    else:
+        return False
+
+
+def _is_story_opened(device):
+    reel_viewer = device.find(resourceId="com.instagram.android:id/reel_viewer_root",
+                              className="android.widget.FrameLayout")
+    return reel_viewer.exists()
 
 
 def _open_user(device, username, open_followers=False, open_followings=False, refresh=False, on_action=None):
@@ -615,26 +628,6 @@ def _get_action_bar(device):
         className="android.widget.FrameLayout",
     )
     return tab_bar
-
-
-def _get_action_bar_title_btn(device):
-    re_case_insensitive = case_insensitive_re(
-        [
-            "com.instagram.android:id/title_view",
-            "com.instagram.android:id/action_bar_large_title",
-            "com.instagram.android:id/action_bar_textview_title",
-        ]
-    )
-    return _get_action_bar(device).child(
-        resourceIdMatches=re_case_insensitive, className="android.widget.TextView"
-    )
-
-
-def _get_user_name(device):
-    title_view = _get_action_bar_title_btn(device)
-    if title_view.exists(quick=True):
-        return title_view.get_text()
-    return ""
 
 
 def case_insensitive_re(str_list):
