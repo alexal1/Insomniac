@@ -8,7 +8,7 @@
 
 [español](https://github.com/alexal1/Insomniac/blob/master/res/README_es.md) | [português](https://github.com/alexal1/Insomniac/blob/master/res/README_pt_BR.md)
 
-Liking and following automatically on your Android phone/emulator. No root required: it works on [UI Automator](https://developer.android.com/training/testing/ui-automator), which is an official Android UI testing framework.
+**Liking**, **following** and **watching stories** automatically on your Android phone/emulator. No root required: it works on [UI Automator](https://developer.android.com/training/testing/ui-automator), which is an official Android UI testing framework.
 
 **No Android device?** Follow instructions to setup Insomniac on a free emultor: [Windows](https://www.patreon.com/posts/how-to-install-43543116), [macOS](https://www.patreon.com/posts/how-to-install-43485861), [Linux](https://www.patreon.com/posts/how-to-install-43485861).
 
@@ -122,25 +122,26 @@ Activate these features by supporting our small team on Patreon: [https://insomn
 You can see contents of the `insomniac` PyPi package in the [insomniac](https://github.com/alexal1/Insomniac/tree/master/insomniac) folder. So, you can work with the source code directly.
 1. Clone the project: `git clone https://github.com/alexal1/Insomniac.git`
 2. Install required libraries: `python3 -m pip install -r requirements.txt`
-3. Launch the script the same way `python3 start.py --interact @natgeo`
+3. Launch the script the same way: `python3 start.py --interact @natgeo`
 
 Pull requests are welcome! Any feature you implement will be included in the Insomniac PyPi package after review. Features implemented by contributors are always free and available for everyone. Only _some_ of features implemented _exclusively_ by Insomniac Team are declared extra features and are stored on [our server](https://insomniac-bot.com/). This is our way to monetize the project in order to keep the code always clean and working.
 
 ### Filtering
 You may want to ignore mass-followers (e.g. > 1000 followings) because they are most likely interested only in growing their audience. Or ignore too popular accounts (e.g. > 5000 followers) because they won't notice you. You can do this (and more) by using `filter.json` file. List of available parameters:
 
-| Parameter                    | Value         | Description                                                                                            |
-| ---------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
-| `skip_business`              | `true/false`  | skip business accounts if true                                                                         |
-| `skip_non_business`          | `true/false`  | skip non-business accounts if true                                                                     |
-| `min_followers`              | 100           | skip accounts with less followers than given value                                                     |
-| `max_followers`              | 5000          | skip accounts with more followers than given value                                                     |
-| `min_followings`             | 10            | skip accounts with less followings than given value                                                    |
-| `max_followings`             | 1000          | skip accounts with more followings than given value                                                    |
-| `min_potency_ratio`          | 1             | skip accounts with ratio (followers/followings) less than given value (decimal values can be used too) |
-| `follow_private_or_empty`    | `true/false`  | private/empty accounts also have a chance to be followed if true                                       |
-| `min_posts`                  | 7             | minimum posts in profile in order to interact                                                          |
-| `max_digits_in_profile_name` | 4             | maximum amount of digits in profile name (more than that - won't be interacted)                        |
+| Parameter                       | Value         | Description                                                                                            |
+| ------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
+| `skip_business`                 | `true/false`  | skip business accounts if true                                                                         |
+| `skip_non_business`             | `true/false`  | skip non-business accounts if true                                                                     |
+| `min_followers`                 | 100           | skip accounts with less followers than given value                                                     |
+| `max_followers`                 | 5000          | skip accounts with more followers than given value                                                     |
+| `min_followings`                | 10            | skip accounts with less followings than given value                                                    |
+| `max_followings`                | 1000          | skip accounts with more followings than given value                                                    |
+| `min_potency_ratio`             | 1             | skip accounts with ratio (followers/followings) less than given value (decimal values can be used too) |
+| `follow_private_or_empty`       | `true/false`  | private/empty accounts also have a chance to be followed if true                                       |
+| `min_posts`                     | 7             | minimum posts in profile in order to interact                                                          |
+| `max_digits_in_profile_name`    | 4             | maximum amount of digits in profile name (more than that - won't be interacted)                        |
+| `skip_profiles_without_stories` | `true/false`  | skip accounts that doesnt have updated story (from last 24 hours)                                      |
 
 Please read detailed explanation and instructions how to use it [in this post](https://www.patreon.com/posts/43362005).
 

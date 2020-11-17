@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from insomniac.actions_impl import is_private_account
+from insomniac.actions_impl import is_private_account, do_have_story
 from insomniac.extra_features.filters_impl import _has_business_category, \
     _get_posts_count, _get_followers, _get_followings
 from insomniac.utils import *
@@ -294,6 +294,29 @@ class FollowPrivateOrEmptyFilter(Filter):
 
         if self.follow_private_or_empty is None or not self.follow_private_or_empty:
             print(COLOR_OKGREEN + "@" + username + " is private, skip." + COLOR_ENDC)
+            return False
+
+        return True
+
+
+class MustHaveStoriesFilter(Filter):
+    FILTER_ID = "skip_profiles_without_stories"
+    FILTER_TAGS = []
+
+    def __init__(self):
+        self.should_skip_profiles_without_stories = None
+
+    def set_filter(self, val):
+        self.should_skip_profiles_without_stories = val
+
+    def check_filter(self, device, username):
+        if self.should_skip_profiles_without_stories is None:
+            return True
+
+        do_have_stories = do_have_story(device)
+
+        if self.should_skip_profiles_without_stories and not do_have_stories:
+            print(COLOR_OKGREEN + "@" + username + " has stories to watch, skip." + COLOR_ENDC)
             return False
 
         return True

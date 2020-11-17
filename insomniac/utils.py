@@ -157,7 +157,7 @@ def _get_latest_version(package):
     return latest_version
 
 
-def get_value(count, name, default):
+def get_value(count, name, default, max_count=None):
     def print_error():
         print(COLOR_FAIL + name.format(default) + f". Using default value instead of \"{count}\", because it must be "
                                                   "either a number (e.g. 2) or a range (e.g. 2-4)." + COLOR_ENDC)
@@ -183,6 +183,10 @@ def get_value(count, name, default):
     else:
         value = default
         print_error()
+
+    if max_count is not None and value > max_count:
+        print(COLOR_FAIL + name.format(max_count) + f". This is max value." + COLOR_ENDC)
+        value = max_count
     return value
 
 
