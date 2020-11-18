@@ -36,6 +36,7 @@ def handle_target(device,
             return False
         elif is_passed_filters is not None:
             if not is_passed_filters(device, target_name, ['BEFORE_PROFILE_CLICK']):
+                storage.add_interacted_user(target_name, followed=False)
                 return False
 
         return True
@@ -59,6 +60,7 @@ def handle_target(device,
 
         if is_passed_filters is not None:
             if not is_passed_filters(device, target_name):
+                storage.add_interacted_user(target_name, followed=False)
                 print("Moving to next target")
                 return
 

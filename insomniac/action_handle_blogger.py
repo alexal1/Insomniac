@@ -46,6 +46,7 @@ def handle_blogger(device,
             return False
         elif is_passed_filters is not None:
             if not is_passed_filters(device, follower_name, ['BEFORE_PROFILE_CLICK']):
+                storage.add_interacted_user(follower_name, followed=False)
                 return False
 
         return True
@@ -71,6 +72,7 @@ def handle_blogger(device,
 
         if is_passed_filters is not None:
             if not is_passed_filters(device, follower_name):
+                storage.add_interacted_user(follower_name, followed=False)
                 # Continue to next follower
                 print("Back to followers list")
                 device.back()
