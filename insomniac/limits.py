@@ -171,13 +171,16 @@ class TotalFollowLimit(CoreLimit):
         }
     }
 
-    total_follow_limit = 0
+    total_follow_limit = None
 
     def set_limit(self, args):
         if args.total_follow_limit is not None:
             self.total_follow_limit = get_value(args.total_follow_limit, "Total follow limit: {}", 70)
 
     def is_reached_for_action(self, action, session_state):
+        if self.total_follow_limit is None:
+            return False
+        
         if not type(action) == FollowAction:
             return False
 
@@ -208,10 +211,10 @@ class TotalStoryWatchLimit(CoreLimit):
             self.total_story_limit = get_value(args.total_story_limit, "Total story-watches limit: {}", 1000)
 
     def is_reached_for_action(self, action, session_state):
-        if not type(action) == StoryWatchAction:
-            return False
-
         if self.total_story_limit is None:
+            return False
+        
+        if not type(action) == StoryWatchAction:
             return False
 
         return session_state.totalStoriesWatched >= self.total_story_limit
