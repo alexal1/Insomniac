@@ -72,7 +72,7 @@ class InsomniacSession(object):
         if device is None:
             return None, None
 
-        print("Instagram version: " + get_instagram_version())
+        print("Instagram version: " + get_instagram_version(args.device))
 
         return args, device_wrapper
 
