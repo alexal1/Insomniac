@@ -30,6 +30,7 @@ def handle_blogger_scrape(device,
             return False
         elif is_passed_filters is not None:
             if not is_passed_filters(device, follower_name, ['BEFORE_PROFILE_CLICK']):
+                storage.add_scrapped_user(username=follower_name, success=False)
                 return False
 
         return True
