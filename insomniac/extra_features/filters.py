@@ -1,4 +1,5 @@
 from collections import defaultdict
+from enum import Enum, unique
 
 from insomniac.actions_impl import is_private_account, do_have_story
 from insomniac.extra_features.filters_impl import _has_business_category, \
@@ -276,47 +277,44 @@ class MaxDigitsInProfileNameFilter(Filter):
         return True
 
 
-class FollowPrivateOrEmptyFilter(Filter):
-    FILTER_ID = "follow_private_or_empty"
+class PrivacyRelationFilter(Filter):
+    FILTER_ID = "privacy_relation"
     FILTER_TAGS = []
 
+    @unique
+    class Relation(Enum):
+        PRIVATE_AND_PUBLIC = "private_and_public"
+        ONLY_PUBLIC = "only_public"
+        ONLY_PRIVATE = "only_private"
+
     def __init__(self):
-        self.follow_private_or_empty = None
+        self.relation = PrivacyRelationFilter.Relation.ONLY_PUBLIC
 
     def set_filter(self, val):
-        self.follow_private_or_empty = val
+        if val == PrivacyRelationFilter.Relation.PRIVATE_AND_PUBLIC.value:
+            self.relation = PrivacyRelationFilter.Relation.PRIVATE_AND_PUBLIC
+        elif val == PrivacyRelationFilter.Relation.ONLY_PUBLIC.value:
+            self.relation = PrivacyRelationFilter.Relation.ONLY_PUBLIC
+        elif val == PrivacyRelationFilter.Relation.ONLY_PRIVATE.value:
+            self.relation = PrivacyRelationFilter.Relation.ONLY_PRIVATE
+        else:
+            print_timeless(COLOR_FAIL + f"Unexpected {self.FILTER_ID} filter value: {val}. "
+                                        f"Using default ({PrivacyRelationFilter.Relation.ONLY_PUBLIC.value})." +
+                           COLOR_ENDC)
+            self.relation = PrivacyRelationFilter.Relation.ONLY_PUBLIC
 
     def check_filter(self, device, username):
-        is_private = is_private_account(device)
-
-        if not is_private:
+        if self.relation == PrivacyRelationFilter.Relation.PRIVATE_AND_PUBLIC:
             return True
 
-        if self.follow_private_or_empty is None or not self.follow_private_or_empty:
+        is_private = is_private_account(device)
+
+        if is_private and self.relation == PrivacyRelationFilter.Relation.ONLY_PUBLIC:
             print(COLOR_OKGREEN + "@" + username + " is private, skip." + COLOR_ENDC)
             return False
 
-        return True
-
-
-class FollowInteractOnlyFilter(Filter):
-    FILTER_ID = "interact_private_only"
-    FILTER_TAGS = []
-
-    def __init__(self):
-        self.interact_only_private = None
-
-    def set_filter(self, val):
-        self.interact_only_private = val
-
-    def check_filter(self, device, username):
-        if self.interact_only_private is None:
-            return True
-
-        is_private = is_private_account(device)
-
-        if (not is_private) and self.interact_only_private:
-            print(COLOR_OKGREEN + "@" + username + " is not private, skip." + COLOR_ENDC)
+        if not is_private and self.relation == PrivacyRelationFilter.Relation.ONLY_PRIVATE:
+            print(COLOR_OKGREEN + "@" + username + " is public, skip." + COLOR_ENDC)
             return False
 
         return True
