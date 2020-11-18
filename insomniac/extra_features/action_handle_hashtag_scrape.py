@@ -25,6 +25,7 @@ def handle_hashtag_scrape(device,
             return False
         elif is_passed_filters is not None:
             if not is_passed_filters(device, liker_username, ['BEFORE_PROFILE_CLICK']):
+                storage.add_scrapped_user(username=liker_username, success=False)
                 return False
 
         return True
