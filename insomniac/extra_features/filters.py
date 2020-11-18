@@ -299,6 +299,29 @@ class FollowPrivateOrEmptyFilter(Filter):
         return True
 
 
+class FollowInteractOnlyFilter(Filter):
+    FILTER_ID = "interact_private_only"
+    FILTER_TAGS = []
+
+    def __init__(self):
+        self.interact_only_private = None
+
+    def set_filter(self, val):
+        self.interact_only_private = val
+
+    def check_filter(self, device, username):
+        if self.interact_only_private is None:
+            return True
+
+        is_private = is_private_account(device)
+
+        if (not is_private) and self.interact_only_private:
+            print(COLOR_OKGREEN + "@" + username + " is not private, skip." + COLOR_ENDC)
+            return False
+
+        return True
+
+
 class MustHaveStoriesFilter(Filter):
     FILTER_ID = "skip_profiles_without_stories"
     FILTER_TAGS = []
