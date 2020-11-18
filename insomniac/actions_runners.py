@@ -131,7 +131,7 @@ class InteractBySourceActionRunner(CoreActionsRunner):
     likes_count = '2'
     follow_percentage = 0
     interact = []
-    stories_count = 0
+    stories_count = '0'
 
     def is_action_selected(self, args):
         return args.interact is not None and len(args.interact) > 0
@@ -366,7 +366,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
 
     likes_count = '2'
     follow_percentage = 0
-    stories_count = 0
+    stories_count = '0'
 
     def is_action_selected(self, args):
         return args.interact_targets is not None
