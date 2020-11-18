@@ -139,6 +139,7 @@ You may want to ignore mass-followers (e.g. > 1000 followings) because they are 
 | `max_followings`                | 1000          | skip accounts with more followings than given value                                                    |
 | `min_potency_ratio`             | 1             | skip accounts with ratio (followers/followings) less than given value (decimal values can be used too) |
 | `follow_private_or_empty`       | `true/false`  | private/empty accounts also have a chance to be followed if true                                       |
+| `interact_private_only`         | `true/false`  | skip accounts that are not private if true                                                             |
 | `min_posts`                     | 7             | minimum posts in profile in order to interact                                                          |
 | `max_digits_in_profile_name`    | 4             | maximum amount of digits in profile name (more than that - won't be interacted)                        |
 | `skip_profiles_without_stories` | `true/false`  | skip accounts that doesnt have updated story (from last 24 hours)                                      |
