@@ -81,6 +81,10 @@ def handle_target(device,
         if not do_have_stories:
             print("@" + target_name + ": seems there are no stories to be watched.")
 
+        is_likes_enabled = likes_count != '0'
+        is_stories_enabled = stories_count != '0'
+        is_follow_enabled = follow_percentage != 0
+
         likes_value = get_value(likes_count, "Likes count: {}", 2, max_count=12)
         stories_value = get_value(stories_count, "Stories to watch: {}", 1)
 
@@ -112,17 +116,21 @@ def handle_target(device,
                 storage.add_interacted_user(target_name, followed=False)
                 on_action(InteractAction(source=target_name, user=target_name, succeed=False))
 
-        if is_like_limit_reached and is_follow_limit_reached and is_watch_limit_reached:
+        if ((is_like_limit_reached and is_likes_enabled) or not is_likes_enabled) and \
+                ((is_follow_limit_reached and is_follow_enabled) or not is_follow_enabled) and \
+                ((is_watch_limit_reached and is_stories_enabled) or not is_stories_enabled):
             # If one of the limits reached for source-limit, move to next source
-            if like_reached_source_limit is not None or \
-               follow_reached_source_limit is not None or \
-               watch_reached_source_limit is not None:
+            if (like_reached_source_limit is not None and like_reached_session_limit is None) or \
+                    (follow_reached_source_limit is not None and follow_reached_session_limit is None) or \
+                    (watch_reached_source_limit is not None and watch_reached_session_limit is None):
+                can_continue = False
                 action_status.set_limit(ActionState.SOURCE_LIMIT_REACHED)
 
             # If all of the limits reached for session-limit, finish the session
-            if like_reached_session_limit is not None and \
-               follow_reached_session_limit is not None and \
-               watch_reached_session_limit is not None:
+            if ((like_reached_session_limit is not None and is_likes_enabled) or not is_likes_enabled) and \
+                    ((follow_reached_session_limit is not None and is_follow_enabled) or not is_follow_enabled) and \
+                    ((watch_reached_session_limit is not None and is_stories_enabled) or not is_stories_enabled):
+                can_continue = False
                 action_status.set_limit(ActionState.SESSION_LIMIT_REACHED)
 
         print("Moving to next target")

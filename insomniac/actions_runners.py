@@ -359,8 +359,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
         "stories_count": {
             "help": 'number of stories to watch for each user, disabled by default. '
                     'It can be a number (e.g. 2) or a range (e.g. 2-4)',
-            'metavar': '3-8',
-            'default': '1-2'
+            'metavar': '3-8'
         }
     }
 
