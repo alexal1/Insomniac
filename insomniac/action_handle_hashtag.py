@@ -130,15 +130,13 @@ def handle_hashtag(device,
                 ((is_watch_limit_reached and is_stories_enabled) or not is_stories_enabled):
             # If one of the limits reached for source-limit, move to next source
             if (like_reached_source_limit is not None and like_reached_session_limit is None) or \
-                    (follow_reached_source_limit is not None and follow_reached_session_limit is None) or \
-                    (watch_reached_source_limit is not None and watch_reached_session_limit is None):
+                    (follow_reached_source_limit is not None and follow_reached_session_limit is None):
                 can_continue = False
                 action_status.set_limit(ActionState.SOURCE_LIMIT_REACHED)
 
             # If all of the limits reached for session-limit, finish the session
             if ((like_reached_session_limit is not None and is_likes_enabled) or not is_likes_enabled) and \
-                    ((follow_reached_session_limit is not None and is_follow_enabled) or not is_follow_enabled) and \
-                    ((watch_reached_session_limit is not None and is_stories_enabled) or not is_stories_enabled):
+                    ((follow_reached_session_limit is not None and is_follow_enabled) or not is_follow_enabled):
                 can_continue = False
                 action_status.set_limit(ActionState.SESSION_LIMIT_REACHED)
 
