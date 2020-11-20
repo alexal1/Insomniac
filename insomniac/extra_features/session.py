@@ -82,6 +82,10 @@ class ExtendedInsomniacSession(InsomniacSession):
                                   self.filters_mgr.check_filters)
 
                 self.end_session(device_wrapper)
+            except ActionBlockedError as ex:
+                print_timeless("")
+                print_timeless(COLOR_FAIL + str(ex) + COLOR_ENDC)
+                return
             except Exception as ex:
                 if __debug_mode__:
                     raise ex
