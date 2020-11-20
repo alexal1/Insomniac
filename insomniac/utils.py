@@ -87,7 +87,7 @@ def save_crash(device):
 
     directory_name = "Crash-" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     try:
-        os.makedirs("crashes/" + directory_name + "/", exist_ok=False)
+        os.makedirs(os.path.join("crashes", directory_name), exist_ok=False)
     except OSError:
         print(COLOR_FAIL + "Directory " + directory_name + " already exists." + COLOR_ENDC)
         return
@@ -107,8 +107,8 @@ def save_crash(device):
     with open("crashes/" + directory_name + "/logs.txt", 'w', encoding="utf-8") as outfile:
         outfile.write(print_log)
 
-    shutil.make_archive("crashes/" + directory_name, 'zip', "crashes/" + directory_name + "/")
-    shutil.rmtree("crashes/" + directory_name + "/")
+    shutil.make_archive(os.path.join("crashes", directory_name), 'zip', os.path.join("crashes", directory_name))
+    shutil.rmtree(os.path.join("crashes", directory_name))
 
     print(COLOR_OKGREEN + "Crash saved as \"crashes/" + directory_name + ".zip\"." + COLOR_ENDC)
     print(COLOR_OKGREEN + "Please attach this file if you gonna report the crash at" + COLOR_ENDC)
