@@ -33,23 +33,23 @@ class Storage:
 
         if not os.path.exists(my_username):
             os.makedirs(my_username)
-        self.interacted_users_path = my_username + "/" + FILENAME_INTERACTED_USERS
+        self.interacted_users_path = os.path.join(my_username, FILENAME_INTERACTED_USERS)
         if os.path.exists(self.interacted_users_path):
             with open(self.interacted_users_path, encoding="utf-8") as json_file:
                 self.interacted_users = json.load(json_file)
-        self.scrapped_users_path = my_username + "/" + FILENAME_SCRAPPED_USERS
+        self.scrapped_users_path = os.path.join(my_username, FILENAME_SCRAPPED_USERS)
         if os.path.exists(self.scrapped_users_path):
             with open(self.scrapped_users_path, encoding="utf-8") as json_file:
                 self.scrapped_users = json.load(json_file)
-        whitelist_path = my_username + "/" + FILENAME_WHITELIST
+        whitelist_path = os.path.join(my_username, FILENAME_WHITELIST)
         if os.path.exists(whitelist_path):
             with open(whitelist_path, encoding="utf-8") as file:
                 self.whitelist = [line.rstrip() for line in file]
-        blacklist_path = my_username + "/" + FILENAME_BLACKLIST
+        blacklist_path = os.path.join(my_username, FILENAME_BLACKLIST)
         if os.path.exists(blacklist_path):
             with open(blacklist_path, encoding="utf-8") as file:
                 self.blacklist = [line.rstrip() for line in file]
-        targets_path = my_username + "/" + FILENAME_TARGETS
+        targets_path = os.path.join(my_username, FILENAME_TARGETS)
         if os.path.exists(targets_path):
             with open(targets_path, encoding="utf-8") as file:
                 self.targets = [line.rstrip() for line in file]
@@ -57,12 +57,12 @@ class Storage:
         if scrape_for_account is not None:
             if not os.path.isdir(scrape_for_account):
                 os.makedirs(scrape_for_account)
-            self.targets_path = scrape_for_account + "/" + FILENAME_TARGETS
+            self.targets_path = os.path.join(scrape_for_account, FILENAME_TARGETS)
             if os.path.exists(self.targets_path):
                 with open(self.targets_path, encoding="utf-8") as file:
                     self.targets = [line.rstrip() for line in file]
 
-            self.followers_path = scrape_for_account + "/" + FILENAME_FOLLOWERS
+            self.followers_path = os.path.join(scrape_for_account, FILENAME_FOLLOWERS)
             if os.path.exists(self.followers_path):
                 with open(self.followers_path, encoding="utf-8") as json_file:
                     self.account_followers = json.load(json_file)
