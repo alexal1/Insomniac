@@ -158,7 +158,11 @@ def extract_hashtag_likers_and_interact(device, hashtag, iteration_callback, ite
     print("Switching to Recent tab")
     tab_layout = device.find(resourceId='com.instagram.android:id/tab_layout',
                              className='android.widget.LinearLayout')
-    tab_layout.child(index=1).click()
+    if tab_layout.exists():
+        tab_layout.child(index=1).click()
+    else:
+        print("Can't Find recent tab. Interacting with Popular.")
+
     random_sleep()
 
     # Open first post
