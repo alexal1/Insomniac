@@ -49,9 +49,9 @@ class Storage:
         if os.path.exists(blacklist_path):
             with open(blacklist_path, encoding="utf-8") as file:
                 self.blacklist = [line.rstrip() for line in file]
-        targets_path = my_username + "/" + FILENAME_TARGETS
-        if os.path.exists(targets_path):
-            with open(targets_path, encoding="utf-8") as file:
+        self.targets_path = my_username + "/" + FILENAME_TARGETS
+        if os.path.exists(self.targets_path):
+            with open(self.targets_path, encoding="utf-8") as file:
                 self.targets = [line.rstrip() for line in file]
 
         if scrape_for_account is not None:
@@ -118,6 +118,11 @@ class Storage:
         if self.targets_path is not None:
             with open(self.targets_path, 'a', encoding="utf-8") as outfile:
                 outfile.write(username + '\n')
+
+    def read_targets(self):
+        if os.path.exists(self.targets_path):
+            with open(self.targets_path, encoding="utf-8") as file:
+                self.targets = [line.rstrip() for line in file]
 
     def save_followers_for_today(self, followers_list, override=False):
         curr_day = str(datetime.date(datetime.now()))

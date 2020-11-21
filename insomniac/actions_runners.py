@@ -391,6 +391,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
 
             @run_safely(device_wrapper=device_wrapper)
             def job():
+                storage.read_targets()
                 self.action_status.set(ActionState.RUNNING)
                 handle_target(device_wrapper.get(),
                               target,
