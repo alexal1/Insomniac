@@ -34,12 +34,15 @@ def handle_hashtag(device,
         if storage.is_user_in_blacklist(liker_username):
             print("@" + liker_username + " is in blacklist. Skip.")
             return False
+        elif storage.check_user_was_filtered(liker_username):
+            print("@" + liker_username + ": already filtered in past. Skip.")
+            return False
         elif storage.check_user_was_interacted(liker_username):
             print("@" + liker_username + ": already interacted. Skip.")
             return False
         elif is_passed_filters is not None:
             if not is_passed_filters(device, liker_username, ['BEFORE_PROFILE_CLICK']):
-                storage.add_interacted_user(liker_username, followed=False)
+                storage.add_filtered_user(liker_username)
                 return False
 
         return True
@@ -65,7 +68,7 @@ def handle_hashtag(device,
 
         if is_passed_filters is not None:
             if not is_passed_filters(device, liker_username):
-                storage.add_interacted_user(liker_username, followed=False)
+                storage.add_filtered_user(liker_username)
                 # Continue to next follower
                 print("Back to followers list")
                 device.back()
@@ -88,13 +91,17 @@ def handle_hashtag(device,
         if not do_have_stories:
             print("@" + liker_username + ": seems there are no stories to be watched.")
 
+        is_likes_enabled = likes_count != '0'
+        is_stories_enabled = stories_count != '0'
+        is_follow_enabled = follow_percentage != 0
+
         likes_value = get_value(likes_count, "Likes count: {}", 2, max_count=12)
         stories_value = get_value(stories_count, "Stories to watch: {}", 1)
 
         can_like = not is_like_limit_reached and not is_private and likes_value > 0
         can_follow = (not is_follow_limit_reached) and storage.get_following_status(liker_username) == FollowingStatus.NONE and follow_percentage > 0
         can_watch = (not is_watch_limit_reached) and do_have_stories and stories_value > 0
-        can_interact = can_like or can_follow
+        can_interact = can_like or can_follow or can_watch
 
         if not can_interact:
             print("@" + liker_username + ": Cant be interacted (due to limits / already followed). Skip.")
@@ -121,18 +128,18 @@ def handle_hashtag(device,
 
         can_continue = True
 
-        if is_like_limit_reached and is_follow_limit_reached and is_watch_limit_reached:
+        if ((is_like_limit_reached and is_likes_enabled) or not is_likes_enabled) and \
+                ((is_follow_limit_reached and is_follow_enabled) or not is_follow_enabled) and \
+                ((is_watch_limit_reached and is_stories_enabled) or not is_stories_enabled):
             # If one of the limits reached for source-limit, move to next source
-            if like_reached_source_limit is not None or \
-                    follow_reached_source_limit is not None or \
-                    watch_reached_source_limit is not None:
+            if (like_reached_source_limit is not None and like_reached_session_limit is None) or \
+                    (follow_reached_source_limit is not None and follow_reached_session_limit is None):
                 can_continue = False
                 action_status.set_limit(ActionState.SOURCE_LIMIT_REACHED)
 
             # If all of the limits reached for session-limit, finish the session
-            if like_reached_session_limit is not None and \
-                    follow_reached_session_limit is not None and \
-                    watch_reached_session_limit is not None:
+            if ((like_reached_session_limit is not None and is_likes_enabled) or not is_likes_enabled) and \
+                    ((follow_reached_session_limit is not None and is_follow_enabled) or not is_follow_enabled):
                 can_continue = False
                 action_status.set_limit(ActionState.SESSION_LIMIT_REACHED)
 
@@ -154,7 +161,11 @@ def extract_hashtag_likers_and_interact(device, hashtag, iteration_callback, ite
     print("Switching to Recent tab")
     tab_layout = device.find(resourceId='com.instagram.android:id/tab_layout',
                              className='android.widget.LinearLayout')
-    tab_layout.child(index=1).click()
+    if tab_layout.exists():
+        tab_layout.child(index=1).click()
+    else:
+        print("Can't Find recent tab. Interacting with Popular.")
+
     random_sleep()
 
     # Open first post

@@ -38,6 +38,9 @@ def handle_blogger(device,
         if storage.is_user_in_blacklist(follower_name):
             print("@" + follower_name + " is in blacklist. Skip.")
             return False
+        elif storage.check_user_was_filtered(follower_name):
+            print("@" + follower_name + ": already filtered in past. Skip.")
+            return False
         elif not is_myself and storage.check_user_was_interacted(follower_name):
             print("@" + follower_name + ": already interacted. Skip.")
             return False
@@ -46,7 +49,7 @@ def handle_blogger(device,
             return False
         elif is_passed_filters is not None:
             if not is_passed_filters(device, follower_name, ['BEFORE_PROFILE_CLICK']):
-                storage.add_interacted_user(follower_name, followed=False)
+                storage.add_filtered_user(follower_name)
                 return False
 
         return True
@@ -72,7 +75,7 @@ def handle_blogger(device,
 
         if is_passed_filters is not None:
             if not is_passed_filters(device, follower_name):
-                storage.add_interacted_user(follower_name, followed=False)
+                storage.add_filtered_user(follower_name)
                 # Continue to next follower
                 print("Back to followers list")
                 device.back()
@@ -94,6 +97,10 @@ def handle_blogger(device,
         do_have_stories = do_have_story(device)
         if not do_have_stories:
             print("@" + follower_name + ": seems there are no stories to be watched.")
+
+        is_likes_enabled = likes_count != '0'
+        is_stories_enabled = stories_count != '0'
+        is_follow_enabled = follow_percentage != 0
 
         likes_value = get_value(likes_count, "Likes count: {}", 2, max_count=12)
         stories_value = get_value(stories_count, "Stories to watch: {}", 1)
@@ -127,18 +134,18 @@ def handle_blogger(device,
 
         can_continue = True
 
-        if is_like_limit_reached and is_follow_limit_reached and is_watch_limit_reached:
+        if ((is_like_limit_reached and is_likes_enabled) or not is_likes_enabled) and \
+           ((is_follow_limit_reached and is_follow_enabled) or not is_follow_enabled) and \
+           ((is_watch_limit_reached and is_stories_enabled) or not is_stories_enabled):
             # If one of the limits reached for source-limit, move to next source
-            if like_reached_source_limit is not None or \
-               follow_reached_source_limit is not None or \
-               watch_reached_source_limit is not None:
+            if (like_reached_source_limit is not None and like_reached_session_limit is None) or \
+               (follow_reached_source_limit is not None and follow_reached_session_limit is None):
                 can_continue = False
                 action_status.set_limit(ActionState.SOURCE_LIMIT_REACHED)
 
             # If all of the limits reached for session-limit, finish the session
-            if like_reached_session_limit is not None and \
-               follow_reached_session_limit is not None and \
-               watch_reached_session_limit is not None:
+            if ((like_reached_session_limit is not None and is_likes_enabled) or not is_likes_enabled) and \
+               ((follow_reached_session_limit is not None and is_follow_enabled) or not is_follow_enabled):
                 can_continue = False
                 action_status.set_limit(ActionState.SESSION_LIMIT_REACHED)
 
