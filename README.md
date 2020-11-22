@@ -129,20 +129,23 @@ Pull requests are welcome! Any feature you implement will be included in the Ins
 ### Filtering
 You may want to ignore mass-followers (e.g. > 1000 followings) because they are most likely interested only in growing their audience. Or ignore too popular accounts (e.g. > 5000 followers) because they won't notice you. You can do this (and more) by using `filter.json` file. List of available parameters:
 
-| Parameter                       | Value         | Description                                                                                            |
-| ------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
-| `skip_business`                 | `true/false`  | skip business accounts if true                                                                         |
-| `skip_non_business`             | `true/false`  | skip non-business accounts if true                                                                     |
-| `min_followers`                 | 100           | skip accounts with less followers than given value                                                     |
-| `max_followers`                 | 5000          | skip accounts with more followers than given value                                                     |
-| `min_followings`                | 10            | skip accounts with less followings than given value                                                    |
-| `max_followings`                | 1000          | skip accounts with more followings than given value                                                    |
-| `min_potency_ratio`             | 1             | skip accounts with ratio (followers/followings) less than given value (decimal values can be used too) |
-| `follow_private_or_empty`       | `true/false`  | private/empty accounts also have a chance to be followed if true                                       |
-| `interact_private_only`         | `true/false`  | skip accounts that are not private if true                                                             |
-| `min_posts`                     | 7             | minimum posts in profile in order to interact                                                          |
-| `max_digits_in_profile_name`    | 4             | maximum amount of digits in profile name (more than that - won't be interacted)                        |
-| `skip_profiles_without_stories` | `true/false`  | skip accounts that doesnt have updated story (from last 24 hours)                                      |
+| Parameter                       | Value                                                       | Description                                                                                                  |
+| ------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------|
+| `skip_business`                 | `true/false`                                                | skip business accounts if true                                                                               |
+| `skip_non_business`             | `true/false`                                                | skip non-business accounts if true                                                                           |
+| `min_followers`                 | 100                                                         | skip accounts with less followers than given value                                                           |
+| `max_followers`                 | 5000                                                        | skip accounts with more followers than given value                                                           |
+| `min_followings`                | 10                                                          | skip accounts with less followings than given value                                                          |
+| `max_followings`                | 1000                                                        | skip accounts with more followings than given value                                                          |
+| `min_potency_ratio`             | 1                                                           | skip accounts with ratio (followers/followings) less than given value (decimal values can be used too)       |
+| `max_potency_ratio`             | 1                                                           | skip accounts with ratio (followers/followings) higher than given value (decimal values can be used too)     |
+| `privacy_relation`      `       | `"only_public"` / `"only_private"` / `"private_and_public"` | choose with accounts of which type you want to interact, `"only_public"` by default                          |
+| `min_posts`                     | 7                                                           | minimum posts in profile in order to interact                                                                |
+| `max_digits_in_profile_name`    | 4                                                           | maximum amount of digits in profile name (more than that - won't be interacted)                              |
+| `skip_profiles_without_stories` | `true/false`                                                | skip accounts that doesnt have updated story (from last 24 hours)                                            |
+| `blacklist_words`               | `["word1", "word2", "word3", ...]`                          | skip accounts that contains one of the words in the list in the profile biography                            |
+| `mandatory_words`               | `["word1", "word2", "word3", ...]`                          | skip accounts that doesn't have one of the words in the list in the profile biography                        |
+| `specific_alphabet`             | `["LATIN", "ARABIC", "GREEK", "HEBREW", ...]`               | skip accounts that contains text in their biography/username which different than the provided alphabet list |
 
 Please read detailed explanation and instructions how to use it [in this post](https://www.patreon.com/posts/43362005).
 
