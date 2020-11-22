@@ -34,12 +34,15 @@ def handle_hashtag(device,
         if storage.is_user_in_blacklist(liker_username):
             print("@" + liker_username + " is in blacklist. Skip.")
             return False
+        elif storage.check_user_was_filtered(liker_username):
+            print("@" + liker_username + ": already filtered in past. Skip.")
+            return False
         elif storage.check_user_was_interacted(liker_username):
             print("@" + liker_username + ": already interacted. Skip.")
             return False
         elif is_passed_filters is not None:
             if not is_passed_filters(device, liker_username, ['BEFORE_PROFILE_CLICK']):
-                storage.add_interacted_user(liker_username, followed=False)
+                storage.add_filtered_user(liker_username)
                 return False
 
         return True
@@ -65,7 +68,7 @@ def handle_hashtag(device,
 
         if is_passed_filters is not None:
             if not is_passed_filters(device, liker_username):
-                storage.add_interacted_user(liker_username, followed=False)
+                storage.add_filtered_user(liker_username)
                 # Continue to next follower
                 print("Back to followers list")
                 device.back()
@@ -98,7 +101,7 @@ def handle_hashtag(device,
         can_like = not is_like_limit_reached and not is_private and likes_value > 0
         can_follow = (not is_follow_limit_reached) and storage.get_following_status(liker_username) == FollowingStatus.NONE and follow_percentage > 0
         can_watch = (not is_watch_limit_reached) and do_have_stories and stories_value > 0
-        can_interact = can_like or can_follow
+        can_interact = can_like or can_follow or can_watch
 
         if not can_interact:
             print("@" + liker_username + ": Cant be interacted (due to limits / already followed). Skip.")

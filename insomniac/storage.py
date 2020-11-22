@@ -5,7 +5,9 @@ from insomniac.utils import *
 
 FILENAME_INTERACTED_USERS = "interacted_users.json"
 FILENAME_SCRAPPED_USERS = "scrapped_users.json"
+FILENAME_FILTERED_USERS = "filtered_users.json"
 USER_LAST_INTERACTION = "last_interaction"
+USER_FILTERED_AT = "filtered_at"
 USER_FOLLOWING_STATUS = "following_status"
 USER_SCRAPPING_STATUS = "scrapping_status"
 
@@ -19,6 +21,7 @@ class Storage:
     interacted_users_path = None
     interacted_users = {}
     scrapped_users = {}
+    filtered_users = {}
     whitelist = []
     blacklist = []
     targets = []
@@ -33,14 +36,22 @@ class Storage:
 
         if not os.path.exists(my_username):
             os.makedirs(my_username)
+
         self.interacted_users_path = my_username + "/" + FILENAME_INTERACTED_USERS
         if os.path.exists(self.interacted_users_path):
             with open(self.interacted_users_path, encoding="utf-8") as json_file:
                 self.interacted_users = json.load(json_file)
+
         self.scrapped_users_path = my_username + "/" + FILENAME_SCRAPPED_USERS
         if os.path.exists(self.scrapped_users_path):
             with open(self.scrapped_users_path, encoding="utf-8") as json_file:
                 self.scrapped_users = json.load(json_file)
+
+        self.filtered_users_path = my_username + "/" + FILENAME_FILTERED_USERS
+        if os.path.exists(self.filtered_users_path):
+            with open(self.filtered_users_path, encoding="utf-8") as json_file:
+                self.filtered_users = json.load(json_file)
+
         whitelist_path = my_username + "/" + FILENAME_WHITELIST
         if os.path.exists(whitelist_path):
             with open(whitelist_path, encoding="utf-8") as file:
@@ -81,6 +92,9 @@ class Storage:
     def check_user_was_scrapped(self, username):
         return not self.scrapped_users.get(username) is None
 
+    def check_user_was_filtered(self, username):
+        return not self.filtered_users.get(username) is None
+
     def get_following_status(self, username):
         user = self.interacted_users.get(username)
         return user is None and FollowingStatus.NONE or FollowingStatus[user[USER_FOLLOWING_STATUS].upper()]
@@ -106,10 +120,16 @@ class Storage:
         if success:
             user[USER_SCRAPPING_STATUS] = ScrappingStatus.SCRAPED.name.lower()
         else:
-            user[USER_FOLLOWING_STATUS] = ScrappingStatus.NOT_SCRAPED.name.lower()
+            user[USER_SCRAPPING_STATUS] = ScrappingStatus.NOT_SCRAPED.name.lower()
 
         self.scrapped_users[username] = user
         self._update_scrapped_file()
+
+    def add_filtered_user(self, username):
+        user = {USER_FILTERED_AT: str(datetime.now())}
+
+        self.filtered_users[username] = user
+        self._update_filters_file()
 
     def add_target_user(self, username):
         if username in self.targets:
@@ -161,6 +181,11 @@ class Storage:
         if self.scrapped_users_path is not None:
             with open(self.scrapped_users_path, 'w', encoding="utf-8") as outfile:
                 json.dump(self.scrapped_users, outfile, indent=4, sort_keys=False)
+
+    def _update_filters_file(self):
+        if self.filtered_users_path is not None:
+            with open(self.filtered_users_path, 'w', encoding="utf-8") as outfile:
+                json.dump(self.filtered_users, outfile, indent=4, sort_keys=False)
 
 
 @unique

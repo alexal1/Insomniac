@@ -38,6 +38,9 @@ def handle_blogger(device,
         if storage.is_user_in_blacklist(follower_name):
             print("@" + follower_name + " is in blacklist. Skip.")
             return False
+        elif storage.check_user_was_filtered(follower_name):
+            print("@" + follower_name + ": already filtered in past. Skip.")
+            return False
         elif not is_myself and storage.check_user_was_interacted(follower_name):
             print("@" + follower_name + ": already interacted. Skip.")
             return False
@@ -46,7 +49,7 @@ def handle_blogger(device,
             return False
         elif is_passed_filters is not None:
             if not is_passed_filters(device, follower_name, ['BEFORE_PROFILE_CLICK']):
-                storage.add_interacted_user(follower_name, followed=False)
+                storage.add_filtered_user(follower_name)
                 return False
 
         return True
@@ -72,7 +75,7 @@ def handle_blogger(device,
 
         if is_passed_filters is not None:
             if not is_passed_filters(device, follower_name):
-                storage.add_interacted_user(follower_name, followed=False)
+                storage.add_filtered_user(follower_name)
                 # Continue to next follower
                 print("Back to followers list")
                 device.back()

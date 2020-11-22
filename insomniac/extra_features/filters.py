@@ -3,7 +3,7 @@ from enum import Enum, unique
 
 from insomniac.actions_impl import is_private_account, do_have_story
 from insomniac.extra_features.filters_impl import _has_business_category, \
-    _get_posts_count, _get_followers, _get_followings
+    _get_posts_count, _get_followers, _get_followings, _get_profile_biography, _find_alphabet, _get_fullname
 from insomniac.utils import *
 
 FILENAME_CONDITIONS = "filter.json"
@@ -25,7 +25,8 @@ class FiltersManager(object):
     def __init__(self):
         for clazz in get_filters_classes():
             instance = clazz()
-            self.filters[instance.FILTER_ID] = instance
+            for filter_id in instance.FILTER_IDS:
+                self.filters[filter_id] = instance
 
             for tag in instance.FILTER_TAGS:
                 self.filters_by_tags[tag].append(instance)
@@ -43,7 +44,7 @@ class FiltersManager(object):
                 filters = json.load(json_file)
 
         for filter_key, value in filters.items():
-            self.filters[filter_key].set_filter(value)
+            self.filters[filter_key].set_filter(filter_key, value)
 
     def check_filters(self, device, username, filters_tags=None):
         if filters_tags is not None:
@@ -62,215 +63,151 @@ class FiltersManager(object):
 class Filter(object):
     """An interface for filter object"""
 
-    FILTER_ID = "OVERRIDE"
+    FILTER_IDS = {"OVERRIDE_KEY": "OVERRIDE_VALUE"}
     FILTER_TAGS = []
 
-    def set_filter(self, val):
-        raise NotImplementedError()
+    def set_filter(self, key, val):
+        self.FILTER_IDS[key] = val
 
     def check_filter(self, device, username):
         raise NotImplementedError()
 
 
 class SkipBusinessFilter(Filter):
-    FILTER_ID = "skip_business"
+    FILTER_IDS = {"skip_business": None,
+                  "skip_non_business": None}
     FILTER_TAGS = []
 
-    def __init__(self):
-        self.should_skip_business = None
-
-    def set_filter(self, val):
-        self.should_skip_business = val
-
     def check_filter(self, device, username):
-        if self.should_skip_business is None:
+        if self.FILTER_IDS['skip_business'] is None and \
+                self.FILTER_IDS['skip_non_business'] is None:
             return True
 
         has_business_category = _has_business_category(device)
-        if self.should_skip_business and has_business_category:
-            print(COLOR_OKGREEN + "@" + username + " has business account, skip." + COLOR_ENDC)
-            return False
+
+        if self.FILTER_IDS['skip_business'] is not None:
+            if self.FILTER_IDS['skip_business'] and has_business_category:
+                print(COLOR_OKGREEN + "@" + username + " has business account, skip." + COLOR_ENDC)
+                return False
+
+        if self.FILTER_IDS['skip_non_business'] is not None:
+            if self.FILTER_IDS['skip_non_business'] and not has_business_category:
+                print(COLOR_OKGREEN + "@" + username + " has non business account, skip." + COLOR_ENDC)
+                return False
 
         return True
 
 
-class SkipNonBusinessFilter(Filter):
-    FILTER_ID = "skip_non_business"
+class MinMaxFollowersFilter(Filter):
+    FILTER_IDS = {"min_followers": None,
+                  "max_followers": None}
     FILTER_TAGS = []
 
-    def __init__(self):
-        self.should_skip_non_business = None
-
-    def set_filter(self, val):
-        self.should_skip_non_business = val
-
     def check_filter(self, device, username):
-        if self.should_skip_non_business is None:
-            return True
-
-        has_business_category = _has_business_category(device)
-        if self.should_skip_non_business and not has_business_category:
-            print(COLOR_OKGREEN + "@" + username + " has non business account, skip." + COLOR_ENDC)
-            return False
-
-        return True
-
-
-class MinFollowersFilter(Filter):
-    FILTER_ID = "min_followers"
-    FILTER_TAGS = []
-
-    def __init__(self):
-        self.min_followers = None
-
-    def set_filter(self, val):
-        self.min_followers = val
-
-    def check_filter(self, device, username):
-        if self.min_followers is None:
+        if self.FILTER_IDS['min_followers'] is None and \
+                self.FILTER_IDS['max_followers'] is None:
             return True
 
         followers = _get_followers(device)
-        if followers < self.min_followers:
-            print(COLOR_OKGREEN + "@" + username + " has less than " + str(self.min_followers) +
-                  " followers, skip." + COLOR_ENDC)
-            return False
+
+        if self.FILTER_IDS['min_followers'] is not None:
+            if followers < self.FILTER_IDS['min_followers']:
+                print(COLOR_OKGREEN + "@" + username + " has less than " + str(self.FILTER_IDS['min_followers']) +
+                      " followers, skip." + COLOR_ENDC)
+                return False
+
+        if self.FILTER_IDS['max_followers'] is not None:
+            if followers > self.FILTER_IDS['max_followers']:
+                print(COLOR_OKGREEN + "@" + username + " has more than " + str(self.FILTER_IDS['max_followers']) +
+                      " followers, skip." + COLOR_ENDC)
+                return False
 
         return True
 
 
-class MaxFollowersFilter(Filter):
-    FILTER_ID = "max_followers"
+class MinMaxFollowingsFilter(Filter):
+    FILTER_IDS = {"min_followings": None,
+                  "max_followings": None}
     FILTER_TAGS = []
 
-    def __init__(self):
-        self.max_followers = None
-
-    def set_filter(self, val):
-        self.max_followers = val
-
     def check_filter(self, device, username):
-        if self.max_followers is None:
-            return True
-
-        followers = _get_followers(device)
-        if followers > self.max_followers:
-            print(COLOR_OKGREEN + "@" + username + " has more than " + str(self.max_followers) +
-                  " followers, skip." + COLOR_ENDC)
-            return False
-
-        return True
-
-
-class MinFollowingsFilter(Filter):
-    FILTER_ID = "min_followings"
-    FILTER_TAGS = []
-
-    def __init__(self):
-        self.min_followings = None
-
-    def set_filter(self, val):
-        self.min_followings = val
-
-    def check_filter(self, device, username):
-        if self.min_followings is None:
+        if self.FILTER_IDS['min_followings'] is None and \
+                self.FILTER_IDS['max_followings'] is None:
             return True
 
         followings = _get_followings(device)
-        if followings < self.min_followings:
-            print(COLOR_OKGREEN + "@" + username + " has less than " + str(self.min_followings) +
-                  " followings, skip." + COLOR_ENDC)
-            return False
 
-        return True
+        if self.FILTER_IDS['min_followings'] is not None:
+            if followings < self.FILTER_IDS['min_followings']:
+                print(COLOR_OKGREEN + "@" + username + " has less than " + str(self.FILTER_IDS['min_followings']) +
+                      " followings, skip." + COLOR_ENDC)
+                return False
 
-
-class MaxFollowingsFilter(Filter):
-    FILTER_ID = "max_followings"
-    FILTER_TAGS = []
-
-    def __init__(self):
-        self.max_followings = None
-
-    def set_filter(self, val):
-        self.max_followings = val
-
-    def check_filter(self, device, username):
-        if self.max_followings is None:
-            return True
-
-        followings = _get_followings(device)
-        if followings > self.max_followings:
-            print(COLOR_OKGREEN + "@" + username + " has more than " + str(self.max_followings) +
-                  " followings, skip." + COLOR_ENDC)
-            return False
+        if self.FILTER_IDS['max_followings'] is not None:
+            if followings > self.FILTER_IDS['max_followings']:
+                print(COLOR_OKGREEN + "@" + username + " has more than " + str(self.FILTER_IDS['max_followings']) +
+                      " followings, skip." + COLOR_ENDC)
+                return False
 
         return True
 
 
 class MinPostsFilter(Filter):
-    FILTER_ID = "min_posts"
+    FILTER_IDS = {"min_posts": None}
     FILTER_TAGS = []
 
-    def __init__(self):
-        self.min_posts = None
-
-    def set_filter(self, val):
-        self.min_posts = val
-
     def check_filter(self, device, username):
-        if self.min_posts is None:
+        if self.FILTER_IDS['min_posts'] is None:
             return True
 
         posts_count = _get_posts_count(device)
-        if posts_count < int(self.min_posts):
-            print(COLOR_OKGREEN + "@" + username + " has less than " + str(self.min_posts) +
+
+        if posts_count < self.FILTER_IDS['min_posts']:
+            print(COLOR_OKGREEN + "@" + username + " has less than " + str(self.FILTER_IDS['min_posts']) +
                   " posts, skip." + COLOR_ENDC)
             return False
 
         return True
 
 
-class MinPotencyRatioFilter(Filter):
-    FILTER_ID = "min_potency_ratio"
+class MinMaxPotencyRatioFilter(Filter):
+    FILTER_IDS = {"min_potency_ratio": None,
+                  "max_potency_ratio": None}
     FILTER_TAGS = []
 
-    def __init__(self):
-        self.min_potency_ratio = None
-
-    def set_filter(self, val):
-        self.min_potency_ratio = val
-
     def check_filter(self, device, username):
-        if self.min_potency_ratio is None:
+        if self.FILTER_IDS['min_potency_ratio'] is None and \
+                self.FILTER_IDS['max_potency_ratio'] is None:
             return True
 
         followers = _get_followers(device)
         followings = _get_followings(device)
-        if int(followings) == 0 or followers / followings < float(self.min_potency_ratio):
-            print(COLOR_OKGREEN + "@" + username + "'s potency ratio is less than " +
-                  str(self.min_potency_ratio) + ", skip." + COLOR_ENDC)
-            return False
+
+        if self.FILTER_IDS['min_potency_ratio'] is not None:
+            if followings == 0 or followers / followings < self.FILTER_IDS['min_potency_ratio']:
+                print(COLOR_OKGREEN + "@" + username + "'s potency ratio is less than " +
+                      str(self.FILTER_IDS['min_potency_ratio']) + ", skip." + COLOR_ENDC)
+                return False
+
+        if self.FILTER_IDS['max_potency_ratio'] is not None:
+            if followings == 0 or followers / followings > self.FILTER_IDS['max_potency_ratio']:
+                print(COLOR_OKGREEN + "@" + username + "'s potency ratio is higher than " +
+                      str(self.FILTER_IDS['max_potency_ratio']) + ", skip." + COLOR_ENDC)
+                return False
 
         return True
 
 
 class MaxDigitsInProfileNameFilter(Filter):
-    FILTER_ID = "max_digits_in_profile_name"
+    FILTER_IDS = {"max_digits_in_profile_name": None}
     FILTER_TAGS = ['BEFORE_PROFILE_CLICK']
 
-    def __init__(self):
-        self.max_digits_in_profile_name = None
-
-    def set_filter(self, val):
-        self.max_digits_in_profile_name = val
-
     def check_filter(self, device, username):
-        if self.max_digits_in_profile_name is None:
+        if self.FILTER_IDS["max_digits_in_profile_name"] is None:
             return True
 
-        if get_count_of_nums_in_str(username) > int(self.max_digits_in_profile_name):
-            print(COLOR_OKGREEN + "@" + username + " has more than " + str(self.max_digits_in_profile_name) +
+        if get_count_of_nums_in_str(username) > self.FILTER_IDS["max_digits_in_profile_name"]:
+            print(COLOR_OKGREEN + "@" + username + " has more than " + str(self.FILTER_IDS["max_digits_in_profile_name"]) +
                   " digits in profile-name, skip." + COLOR_ENDC)
             return False
 
@@ -278,42 +215,39 @@ class MaxDigitsInProfileNameFilter(Filter):
 
 
 class PrivacyRelationFilter(Filter):
-    FILTER_ID = "privacy_relation"
-    FILTER_TAGS = []
-
     @unique
     class Relation(Enum):
         PRIVATE_AND_PUBLIC = "private_and_public"
         ONLY_PUBLIC = "only_public"
         ONLY_PRIVATE = "only_private"
 
-    def __init__(self):
-        self.relation = PrivacyRelationFilter.Relation.ONLY_PUBLIC
+    FILTER_IDS = {"privacy_relation": Relation.ONLY_PUBLIC}
+    FILTER_TAGS = []
 
-    def set_filter(self, val):
+    def set_filter(self, key, val):
         if val == PrivacyRelationFilter.Relation.PRIVATE_AND_PUBLIC.value:
-            self.relation = PrivacyRelationFilter.Relation.PRIVATE_AND_PUBLIC
+            self.FILTER_IDS["privacy_relation"] = PrivacyRelationFilter.Relation.PRIVATE_AND_PUBLIC
         elif val == PrivacyRelationFilter.Relation.ONLY_PUBLIC.value:
-            self.relation = PrivacyRelationFilter.Relation.ONLY_PUBLIC
+            self.FILTER_IDS["privacy_relation"] = PrivacyRelationFilter.Relation.ONLY_PUBLIC
         elif val == PrivacyRelationFilter.Relation.ONLY_PRIVATE.value:
-            self.relation = PrivacyRelationFilter.Relation.ONLY_PRIVATE
+            self.FILTER_IDS["privacy_relation"] = PrivacyRelationFilter.Relation.ONLY_PRIVATE
         else:
-            print_timeless(COLOR_FAIL + f"Unexpected {self.FILTER_ID} filter value: {val}. "
+            print_timeless(COLOR_FAIL + f"Unexpected privacy_relation filter value: {val}. "
                                         f"Using default ({PrivacyRelationFilter.Relation.ONLY_PUBLIC.value})." +
                            COLOR_ENDC)
-            self.relation = PrivacyRelationFilter.Relation.ONLY_PUBLIC
+            self.FILTER_IDS["privacy_relation"] = PrivacyRelationFilter.Relation.ONLY_PUBLIC
 
     def check_filter(self, device, username):
-        if self.relation == PrivacyRelationFilter.Relation.PRIVATE_AND_PUBLIC:
+        if self.FILTER_IDS["privacy_relation"] == PrivacyRelationFilter.Relation.PRIVATE_AND_PUBLIC:
             return True
 
         is_private = is_private_account(device)
 
-        if is_private and self.relation == PrivacyRelationFilter.Relation.ONLY_PUBLIC:
+        if is_private and self.FILTER_IDS["privacy_relation"] == PrivacyRelationFilter.Relation.ONLY_PUBLIC:
             print(COLOR_OKGREEN + "@" + username + " is private, skip." + COLOR_ENDC)
             return False
 
-        if not is_private and self.relation == PrivacyRelationFilter.Relation.ONLY_PRIVATE:
+        if not is_private and self.FILTER_IDS["privacy_relation"] == PrivacyRelationFilter.Relation.ONLY_PRIVATE:
             print(COLOR_OKGREEN + "@" + username + " is public, skip." + COLOR_ENDC)
             return False
 
@@ -321,24 +255,77 @@ class PrivacyRelationFilter(Filter):
 
 
 class MustHaveStoriesFilter(Filter):
-    FILTER_ID = "skip_profiles_without_stories"
+    FILTER_IDS = {"skip_profiles_without_stories": None}
     FILTER_TAGS = []
 
-    def __init__(self):
-        self.should_skip_profiles_without_stories = None
-
-    def set_filter(self, val):
-        self.should_skip_profiles_without_stories = val
-
     def check_filter(self, device, username):
-        if self.should_skip_profiles_without_stories is None:
+        if self.FILTER_IDS["skip_profiles_without_stories"] is None:
             return True
 
         do_have_stories = do_have_story(device)
 
-        if self.should_skip_profiles_without_stories and not do_have_stories:
-            print(COLOR_OKGREEN + "@" + username + " has stories to watch, skip." + COLOR_ENDC)
+        if self.FILTER_IDS["skip_profiles_without_stories"] and not do_have_stories:
+            print(COLOR_OKGREEN + "@" + username + " has no stories to watch, skip." + COLOR_ENDC)
             return False
+
+        return True
+
+
+class BiographyFilter(Filter):
+    FILTER_IDS = {"blacklist_words": [],
+                  "mandatory_words": [],
+                  "specific_alphabet": []}
+    FILTER_TAGS = []
+    IGNORE_CHARSETS = ["MATHEMATICAL"]
+
+    def check_filter(self, device, username):
+        if len(self.FILTER_IDS['blacklist_words']) == 0 and \
+                len(self.FILTER_IDS['mandatory_words']) == 0 and \
+                self.FILTER_IDS['specific_alphabet'] is None:
+            return True
+
+        biography = _get_profile_biography(device)
+
+        if len(self.FILTER_IDS['blacklist_words']) > 0:
+            # If we found a blacklist word return False
+            for w in self.FILTER_IDS['blacklist_words']:
+                blacklist_words = re.compile(r"\b({0})\b".format(w), flags=re.IGNORECASE).search(biography)
+                if blacklist_words is not None:
+                    print(COLOR_OKGREEN + "@" + username +
+                          f" found a blacklisted word '{w}' in biography, skip." + COLOR_ENDC)
+                    return False
+
+        if len(self.FILTER_IDS['mandatory_words']) > 0:
+            mandatory_words = [w for w in self.FILTER_IDS['mandatory_words']
+                               if re.compile(r"\b({0})\b".format(w),
+                                             flags=re.IGNORECASE).search(biography) is not None]
+
+            if not mandatory_words:
+                print(COLOR_OKGREEN + "@" + username + " mandatory words not found in biography, skip." + COLOR_ENDC)
+                return False
+
+        if len(self.FILTER_IDS['specific_alphabet']) > 0:
+            if biography != "":
+                biography = biography.replace("\n", "")
+                alphabet = _find_alphabet(biography, self.IGNORE_CHARSETS)
+
+                if alphabet not in self.FILTER_IDS['specific_alphabet'] and alphabet != "":
+                    print(
+                        COLOR_OKGREEN + "@" + username +
+                        f"'s biography alphabet ({alphabet}) is not "
+                        f"in requested alphabets {self.FILTER_IDS['specific_alphabet']}, skip." + COLOR_ENDC)
+                    return False
+            else:
+                fullname = _get_fullname(device)
+
+                if fullname != "":
+                    alphabet = _find_alphabet(fullname)
+                    if alphabet not in self.FILTER_IDS['specific_alphabet'] and alphabet != "":
+                        print(
+                            COLOR_OKGREEN + "@" + username +
+                            f"'s name alphabet ({alphabet}) is not "
+                            f"in requested alphabets {self.FILTER_IDS['specific_alphabet']}, skip." + COLOR_ENDC)
+                        return False
 
         return True
 

@@ -1,3 +1,5 @@
+import unicodedata
+
 from insomniac.counters_parser import parse
 from insomniac.utils import *
 
@@ -62,3 +64,57 @@ def _get_followings(device):
         print_timeless(COLOR_FAIL + "Cannot find followings count view, default is " + str(followings) + COLOR_ENDC)
 
     return followings
+
+
+def _get_profile_biography(device):
+    biography = device.find(
+        resourceIdMatches="com.instagram.android:id/profile_header_bio_text",
+        className="android.widget.TextView",
+    )
+    if biography.exists():
+        biography_text = biography.get_text()
+        # If the biography is very long, blabla text and end with "...more"
+        # click the bottom of the text and get the new text
+        is_long_bio = re.compile(
+            r"\b({0})\b".format("more"), flags=re.IGNORECASE
+        ).search(biography_text)
+        if is_long_bio is not None:
+            biography.click()
+            return biography.get_text()
+        return biography_text
+    return ""
+
+
+def _find_alphabet(biography, ignore_charsets=[]):
+    a_dict = {}
+    max_alph = ""
+    for x in range(0, len(biography)):
+        if biography[x].isalpha():
+            a = unicodedata.name(biography[x]).split(" ")[0]
+            if a not in ignore_charsets:
+                if a in a_dict:
+                    a_dict[a] += 1
+                else:
+                    a_dict[a] = 1
+    if bool(a_dict):
+        max_alph = max(a_dict, key=lambda k: a_dict[k])
+
+    return max_alph
+
+
+def _get_fullname(device):
+    fullname = ""
+
+    try:
+        full_name_view = device.find(
+            resourceIdMatches="com.instagram.android:id/profile_header_full_name",
+            className="android.widget.TextView",
+        )
+        if full_name_view.exists():
+            fullname_text = full_name_view.get_text()
+            if fullname_text is not None:
+                return fullname_text
+        return ""
+    except Exception:
+        print_timeless(COLOR_FAIL + "Cannot find full name" + COLOR_ENDC)
+    return fullname
