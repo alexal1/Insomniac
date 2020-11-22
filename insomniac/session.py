@@ -140,6 +140,10 @@ class InsomniacSession(object):
                                   self.limits_mgr.is_limit_reached_for_action)
 
                 self.end_session(device_wrapper)
+            except ActionBlockedError as ex:
+                print_timeless("")
+                print_timeless(COLOR_FAIL + str(ex) + COLOR_ENDC)
+                return
             except Exception as ex:
                 if __debug_mode__:
                     raise ex
