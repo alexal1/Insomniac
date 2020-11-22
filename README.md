@@ -138,6 +138,7 @@ You may want to ignore mass-followers (e.g. > 1000 followings) because they are 
 | `min_followings`                | 10                                                          | skip accounts with less followings than given value                                                          |
 | `max_followings`                | 1000                                                        | skip accounts with more followings than given value                                                          |
 | `min_potency_ratio`             | 1                                                           | skip accounts with ratio (followers/followings) less than given value (decimal values can be used too)       |
+| `max_potency_ratio`             | 1                                                           | skip accounts with ratio (followers/followings) higher than given value (decimal values can be used too)     |
 | `privacy_relation`      `       | `"only_public"` / `"only_private"` / `"private_and_public"` | choose with accounts of which type you want to interact, `"only_public"` by default                          |
 | `min_posts`                     | 7                                                           | minimum posts in profile in order to interact                                                                |
 | `max_digits_in_profile_name`    | 4                                                           | maximum amount of digits in profile name (more than that - won't be interacted)                              |
