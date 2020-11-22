@@ -47,14 +47,17 @@ class FiltersManager(object):
             self.filters[filter_key].set_filter(filter_key, value)
 
     def check_filters(self, device, username, filters_tags=None):
+        for filter_key, profile_filter in self.filters.items():
+            profile_filter.reset_filter()
+
         if filters_tags is not None:
             for tag in filters_tags:
                 for profile_filter in self.filters_by_tags[tag]:
-                    if not profile_filter.check_filter(device, username):
+                    if not profile_filter.check_cached_filter(device, username):
                         return False
         else:
             for filter_key, profile_filter in self.filters.items():
-                if not profile_filter.check_filter(device, username):
+                if not profile_filter.check_cached_filter(device, username):
                     return False
 
         return True
@@ -65,9 +68,20 @@ class Filter(object):
 
     FILTER_IDS = {"OVERRIDE_KEY": "OVERRIDE_VALUE"}
     FILTER_TAGS = []
+    RESULT = None
 
     def set_filter(self, key, val):
         self.FILTER_IDS[key] = val
+
+    def reset_filter(self):
+        self.RESULT = None
+
+    def check_cached_filter(self, device, username):
+        if self.RESULT is not None:
+            return self.RESULT
+
+        self.RESULT = self.check_filter(device, username)
+        return self.RESULT
 
     def check_filter(self, device, username):
         raise NotImplementedError()
