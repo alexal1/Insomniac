@@ -82,7 +82,7 @@ class InsomniacSession(object):
         self.sessions.append(self.session_state)
 
         print_timeless(COLOR_REPORT + "\n-------- START: " + str(self.session_state.startTime) + " --------" + COLOR_ENDC)
-        open_instagram(self.device)
+        open_instagram(args.device)
         self.session_state.my_username, \
             self.session_state.my_followers_count, \
             self.session_state.my_following_count = get_my_profile_info(device_wrapper.get())

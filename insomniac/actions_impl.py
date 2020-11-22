@@ -291,7 +291,7 @@ def interact_with_user(device,
             print(COLOR_OKGREEN + "Following @{}.".format(username) + COLOR_ENDC)
             on_action(FollowAction(source=user_source, user=username))
 
-    return liked_count == interaction_strategy.likes_count, is_followed, is_watched
+    return liked_count > 0, is_followed, is_watched
 
 
 def _open_photo_and_like(device, row, column, on_like):

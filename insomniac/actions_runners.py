@@ -359,8 +359,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
         "stories_count": {
             "help": 'number of stories to watch for each user, disabled by default. '
                     'It can be a number (e.g. 2) or a range (e.g. 2-4)',
-            'metavar': '3-8',
-            'default': '1-2'
+            'metavar': '3-8'
         }
     }
 
@@ -392,6 +391,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
 
             @run_safely(device_wrapper=device_wrapper)
             def job():
+                storage.read_targets()
                 self.action_status.set(ActionState.RUNNING)
                 handle_target(device_wrapper.get(),
                               target,
