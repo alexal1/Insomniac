@@ -31,12 +31,15 @@ def handle_target(device,
         if storage.is_user_in_blacklist(target_name):
             print("@" + target_name + " is in blacklist. Skip.")
             return False
+        elif storage.check_user_was_filtered(target_name):
+            print("@" + target_name + ": already filtered in past. Skip.")
+            return False
         elif storage.check_user_was_interacted(target_name):
             print("@" + target_name + ": already interacted. Skip.")
             return False
         elif is_passed_filters is not None:
             if not is_passed_filters(device, target_name, ['BEFORE_PROFILE_CLICK']):
-                storage.add_interacted_user(target_name, followed=False)
+                storage.add_filtered_user(target_name)
                 return False
 
         return True
@@ -60,7 +63,7 @@ def handle_target(device,
 
         if is_passed_filters is not None:
             if not is_passed_filters(device, target_name):
-                storage.add_interacted_user(target_name, followed=False)
+                storage.add_filtered_user(target_name)
                 print("Moving to next target")
                 return
 
