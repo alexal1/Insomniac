@@ -2,7 +2,8 @@ from abc import ABC
 from enum import unique, Enum
 
 from insomniac.actions_runners import ActionState
-from insomniac.actions_types import LikeAction, InteractAction, FollowAction, UnfollowAction, StoryWatchAction
+from insomniac.actions_types import LikeAction, InteractAction, FollowAction, UnfollowAction, StoryWatchAction, \
+    GetProfileAction
 from insomniac.utils import *
 
 
@@ -349,6 +350,39 @@ class MinFollowing(CoreLimit):
         unfollowed_count = session_state.totalUnfollowed
 
         return initial_following - unfollowed_count <= self.min_following_limit
+
+    def reset(self):
+        pass
+
+    def update_state(self, action):
+        pass
+
+
+class TotalGetProfileLimit(CoreLimit):
+    LIMIT_ID = "total_get_profile_limit"
+    LIMIT_TYPE = LimitType.SESSION
+    LIMIT_ARGS = {
+        "total_get_profile_limit": {
+            "help": "limit on total amount of get-profile actions during the session, disabled by default. "
+                    "It can be a number (e.g. 600) or a range (e.g. 500-700)",
+            "metavar": "1500"
+        }
+    }
+
+    total_get_profile_limit = None
+
+    def set_limit(self, args):
+        if args.total_get_profile_limit is not None:
+            self.total_get_profile_limit = get_value(args.total_get_profile_limit, "Total get-profile limit: {}", 1000)
+
+    def is_reached_for_action(self, action, session_state):
+        if self.total_get_profile_limit is None:
+            return False
+
+        if not type(action) == GetProfileAction:
+            return False
+
+        return session_state.totalGetProfile >= self.total_get_profile_limit
 
     def reset(self):
         pass

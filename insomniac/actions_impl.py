@@ -13,6 +13,7 @@ FOLLOW_REGEX = 'Follow|Follow Back'
 UNFOLLOW_REGEX = 'Following|Requested'
 FOLLOWING_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_following_container' \
                             '|com.instagram.android:id/row_profile_header_container_following'
+USER_AVATAR_VIEW_ID = 'com.instagram.android:id/circular_image|^$'
 
 _action_bar_bottom = None
 _tab_bar_top = None
@@ -291,7 +292,7 @@ def interact_with_user(device,
             print(COLOR_OKGREEN + "Following @{}.".format(username) + COLOR_ENDC)
             on_action(FollowAction(source=user_source, user=username))
 
-    return liked_count == interaction_strategy.likes_count, is_followed, is_watched
+    return liked_count > 0, is_followed, is_watched
 
 
 def _open_photo_and_like(device, row, column, on_like):
@@ -608,7 +609,7 @@ def _close_confirm_dialog_if_shown(device):
         return
 
     # Avatar existence is the way to distinguish confirm dialog from block dialog
-    user_avatar_view = device.find(resourceId='com.instagram.android:id/circular_image',
+    user_avatar_view = device.find(resourceIdMatches=USER_AVATAR_VIEW_ID,
                                    className='android.widget.ImageView')
     if not user_avatar_view.exists():
         return
