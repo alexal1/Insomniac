@@ -169,7 +169,7 @@
   },
   {
     "parameter-name": "filters",
-    "enabled": false,
+    "enabled": true,
     "value": {
       "skip_business": false,
       "skip_non_business": false,
@@ -180,7 +180,11 @@
       "min_potency_ratio": 0.45,
       "min_posts": 7,
       "max_digits_in_profile_name": 4,
-      "follow_private_or_empty": true
+      "privacy_relation": "private_and_public",
+      "skip_profiles_without_stories": false,
+      "blacklist_words": ["word1", "word2"],
+      "mandatory_words": ["word1", "word2"],
+      "specific_alphabet": ["LATIN", "ARABIC", "HEBREW"]
     },
     "description" : "add this argument if you want to pass filters as an argument and not from filters.json file"
   }
