@@ -104,6 +104,11 @@ class InteractBySourceActionRunner(CoreActionsRunner):
             'metavar': '2-4',
             "default": '2'
         },
+        "like_percentage": {
+            "help": "likes given percentage of interacted users, 100 by default",
+            "metavar": '50',
+            "default": '100'
+        },
         "follow_percentage": {
             "help": "follow given percentage of interacted users, 0 by default",
             "metavar": '50',
@@ -112,9 +117,10 @@ class InteractBySourceActionRunner(CoreActionsRunner):
         "interact": {
             "nargs": '+',
             "help": 'list of hashtags and usernames. Usernames should start with \"@\" symbol. '
-                    'The script will interact with hashtags\' posts likers and with users\' followers',
+                    'You can specify the way of interaction after a \"-\" sign: @username-followers, '
+                    '@username-following, hashtag-top-likers, hashtag-recent-likers',
             "default": [],
-            "metavar": ('hashtag', '@username')
+            "metavar": ('hashtag-top-likers', '@username-followers')
         },
         "interaction_users_amount": {
             "help": 'add this argument to select an amount of users from the interact-list '
@@ -125,11 +131,12 @@ class InteractBySourceActionRunner(CoreActionsRunner):
             "help": 'number of stories to watch for each user, disabled by default. '
                     'It can be a number (e.g. 2) or a range (e.g. 2-4)',
             'metavar': '3-8'
-        }
+        },
     }
 
     likes_count = '2'
     follow_percentage = 0
+    like_percentage = 100
     interact = []
     stories_count = '0'
 
@@ -150,6 +157,9 @@ class InteractBySourceActionRunner(CoreActionsRunner):
         if args.follow_percentage is not None:
             self.follow_percentage = int(args.follow_percentage)
 
+        if args.like_percentage is not None:
+            self.like_percentage = int(args.like_percentage)
+
         if args.interaction_users_amount is not None:
             if len(self.interact) > 0:
                 users_amount = get_value(args.interaction_users_amount, "Interaction user amount {}", 100)
@@ -163,8 +173,8 @@ class InteractBySourceActionRunner(CoreActionsRunner):
                         self.interact.remove(random.choice(self.interact))
 
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
-        from insomniac.action_handle_blogger import handle_blogger
-        from insomniac.action_handle_hashtag import handle_hashtag
+        from insomniac.action_handle_blogger import handle_blogger, extract_blogger_instructions
+        from insomniac.action_handle_hashtag import handle_hashtag, extract_hashtag_instructions
 
         random.shuffle(self.interact)
 
@@ -183,24 +193,30 @@ class InteractBySourceActionRunner(CoreActionsRunner):
             def job():
                 self.action_status.set(ActionState.RUNNING)
                 if source[0] == '@':
+                    source_name, instructions = extract_blogger_instructions(source)
                     handle_blogger(device_wrapper.get(),
-                                   source[1:],  # drop "@"
+                                   source_name[1:],  # drop "@"
+                                   instructions,
                                    session_state,
                                    self.likes_count,
                                    self.stories_count,
                                    self.follow_percentage,
+                                   self.like_percentage,
                                    storage,
                                    on_action,
                                    is_limit_reached,
                                    is_passed_filters,
                                    self.action_status)
                 elif source[0] == '#':
+                    source_name, instructions = extract_hashtag_instructions(source)
                     handle_hashtag(device_wrapper.get(),
-                                   source[1:],  # drop "#"
+                                   source_name[1:],  # drop "#"
+                                   instructions,
                                    session_state,
                                    self.likes_count,
                                    self.stories_count,
                                    self.follow_percentage,
+                                   self.like_percentage,
                                    storage,
                                    on_action,
                                    is_limit_reached,
@@ -356,6 +372,11 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
             "metavar": '50',
             "default": '0'
         },
+        "like_percentage": {
+            "help": "likes given percentage of interacted users, 100 by default",
+            "metavar": '50',
+            "default": '100'
+        },
         "stories_count": {
             "help": 'number of stories to watch for each user, disabled by default. '
                     'It can be a number (e.g. 2) or a range (e.g. 2-4)',
@@ -365,6 +386,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
 
     likes_count = '2'
     follow_percentage = 0
+    like_percentage = 100
     stories_count = '0'
 
     def is_action_selected(self, args):
@@ -379,6 +401,9 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
 
         if args.follow_percentage is not None:
             self.follow_percentage = int(args.follow_percentage)
+
+        if args.like_percentage is not None:
+            self.like_percentage = int(args.like_percentage)
 
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
         from insomniac.action_handle_target import handle_target
@@ -399,6 +424,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
                               self.likes_count,
                               self.stories_count,
                               self.follow_percentage,
+                              self.like_percentage,
                               storage,
                               on_action,
                               is_limit_reached,

@@ -9,6 +9,7 @@ from insomniac.actions_types import LikeAction, InteractAction, FollowAction, Ge
 class SessionState:
     id = None
     args = {}
+    app_version = None
     my_username = None
     my_followers_count = None
     my_following_count = None
@@ -25,6 +26,7 @@ class SessionState:
     def __init__(self):
         self.id = str(uuid.uuid4())
         self.args = {}
+        self.app_version = None
         self.my_username = None
         self.my_followers_count = None
         self.my_following_count = None
@@ -89,6 +91,7 @@ class SessionStateEncoder(JSONEncoder):
     def default(self, session_state: SessionState):
         return {
             "id": session_state.id,
+            "app_version": session_state.app_version,
             "total_interactions": sum(session_state.totalInteractions.values()),
             "successful_interactions": sum(session_state.successfulInteractions.values()),
             "total_followed": sum(session_state.totalFollowed.values()),

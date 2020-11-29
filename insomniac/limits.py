@@ -358,6 +358,41 @@ class MinFollowing(CoreLimit):
         pass
 
 
+class MaxFollowing(CoreLimit):
+    LIMIT_ID = "max_following"
+    LIMIT_TYPE = LimitType.SESSION
+    LIMIT_ARGS = {
+        "max_following": {
+            "help": 'maximum amount of followings, after reaching this amount follow stops. disabled by default',
+            "metavar": '100'
+        }
+    }
+
+    max_following_limit = None
+
+    def set_limit(self, args):
+        if args.max_following is not None:
+            self.max_following_limit = int(args.max_following)
+
+    def is_reached_for_action(self, action, session_state):
+        if self.max_following_limit is None:
+            return False
+
+        if not type(action) == FollowAction:
+            return False
+
+        initial_following = session_state.my_following_count
+        followed_count = session_state.sum(session_state.totalFollowed.values())
+
+        return initial_following + followed_count >= self.max_following_limit
+
+    def reset(self):
+        pass
+
+    def update_state(self, action):
+        pass
+
+
 class TotalGetProfileLimit(CoreLimit):
     LIMIT_ID = "total_get_profile_limit"
     LIMIT_TYPE = LimitType.SESSION
@@ -383,6 +418,41 @@ class TotalGetProfileLimit(CoreLimit):
             return False
 
         return session_state.totalGetProfile >= self.total_get_profile_limit
+
+    def reset(self):
+        pass
+
+    def update_state(self, action):
+        pass
+
+
+class SessionTimeMaxLengthLimit(CoreLimit):
+    LIMIT_ID = "session_length_in_mins_limit"
+    LIMIT_TYPE = LimitType.SESSION
+    LIMIT_ARGS = {
+        "session_length_in_mins_limit": {
+            "help": "limit the session length by time (minutes), disabled by default. "
+                    "It can be a number (e.g. 60) or a range (e.g. 40-70)",
+            "metavar": "50-60"
+        }
+    }
+
+    session_length_in_mins_limit = None
+
+    def set_limit(self, args):
+        if args.session_length_in_mins_limit is not None:
+            self.session_length_in_mins_limit = get_value(args.session_length_in_mins_limit, "Session max-length (minutes): {}", 60)
+
+    def is_reached_for_action(self, action, session_state):
+        if self.session_length_in_mins_limit is None:
+            return False
+
+        # Apply this limit for every action (no action-type condition)
+
+        delta = datetime.now() - session_state.startTime
+        mins_delta = delta.seconds // 60
+
+        return mins_delta > self.session_length_in_mins_limit
 
     def reset(self):
         pass

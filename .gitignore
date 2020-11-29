@@ -2,6 +2,7 @@
 /.idea
 interacted_users.*
 scrapped_users.json
+filtered_users.json
 sessions.json
 targets.txt
 *.pyc

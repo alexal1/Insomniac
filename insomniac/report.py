@@ -84,11 +84,13 @@ def print_short_report(source, session_state):
     total_likes = session_state.totalLikes
     total_followed = sum(session_state.totalFollowed.values())
     interactions = session_state.successfulInteractions.get(source, 0)
+    total_successful_interactions = sum(session_state.successfulInteractions.values())
     total_story_views = session_state.totalStoriesWatched
     print(COLOR_REPORT + "Session progress: " + str(total_likes) + " likes, " + str(total_followed) + " followed, " +
           str(total_story_views) + " stories watched, " + str(interactions) + " successful " +
           ("interaction" if interactions == 1 else "interactions") +
-          " for " + source + COLOR_ENDC)
+          " for " + source + "," +
+          " " + str(total_successful_interactions) + " successful interactions for the entire session" + COLOR_ENDC)
 
 
 def print_interaction_types(username, can_like, can_follow, can_watch):

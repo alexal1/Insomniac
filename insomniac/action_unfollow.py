@@ -3,6 +3,7 @@ from enum import unique, Enum
 from insomniac.actions_impl import open_user_followings, sort_followings_by_date, iterate_over_followings, do_unfollow
 from insomniac.actions_types import UnfollowAction, GetProfileAction
 from insomniac.limits import process_limits
+from insomniac.sleeper import sleeper
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
@@ -10,9 +11,9 @@ from insomniac.utils import *
 def unfollow(device, on_action, storage, unfollow_restriction, session_state, is_limit_reached, action_status):
     if not open_user_followings(device=device, username=None, on_action=on_action):
         return
-    random_sleep()
+    sleeper.random_sleep()
     sort_followings_by_date(device)
-    random_sleep()
+    sleeper.random_sleep()
 
     # noinspection PyUnusedLocal
     # following_name_view is a standard callback argument

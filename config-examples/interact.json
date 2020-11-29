@@ -12,6 +12,12 @@
     "description" : "add this flag to use an old version of uiautomator. Use it only if you experience problems with the default version"
   },
   {
+    "parameter-name": "no_speed_check",
+    "enabled": false,
+    "value": "True",
+    "description" : "skip internet speed check at start"
+  },
+  {
     "parameter-name": "repeat",
     "enabled": true,
     "value": "160-220",
@@ -22,6 +28,12 @@
     "enabled": true,
     "value": "1-2",
     "description" : "number of likes for each interacted user, 2 by default. It can be a number (e.g. 2) or a range (e.g. 2-4)"
+  },
+  {
+    "parameter-name": "likes_percentage",
+    "enabled": true,
+    "value": "80",
+    "description" : "likes given percentage of interacted users, 100 by default"
   },
   {
     "parameter-name": "stories_count",
@@ -39,10 +51,18 @@
     "parameter-name": "interact",
     "enabled": true,
     "value": [
-      "@natgeo",
-      "amazingtrips"
+      "@natgeo-followers",
+      "@natgeo-following",
+      "amazingtrips-top-likers",
+      "amazingtrips-recent-likers"
     ],
     "description" : "list of hashtags and usernames. Usernames should start with \\\"@\\\" symbol. The script will interact with hashtags\\' posts likers and with users\\' followers"
+  },
+  {
+    "parameter-name": "reinteract_after",
+    "enabled": false,
+    "value": "72-96",
+    "description" : "set a time (in hours) to wait before re-interact with an already interacted profile, disabled by default (won't interact again). It can be a number (e.g. 48) or a range (e.g. 50-80)"
   },
   {
     "parameter-name": "interaction_users_amount",
@@ -61,6 +81,12 @@
     "enabled": false,
     "value": "150",
     "description" : "minimum amount of followings, after reaching this amount unfollow stops"
+  },
+  {
+    "parameter-name": "max_following",
+    "enabled": false,
+    "value": "150",
+    "description" : "maximum amount of followings, after reaching this amount follow stops. disabled by default"
   },
   {
     "parameter-name": "unfollow_non_followers",
@@ -109,6 +135,17 @@
     "enabled": true,
     "value": "50-60",
     "description" : "limit on total amount of stories watches during the session, disabled by default. It can be a number (e.g. 27) or a range (e.g. 20-30)"
+  },
+  {
+    "parameter-name": "total_get_profile_limit",
+    "enabled": true,
+    "value": "300-400",
+    "description" : "limit on total amount of get-profile actions during the session, disabled by default. It can be a number (e.g. 600) or a range (e.g. 500-700)"
+  },
+  {
+    "parameter-name": "session_length_in_mins_limit",
+    "enabled": false,
+    "value": "50-60",
+    "description" : "limit the session length by time (minutes), disabled by default. It can be a number (e.g. 60) or a range (e.g. 40-70)"
   }
 ]
-

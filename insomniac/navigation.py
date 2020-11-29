@@ -1,6 +1,7 @@
 from enum import Enum, unique
 
 from insomniac.actions_types import GetProfileAction
+from insomniac.sleeper import sleeper
 from insomniac.utils import *
 
 SEARCH_CONTENT_DESC_REGEX = '[Ss]earch and [Ee]xplore'
@@ -36,7 +37,7 @@ def search_for(device, username=None, hashtag=None, on_action=None):
                                     className='android.widget.TextView',
                                     text=username)
 
-        random_sleep()
+        sleeper.random_sleep()
         if not username_view.exists():
             print_timeless(COLOR_FAIL + "Cannot find user @" + username + ", abort." + COLOR_ENDC)
             return False
@@ -62,7 +63,7 @@ def search_for(device, username=None, hashtag=None, on_action=None):
                                    className='android.widget.TextView',
                                    text=f"#{hashtag}")
 
-        random_sleep()
+        sleeper.random_sleep()
         if not hashtag_view.exists():
             print_timeless(COLOR_FAIL + "Cannot find hashtag #" + hashtag + ", abort." + COLOR_ENDC)
             return False

@@ -18,7 +18,7 @@ class PersistentList(list):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        path = directory + "/" + self.filename + ".json"
+        path = os.path.join(directory, self.filename + ".json")
 
         if os.path.exists(path):
             with open(path) as json_file:

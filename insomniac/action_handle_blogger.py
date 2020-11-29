@@ -1,21 +1,48 @@
 from functools import partial
 
 from insomniac.actions_impl import interact_with_user, open_user_followers, \
-    scroll_to_bottom, iterate_over_followers, InteractionStrategy, is_private_account, do_have_story
+    scroll_to_bottom, iterate_over_followers, InteractionStrategy, is_private_account, do_have_story, \
+    open_user_followings
 from insomniac.actions_runners import ActionState
-from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, StoryWatchAction
+from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, StoryWatchAction, \
+    BloggerInteractionType
 from insomniac.limits import process_limits
 from insomniac.report import print_short_report, print_interaction_types
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
 
+def extract_blogger_instructions(source):
+    split_idx = source.find('-')
+    if split_idx == -1:
+        print("There is no special interaction-instructions for " + source + ". Working with " + source + " followers.")
+        return source, BloggerInteractionType.FOLLOWERS
+
+    selected_instruction = None
+    source_profile_name = source[:split_idx]
+    interaction_instructions_str = source[split_idx+1:]
+
+    for blogger_instruction in BloggerInteractionType:
+        if blogger_instruction.value == interaction_instructions_str:
+            selected_instruction = blogger_instruction
+            break
+
+    if selected_instruction is None:
+        print("Couldn't use interaction-instructions " + interaction_instructions_str +
+              ". Working with " + source + " followers.")
+        selected_instruction = BloggerInteractionType.FOLLOWERS
+
+    return source_profile_name, selected_instruction
+
+
 def handle_blogger(device,
                    username,
+                   instructions,
                    session_state,
                    likes_count,
                    stories_count,
                    follow_percentage,
+                   like_percentage,
                    storage,
                    on_action,
                    is_limit_reached,
@@ -28,8 +55,12 @@ def handle_blogger(device,
                           my_username=session_state.my_username,
                           on_action=on_action)
 
-    if not open_user_followers(device=device, username=username, on_action=on_action):
-        return
+    if instructions == BloggerInteractionType.FOLLOWERS:
+        if not open_user_followers(device=device, username=username, on_action=on_action):
+            return
+    elif instructions == BloggerInteractionType.FOLLOWING:
+        if not open_user_followings(device=device, username=username, on_action=on_action):
+            return
 
     if is_myself:
         scroll_to_bottom(device)
@@ -77,7 +108,7 @@ def handle_blogger(device,
             if not is_passed_filters(device, follower_name):
                 storage.add_filtered_user(follower_name)
                 # Continue to next follower
-                print("Back to followers list")
+                print("Back to profiles list")
                 device.back()
                 return True
 
@@ -121,6 +152,7 @@ def handle_blogger(device,
                                                        do_story_watch=can_watch,
                                                        likes_count=likes_value,
                                                        follow_percentage=follow_percentage,
+                                                       like_percentage=like_percentage,
                                                        stories_count=stories_value)
 
             is_liked, is_followed, is_watch = interaction(username=follower_name, interaction_strategy=interaction_strategy)
@@ -149,7 +181,7 @@ def handle_blogger(device,
                 can_continue = False
                 action_status.set_limit(ActionState.SESSION_LIMIT_REACHED)
 
-        print("Back to followers list")
+        print("Back to profiles list")
         device.back()
 
         return can_continue

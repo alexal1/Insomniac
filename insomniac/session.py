@@ -1,5 +1,6 @@
 import random
 import sys
+from time import sleep
 
 import colorama
 
@@ -12,6 +13,8 @@ from insomniac.params import parse_arguments, refresh_args_by_conf_file
 from insomniac.persistent_list import PersistentList
 from insomniac.report import print_full_report
 from insomniac.session_state import SessionStateEncoder, SessionState
+from insomniac.sleeper import sleeper
+from insomniac.storage import STORAGE_ARGS
 from insomniac.storage import Storage
 from insomniac.utils import *
 
@@ -28,6 +31,10 @@ class InsomniacSession(object):
         "device": {
             "help": 'device identifier. Should be used only when multiple devices are connected at once',
             "metavar": '2443de990e017ece'
+        },
+        "no_speed_check": {
+            'help': 'skip internet speed check at start',
+            'action': 'store_true'
         },
         "old": {
             'help': 'add this flag to use an old version of uiautomator. Use it only if you experience '
@@ -53,6 +60,7 @@ class InsomniacSession(object):
     def get_session_args(self):
         all_args = {}
         all_args.update(self.SESSION_ARGS)
+        all_args.update(STORAGE_ARGS)
         all_args.update(self.actions_mgr.get_actions_args())
         all_args.update(self.limits_mgr.get_limits_args())
 
@@ -65,24 +73,28 @@ class InsomniacSession(object):
     def parse_args_and_get_device_wrapper(self):
         ok, args = parse_arguments(self.get_session_args())
         if not ok:
-            return None, None
+            return None, None, None
 
         device_wrapper = DeviceWrapper(args.device, args.old)
         device = device_wrapper.get()
         if device is None:
-            return None, None
+            return None, None, None
 
-        print("Instagram version: " + get_instagram_version(args.device))
+        app_version = get_instagram_version(args.device)
 
-        return args, device_wrapper
+        print("Instagram version: " + app_version)
 
-    def start_session(self, args, device_wrapper):
+        return args, device_wrapper, app_version
+
+    def start_session(self, args, device_wrapper, app_version):
         self.session_state = SessionState()
         self.session_state.args = args.__dict__
+        self.session_state.app_version = app_version
         self.sessions.append(self.session_state)
 
         print_timeless(COLOR_REPORT + "\n-------- START: " + str(self.session_state.startTime) + " --------" + COLOR_ENDC)
         open_instagram(args.device)
+        sleeper.random_sleep()
         self.session_state.my_username, \
             self.session_state.my_followers_count, \
             self.session_state.my_following_count = get_my_profile_info(device_wrapper.get())
@@ -113,12 +125,16 @@ class InsomniacSession(object):
         self.limits_mgr.update_state(action)
 
     def run(self):
-        args, device_wrapper = self.parse_args_and_get_device_wrapper()
+        args, device_wrapper, app_version = self.parse_args_and_get_device_wrapper()
+        if args is None or device_wrapper is None:
+            return
+
+        if not args.no_speed_check:
+            print("Checking your Internet speed to adjust the script speed, please wait for a minute...")
+            print("(use " + COLOR_BOLD + "--no-speed-check" + COLOR_ENDC + " to skip this check)")
+            sleeper.update_random_sleep_range()
 
         while True:
-            if args is None or device_wrapper is None:
-                return
-
             self.set_session_args(args)
 
             action_runner = self.actions_mgr.select_action_runner(args)
@@ -130,7 +146,7 @@ class InsomniacSession(object):
             self.limits_mgr.set_limits(args)
 
             try:
-                self.start_session(args, device_wrapper)
+                self.start_session(args, device_wrapper, app_version)
                 self.storage = Storage(self.session_state.my_username, args)
 
                 action_runner.run(device_wrapper,
@@ -149,7 +165,7 @@ class InsomniacSession(object):
                     raise ex
                 else:
                     print_timeless(COLOR_FAIL + f"\nCaught an exception:\n{ex}" + COLOR_ENDC)
-                    save_crash(device_wrapper.get())
+                    save_crash(device_wrapper.get(), ex)
 
             if self.repeat is not None:
                 self.repeat_session(args)

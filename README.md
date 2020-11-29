@@ -72,14 +72,14 @@ _IMPORTANT: if you previously used v2.x.x, then insomniac.py file will conflict 
 5. Type `adb devices` in terminal. It will display attached devices. There should be exactly one device. Then run the script (it works on Python 3):
 6. Open Terminal / Command Prompt in the folder with downloaded [start.py](https://raw.githubusercontent.com/alexal1/Insomniac/master/start.py) (or type `cd <path-to-start.py>`) and run
 ```
-python3 start.py --interact @natgeo
+python3 start.py --interact @natgeo-followers
 ```
 Make sure that the screen is turned on and device is unblocked. You don't have to open Instagram app, script opens it and closes when it's finished. Just make sure that Instagram app is installed. If everything's fine, script will open `@natgeo`'s followers and like their posts.
 
 ### Usage example
 Say you have a travel blog. Then you may want to use such setup:
 ```
-python3 start.py --interact @natgeo amazingtrips --interactions-count 20-30 --likes-count 1-2 --follow-percentage 80 --repeat 160-220
+python3 start.py --interact @natgeo-followers amazingtrips-recent-likers --interactions-count 20-30 --likes-count 1-2 --follow-percentage 80 --repeat 160-220
 ```
 Or just download a config file [interact.json](https://raw.githubusercontent.com/alexal1/Insomniac/master/config-examples/interact.json) and put it near `start.py`. Then run:
 ```
@@ -129,25 +129,29 @@ Pull requests are welcome! Any feature you implement will be included in the Ins
 ### Filtering
 You may want to ignore mass-followers (e.g. > 1000 followings) because they are most likely interested only in growing their audience. Or ignore too popular accounts (e.g. > 5000 followers) because they won't notice you. You can do this (and more) by using `filter.json` file. List of available parameters:
 
-| Parameter                       | Value                                                       | Description                                                                                                  |
-| ------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------|
-| `skip_business`                 | `true/false`                                                | skip business accounts if true                                                                               |
-| `skip_non_business`             | `true/false`                                                | skip non-business accounts if true                                                                           |
-| `min_followers`                 | 100                                                         | skip accounts with less followers than given value                                                           |
-| `max_followers`                 | 5000                                                        | skip accounts with more followers than given value                                                           |
-| `min_followings`                | 10                                                          | skip accounts with less followings than given value                                                          |
-| `max_followings`                | 1000                                                        | skip accounts with more followings than given value                                                          |
-| `min_potency_ratio`             | 1                                                           | skip accounts with ratio (followers/followings) less than given value (decimal values can be used too)       |
-| `max_potency_ratio`             | 1                                                           | skip accounts with ratio (followers/followings) higher than given value (decimal values can be used too)     |
-| `privacy_relation`      `       | `"only_public"` / `"only_private"` / `"private_and_public"` | choose with accounts of which type you want to interact, `"only_public"` by default                          |
-| `min_posts`                     | 7                                                           | minimum posts in profile in order to interact                                                                |
-| `max_digits_in_profile_name`    | 4                                                           | maximum amount of digits in profile name (more than that - won't be interacted)                              |
-| `skip_profiles_without_stories` | `true/false`                                                | skip accounts that doesnt have updated story (from last 24 hours)                                            |
-| `blacklist_words`               | `["word1", "word2", "word3", ...]`                          | skip accounts that contains one of the words in the list in the profile biography                            |
-| `mandatory_words`               | `["word1", "word2", "word3", ...]`                          | skip accounts that doesn't have one of the words in the list in the profile biography                        |
-| `specific_alphabet`             | `["LATIN", "ARABIC", "GREEK", "HEBREW", ...]`               | skip accounts that contains text in their biography/username which different than the provided alphabet list |
+| Parameter                         | Value                                                       | Description                                                                                                  |
+| --------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------|
+| `skip_business`                   | `true/false`                                                | skip business accounts if true                                                                               |
+| `skip_non_business`               | `true/false`                                                | skip non-business accounts if true                                                                           |
+| `min_followers`                   | 100                                                         | skip accounts with less followers than given value                                                           |
+| `max_followers`                   | 5000                                                        | skip accounts with more followers than given value                                                           |
+| `min_followings`                  | 10                                                          | skip accounts with less followings than given value                                                          |
+| `max_followings`                  | 1000                                                        | skip accounts with more followings than given value                                                          |
+| `min_potency_ratio`               | 1                                                           | skip accounts with ratio (followers/followings) less than given value (decimal values can be used too)       |
+| `max_potency_ratio`               | 1                                                           | skip accounts with ratio (followers/followings) higher than given value (decimal values can be used too)     |
+| `privacy_relation`      `         | `"only_public"` / `"only_private"` / `"private_and_public"` | choose with accounts of which type you want to interact, `"only_public"` by default                          |
+| `min_posts`                       | 7                                                           | minimum posts in profile in order to interact                                                                |
+| `max_digits_in_profile_name`      | 4                                                           | maximum amount of digits in profile name (more than that - won't be interacted)                              |
+| `skip_profiles_without_stories`   | `true/false`                                                | skip accounts that doesnt have updated story (from last 24 hours)                                            |
+| `blacklist_words`                 | `["word1", "word2", "word3", ...]`                          | skip accounts that contains one of the words in the list in the profile biography                            |
+| `mandatory_words`                 | `["word1", "word2", "word3", ...]`                          | skip accounts that doesn't have one of the words in the list in the profile biography                        |
+| `specific_alphabet`               | `["LATIN", "ARABIC", "GREEK", "HEBREW", ...]`               | skip accounts that contains text in their biography/username which different than the provided alphabet list |
+| `skip_already_following_profiles` | `true/false`                                                | skip accounts that your profile already followed, even if not followed by the bot                            |
 
-Please read detailed explanation and instructions how to use it [in this post](https://www.patreon.com/posts/43362005).
+
+Please read detailed explanation and instructions how to use filter in [this Patreon post](https://www.patreon.com/posts/43362005).
+
+_IMPORTANT: Please use_ `--total-get-profile-limit 500` _(or some other value) when using filter. You may get a soft ban because of opening and closing too large amount of Instagram profiles._
 
 ### Whitelist and Blacklist
 **Whitelist** – affects `--remove-mass-followers`, `--unfollow` and all other unfollow actions. Users from this list will _never_ be removed from your followers or unfollowed.
@@ -155,6 +159,11 @@ Please read detailed explanation and instructions how to use it [in this post](h
 **Blacklist** - affects _all other actions_. Users from this list will be skipped immediately: no interactions and no following.
 
 Go to Insomniac folder and create a folder named as your Instagram nickname (or open an existing one, as Insomniac creates such folder when launched). Create there a file `whitelist.txt` or `blacklist.txt` (or both of them). Write usernames in these files, one username per line, no `@`'s, no commas. Don't forget to save. That's it! 
+
+### Targets Interaction
+Go to Insomniac folder and create a folder named as your Instagram nickname (or open an existing one, as Insomniac creates such folder when launched). Create there a file `targets.txt`. Write usernames in these files, one username per line, no `@`'s, no commas. Don't forget to save.
+
+Run Insomniac with --interact-targets parameter, and the session will be targeted on those specific profiles form the `targets.txt` file. 
 
 ### Analytics
 There also is an analytics tool for this bot. It is a script that builds a report in PDF format. The report contains account's followers growth graphs for different periods. Liking, following and unfollowing actions' amounts are on the same axis to determine bot effectiveness. The report also contains stats of sessions length for different configurations that you've used. All data is taken from `sessions.json` file that's generated during bot's execution.

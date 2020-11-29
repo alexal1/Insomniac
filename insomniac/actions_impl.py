@@ -4,6 +4,7 @@ from insomniac.actions_types import LikeAction, FollowAction, GetProfileAction, 
 from insomniac.device_facade import DeviceFacade
 from insomniac.navigation import switch_to_english, search_for, LanguageChangedException
 from insomniac.scroll_end_detector import ScrollEndDetector
+from insomniac.sleeper import sleeper
 from insomniac.utils import *
 
 FOLLOWERS_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_followers_container' \
@@ -11,6 +12,7 @@ FOLLOWERS_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_followe
 TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
 FOLLOW_REGEX = 'Follow|Follow Back'
 UNFOLLOW_REGEX = 'Following|Requested'
+SHOP_REGEX = 'Add Shop|View Shop'
 FOLLOWING_BUTTON_ID_REGEX = 'com.instagram.android:id/row_profile_header_following_container' \
                             '|com.instagram.android:id/row_profile_header_container_following'
 USER_AVATAR_VIEW_ID = 'com.instagram.android:id/circular_image|^$'
@@ -24,12 +26,13 @@ is_followed = False
 
 class InteractionStrategy(object):
     def __init__(self, do_like=False, do_follow=False, do_story_watch=False,
-                 likes_count=2, follow_percentage=0, stories_count=2):
+                 likes_count=2, like_percentage=100, follow_percentage=0, stories_count=2):
         self.do_like = do_like
         self.do_follow = do_follow
         self.do_story_watch = do_story_watch
         self.likes_count = likes_count
         self.follow_percentage = follow_percentage
+        self.like_percentage = like_percentage
         self.stories_count = stories_count
 
 
@@ -114,7 +117,7 @@ def iterate_over_followers(device, is_myself, iteration_callback,
     while True:
         print("Iterate over visible followers")
         if not iterate_without_sleep:
-            random_sleep()
+            sleeper.random_sleep()
 
         screen_iterated_followers = []
         screen_skipped_followers_count = 0
@@ -174,7 +177,7 @@ def iterate_over_followers(device, is_myself, iteration_callback,
                     if retry_button.exists():
                         print("Press \"Load\" button")
                         retry_button.click()
-                        random_sleep()
+                        sleeper.random_sleep()
                         pressed_retry = True
 
                 if need_swipe and not pressed_retry:
@@ -250,9 +253,9 @@ def interact_with_user(device,
 
     if username == my_username:
         print("It's you, skip.")
-        return liked_count == interaction_strategy.likes_count, is_followed
+        return liked_count == interaction_strategy.likes_count, is_followed, is_watched
 
-    random_sleep()
+    sleeper.random_sleep()
 
     if interaction_strategy.do_story_watch:
         is_watched = _watch_stories(device, username, interaction_strategy.stories_count, on_action)
@@ -280,9 +283,9 @@ def interact_with_user(device,
             row = photo_index // 3
             column = photo_index - row * 3
 
-            random_sleep()
+            sleeper.random_sleep()
             print("Open and like photo #" + str(i + 1) + " (" + str(row + 1) + " row, " + str(column + 1) + " column)")
-            if not _open_photo_and_like(device, row, column, on_like):
+            if not _open_photo_and_like(device, row, column, interaction_strategy.like_percentage, on_like):
                 print(COLOR_OKGREEN + "Less than " + str(number_of_rows_to_use * 3) + " photos." + COLOR_ENDC)
                 break
 
@@ -295,7 +298,7 @@ def interact_with_user(device,
     return liked_count > 0, is_followed, is_watched
 
 
-def _open_photo_and_like(device, row, column, on_like):
+def _open_photo_and_like(device, row, column, like_percentage, on_like):
     def open_photo():
         # recycler_view has a className 'androidx.recyclerview.widget.RecyclerView' on modern Android versions and
         # 'android.view.View' on Android 5.0.1 and probably earlier versions
@@ -312,30 +315,39 @@ def _open_photo_and_like(device, row, column, on_like):
     if not open_photo():
         return False
 
-    random_sleep()
-    print("Double click!")
-    photo_view = device.find(resourceId='com.instagram.android:id/layout_container_main',
-                             className='android.widget.FrameLayout')
-    photo_view.double_click()
-    random_sleep()
+    sleeper.random_sleep()
 
-    # If double click didn't work, set like by icon click
-    try:
-        # Click only button which is under the action bar and above the tab bar.
-        # It fixes bugs with accidental back / home clicks.
-        for like_button in device.find(resourceId='com.instagram.android:id/row_feed_button_like',
-                                       className='android.widget.ImageView',
-                                       selected=False):
-            if is_in_interaction_rect(like_button):
-                print("Double click didn't work, click on icon.")
-                like_button.click()
-                random_sleep()
-                break
-    except DeviceFacade.JsonRpcError:
-        print("Double click worked successfully.")
+    to_like = True
+    like_chance = randint(1, 100)
+    if like_chance > like_percentage:
+        print("Not going to like image due to like-percentage hit")
+        to_like = False
 
-    detect_block(device)
-    on_like()
+    if to_like:
+        print("Double click!")
+        photo_view = device.find(resourceId='com.instagram.android:id/layout_container_main',
+                                 className='android.widget.FrameLayout')
+        photo_view.double_click()
+        sleeper.random_sleep()
+
+        # If double click didn't work, set like by icon click
+        try:
+            # Click only button which is under the action bar and above the tab bar.
+            # It fixes bugs with accidental back / home clicks.
+            for like_button in device.find(resourceId='com.instagram.android:id/row_feed_button_like',
+                                           className='android.widget.ImageView',
+                                           selected=False):
+                if is_in_interaction_rect(like_button):
+                    print("Double click didn't work, click on icon.")
+                    like_button.click()
+                    sleeper.random_sleep()
+                    break
+        except DeviceFacade.JsonRpcError:
+            print("Double click worked successfully.")
+
+        detect_block(device)
+        on_like()
+
     print("Back to profile")
     device.back()
     return True
@@ -351,41 +363,67 @@ def _follow(device, username, follow_percentage):
     if coordinator_layout.exists():
         coordinator_layout.scroll(DeviceFacade.Direction.TOP)
 
-    random_sleep()
+    sleeper.random_sleep()
 
-    profile_header_actions_layout = device.find(resourceId='com.instagram.android:id/profile_header_actions_top_row',
-                                                className='android.widget.LinearLayout')
-    if not profile_header_actions_layout.exists():
-        print(COLOR_FAIL + "Cannot find profile actions." + COLOR_ENDC)
-        return False
+    profile_header_main_layout = device.find(resourceId="com.instagram.android:id/profile_header_fixed_list",
+                                             className='android.widget.LinearLayout')
 
-    follow_button = profile_header_actions_layout.child(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
-                                                        clickable=True,
-                                                        textMatches=FOLLOW_REGEX)
-    if not follow_button.exists():
-        unfollow_button = profile_header_actions_layout.child(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
-                                                              clickable=True,
-                                                              textMatches=UNFOLLOW_REGEX)
-        if unfollow_button.exists():
-            print(COLOR_OKGREEN + "You already follow @" + username + "." + COLOR_ENDC)
+    shop_button = profile_header_main_layout.child(className='android.widget.Button',
+                                                   clickable=True,
+                                                   textMatches=SHOP_REGEX)
+
+    if shop_button.exists():
+        follow_button = profile_header_main_layout.child(className='android.widget.Button',
+                                                         clickable=True,
+                                                         textMatches=FOLLOW_REGEX)
+        if not follow_button.exists():
+            print(COLOR_FAIL + "Look like a shop profile without an option to follow, continue." + COLOR_ENDC)
             return False
-        else:
-            print(COLOR_FAIL + "Cannot find neither Follow button, nor Unfollow button. Maybe not "
-                               "English language is set?" + COLOR_ENDC)
-            save_crash(device)
-            switch_to_english(device)
-            raise LanguageChangedException()
+    else:
+        profile_header_actions_layout = device.find(resourceId='com.instagram.android:id/profile_header_actions_top_row',
+                                                    className='android.widget.LinearLayout')
+        if not profile_header_actions_layout.exists():
+            print(COLOR_FAIL + "Cannot find profile actions." + COLOR_ENDC)
+            return False
+
+        follow_button = profile_header_actions_layout.child(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
+                                                            clickable=True,
+                                                            textMatches=FOLLOW_REGEX)
+
+        if not follow_button.exists():
+            unfollow_button = profile_header_actions_layout.child(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
+                                                                  clickable=True,
+                                                                  textMatches=UNFOLLOW_REGEX)
+            if unfollow_button.exists():
+                print(COLOR_OKGREEN + "You already follow @" + username + "." + COLOR_ENDC)
+                return False
+            else:
+                print(COLOR_FAIL + "Cannot find neither Follow button, nor Unfollow button. Maybe not "
+                                   "English language is set?" + COLOR_ENDC)
+                save_crash(device)
+                switch_to_english(device)
+                return False
 
     follow_button.click()
     detect_block(device)
     print(COLOR_OKGREEN + "Followed @" + username + COLOR_ENDC)
-    random_sleep()
+    sleeper.random_sleep()
     return True
 
 
 def do_have_story(device):
     return device.find(resourceId="com.instagram.android:id/reel_ring",
-                       className="android.view.View").exists()
+                       className="android.view.View").exists(quick=True)
+
+
+def is_already_followed(device):
+    # Using main layout in order to support shop pages
+    profile_header_main_layout = device.find(resourceId="com.instagram.android:id/profile_header_fixed_list",
+                                             className='android.widget.LinearLayout')
+    unfollow_button = profile_header_main_layout.child(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
+                                                       clickable=True,
+                                                       textMatches=UNFOLLOW_REGEX)
+    return unfollow_button.exists()
 
 
 def _watch_stories(device, username, stories_value, on_action):
@@ -403,12 +441,12 @@ def _watch_stories(device, username, stories_value, on_action):
 
             profile_picture.click()  # Open the first story
             on_action(StoryWatchAction(user=username))
-            random_sleep()
+            sleeper.random_sleep()
 
             for i in range(1, stories_value):
                 if _skip_story(device):
                     print("Watching next story...")
-                    random_sleep()
+                    sleeper.random_sleep()
                 else:
                     print(COLOR_OKGREEN + "Watched all stories" + COLOR_ENDC)
                     break
@@ -455,6 +493,8 @@ def _open_user(device, username, open_followers=False, open_followings=False, re
         if not search_for(device, username=username, on_action=on_action):
             return False
 
+        sleeper.random_sleep()
+
         if open_followers:
             print("Open @" + username + " followers")
             followers_button = device.find(resourceIdMatches=FOLLOWERS_BUTTON_ID_REGEX)
@@ -475,7 +515,7 @@ def iterate_over_followings(device, iteration_callback, iteration_callback_pre_c
 
     while True:
         print("Iterate over visible followings")
-        random_sleep()
+        sleeper.random_sleep()
         screen_iterated_followings = 0
 
         for item in device.find(resourceId='com.instagram.android:id/follow_list_container',
@@ -494,7 +534,7 @@ def iterate_over_followings(device, iteration_callback, iteration_callback_pre_c
 
             to_continue = iteration_callback(username, user_name_view)
             if to_continue:
-                random_sleep()
+                sleeper.random_sleep()
             else:
                 print(COLOR_OKBLUE + "Stopping unfollowing" + COLOR_ENDC)
                 return
@@ -565,7 +605,7 @@ def do_unfollow(device, username, my_username, check_if_is_follower, on_action):
         return False
     confirm_unfollow_button.click()
 
-    random_sleep()
+    sleeper.random_sleep()
     _close_confirm_dialog_if_shown(device)
     detect_block(device)
 
@@ -579,7 +619,7 @@ def open_likers(device):
                              className='android.widget.TextView')
     if likes_view.exists(quick=True) and is_in_interaction_rect(likes_view):
         print("Opening post likers")
-        random_sleep()
+        sleeper.random_sleep()
         likes_view.click()
         return True
     else:
@@ -591,7 +631,7 @@ def _check_is_follower(device, username, my_username):
     following_container = device.find(resourceIdMatches=FOLLOWING_BUTTON_ID_REGEX)
     following_container.click()
 
-    random_sleep()
+    sleeper.random_sleep()
 
     my_username_view = device.find(resourceId='com.instagram.android:id/follow_list_username',
                                    className='android.widget.TextView',
@@ -615,7 +655,7 @@ def _close_confirm_dialog_if_shown(device):
         return
 
     print(COLOR_OKGREEN + "Dialog shown, confirm unfollowing." + COLOR_ENDC)
-    random_sleep()
+    sleeper.random_sleep()
     unfollow_button = dialog_root_view.child(resourceId='com.instagram.android:id/primary_button',
                                              className='android.widget.TextView')
     unfollow_button.click()

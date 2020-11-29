@@ -2,7 +2,7 @@ import setuptools
 
 from insomniac.__version__ import __version__
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", errors='ignore') as fh:
     long_description = fh.read()
 
 with open("requirements.txt", "r") as file:

@@ -17,7 +17,17 @@ FILENAME_TARGETS = "targets.txt"
 FILENAME_FOLLOWERS = "followers.txt"
 
 
+STORAGE_ARGS = {
+    "reinteract_after": {
+        "help": "set a time (in hours) to wait before re-interact with an already interacted profile, disabled by default (won't interact again). "
+                "It can be a number (e.g. 48) or a range (e.g. 50-80)",
+        "metavar": "150"
+    }
+}
+
+
 class Storage:
+    reinteract_after = None
     interacted_users_path = None
     interacted_users = {}
     scrapped_users = {}
@@ -28,6 +38,9 @@ class Storage:
     account_followers = {}
 
     def __init__(self, my_username, args):
+        if args.reinteract_after is not None:
+            self.reinteract_after = get_value(args.reinteract_after, "Re-interact after {} hours", 168)
+
         scrape_for_account = args.__dict__.get('scrape_for_account', None)
         if my_username is None:
             print(COLOR_FAIL + "No username, thus the script won't get access to interacted users and sessions data" +
@@ -37,30 +50,30 @@ class Storage:
         if not os.path.exists(my_username):
             os.makedirs(my_username)
 
-        self.interacted_users_path = my_username + "/" + FILENAME_INTERACTED_USERS
+        self.interacted_users_path = os.path.join(my_username, FILENAME_INTERACTED_USERS)
         if os.path.exists(self.interacted_users_path):
             with open(self.interacted_users_path, encoding="utf-8") as json_file:
                 self.interacted_users = json.load(json_file)
 
-        self.scrapped_users_path = my_username + "/" + FILENAME_SCRAPPED_USERS
+        self.scrapped_users_path = os.path.join(my_username, FILENAME_SCRAPPED_USERS)
         if os.path.exists(self.scrapped_users_path):
             with open(self.scrapped_users_path, encoding="utf-8") as json_file:
                 self.scrapped_users = json.load(json_file)
 
-        self.filtered_users_path = my_username + "/" + FILENAME_FILTERED_USERS
+        self.filtered_users_path = os.path.join(my_username, FILENAME_FILTERED_USERS)
         if os.path.exists(self.filtered_users_path):
             with open(self.filtered_users_path, encoding="utf-8") as json_file:
                 self.filtered_users = json.load(json_file)
 
-        whitelist_path = my_username + "/" + FILENAME_WHITELIST
+        whitelist_path = os.path.join(my_username, FILENAME_WHITELIST)
         if os.path.exists(whitelist_path):
             with open(whitelist_path, encoding="utf-8") as file:
                 self.whitelist = [line.rstrip() for line in file]
-        blacklist_path = my_username + "/" + FILENAME_BLACKLIST
+        blacklist_path = os.path.join(my_username, FILENAME_BLACKLIST)
         if os.path.exists(blacklist_path):
             with open(blacklist_path, encoding="utf-8") as file:
                 self.blacklist = [line.rstrip() for line in file]
-        self.targets_path = my_username + "/" + FILENAME_TARGETS
+        self.targets_path = os.path.join(my_username, FILENAME_TARGETS)
         if os.path.exists(self.targets_path):
             with open(self.targets_path, encoding="utf-8") as file:
                 self.targets = [line.rstrip() for line in file]
@@ -68,26 +81,29 @@ class Storage:
         if scrape_for_account is not None:
             if not os.path.isdir(scrape_for_account):
                 os.makedirs(scrape_for_account)
-            self.targets_path = scrape_for_account + "/" + FILENAME_TARGETS
+            self.targets_path = os.path.join(scrape_for_account, FILENAME_TARGETS)
             if os.path.exists(self.targets_path):
                 with open(self.targets_path, encoding="utf-8") as file:
                     self.targets = [line.rstrip() for line in file]
 
-            self.followers_path = scrape_for_account + "/" + FILENAME_FOLLOWERS
+            self.followers_path = os.path.join(scrape_for_account, FILENAME_FOLLOWERS)
             if os.path.exists(self.followers_path):
                 with open(self.followers_path, encoding="utf-8") as json_file:
                     self.account_followers = json.load(json_file)
 
     def check_user_was_interacted(self, username):
-        return not self.interacted_users.get(username) is None
+        if self.reinteract_after is None:
+            return not self.interacted_users.get(username) is None
 
-    def check_user_was_interacted_recently(self, username):
+        return self.check_user_was_interacted_recently(username, hours=self.reinteract_after)
+
+    def check_user_was_interacted_recently(self, username, hours=72):
         user = self.interacted_users.get(username)
         if user is None:
             return False
 
         last_interaction = datetime.strptime(user[USER_LAST_INTERACTION], '%Y-%m-%d %H:%M:%S.%f')
-        return datetime.now() - last_interaction <= timedelta(days=3)
+        return datetime.now() - last_interaction <= timedelta(hours=hours)
 
     def check_user_was_scrapped(self, username):
         return not self.scrapped_users.get(username) is None

@@ -6,8 +6,8 @@ import ssl
 import urllib.request
 from datetime import datetime
 from random import randint
-from time import sleep
 from urllib.error import URLError
+import traceback
 
 from insomniac.__version__ import __version__
 
@@ -64,17 +64,10 @@ def check_adb_connection(is_device_id_provided):
     return is_ok
 
 
-def random_sleep():
-    delay = randint(1, 4)
-    print("Sleep for " + str(delay) + (delay == 1 and " second" or " seconds"))
-    sleep(delay)
-
-
 def open_instagram(device_id):
     print("Open Instagram app")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              " shell am start -n com.instagram.android/com.instagram.mainactivity.MainActivity").close()
-    random_sleep()
 
 
 def close_instagram(device_id):
@@ -83,33 +76,37 @@ def close_instagram(device_id):
              " shell am force-stop com.instagram.android").close()
 
 
-def save_crash(device):
+def save_crash(device, ex=None):
     global print_log
 
     directory_name = "Crash-" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     try:
-        os.makedirs("crashes/" + directory_name + "/", exist_ok=False)
+        os.makedirs(os.path.join("crashes", directory_name), exist_ok=False)
     except OSError:
         print(COLOR_FAIL + "Directory " + directory_name + " already exists." + COLOR_ENDC)
         return
 
     screenshot_format = ".png" if device.is_old() else ".jpg"
     try:
-        device.screenshot("crashes/" + directory_name + "/screenshot" + screenshot_format)
+        device.screenshot(os.path.join("crashes", directory_name, "screenshot" + screenshot_format))
     except RuntimeError:
         print(COLOR_FAIL + "Cannot save screenshot." + COLOR_ENDC)
 
     view_hierarchy_format = ".xml"
     try:
-        device.dump_hierarchy("crashes/" + directory_name + "/view_hierarchy" + view_hierarchy_format)
+        device.dump_hierarchy(os.path.join("crashes", directory_name, "view_hierarchy" + view_hierarchy_format))
     except RuntimeError:
         print(COLOR_FAIL + "Cannot save view hierarchy." + COLOR_ENDC)
 
-    with open("crashes/" + directory_name + "/logs.txt", 'w', encoding="utf-8") as outfile:
+    with open(os.path.join("crashes", directory_name, "logs.txt"), 'w', encoding="utf-8") as outfile:
         outfile.write(print_log)
 
-    shutil.make_archive("crashes/" + directory_name, 'zip', "crashes/" + directory_name + "/")
-    shutil.rmtree("crashes/" + directory_name + "/")
+        if ex:
+            outfile.write("\n")
+            outfile.write(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
+
+    shutil.make_archive(os.path.join("crashes", directory_name), 'zip', os.path.join("crashes", directory_name))
+    shutil.rmtree(os.path.join("crashes", directory_name))
 
     print(COLOR_OKGREEN + "Crash saved as \"crashes/" + directory_name + ".zip\"." + COLOR_ENDC)
     print(COLOR_OKGREEN + "Please attach this file if you gonna report the crash at" + COLOR_ENDC)
