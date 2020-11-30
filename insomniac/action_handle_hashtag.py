@@ -209,9 +209,11 @@ def extract_hashtag_profiles_and_interact(device,
 
     # Open first post
     print("Opening the first post")
+    # Index 1 is reserved for hot Reels by this tag
+    first_post_index = 2 if instructions == HashtagInteractionType.TOP_LIKERS else 1
     first_post_view = device.find(resourceId='com.instagram.android:id/image_button',
                                   className='android.widget.ImageView',
-                                  index=1)
+                                  index=first_post_index)
     first_post_view.click()
     sleeper.random_sleep()
 

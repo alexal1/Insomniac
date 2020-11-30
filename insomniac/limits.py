@@ -382,7 +382,7 @@ class MaxFollowing(CoreLimit):
             return False
 
         initial_following = session_state.my_following_count
-        followed_count = session_state.sum(session_state.totalFollowed.values())
+        followed_count = sum(session_state.totalFollowed.values())
 
         return initial_following + followed_count >= self.max_following_limit
 

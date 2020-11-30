@@ -26,6 +26,7 @@
 - [Source code](#source-code)
 - [Filtering](#filtering)
 - [Whitelist and Blacklist](#whitelist-and-blacklist)
+- [Targets Interaction](#targets-interaction)
 - [Analytics](#analytics)
 - [Features in progress](#features-in-progress)
 - [Why Insomniac?](#why-insomniac)

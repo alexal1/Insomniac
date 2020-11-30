@@ -154,11 +154,10 @@ class InsomniacSession(object):
                                   self.session_state,
                                   self.on_action_callback,
                                   self.limits_mgr.is_limit_reached_for_action)
-
-                self.end_session(device_wrapper)
             except ActionBlockedError as ex:
                 print_timeless("")
                 print_timeless(COLOR_FAIL + str(ex) + COLOR_ENDC)
+                self.end_session(device_wrapper)
                 return
             except Exception as ex:
                 if __debug_mode__:
@@ -166,7 +165,8 @@ class InsomniacSession(object):
                 else:
                     print_timeless(COLOR_FAIL + f"\nCaught an exception:\n{ex}" + COLOR_ENDC)
                     save_crash(device_wrapper.get(), ex)
-
+            
+            self.end_session(device_wrapper)
             if self.repeat is not None:
                 self.repeat_session(args)
             else:
