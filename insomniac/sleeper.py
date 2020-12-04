@@ -49,7 +49,7 @@ class Sleeper:
 
         start1, end1 = SLEEP_RANGE_BY_SPEED[s1]
         start2, end2 = SLEEP_RANGE_BY_SPEED[s2]
-        x = (speed - s1) / (s2 - s1)  # x is a value between [0, 1]
+        x = (speed - s1) / (s2 - s1) if s2 != s1 else 1  # x is a value between [0, 1]
 
         self.sleep_range_start = start1 + x * (start2 - start1)
         self.sleep_range_end = end1 + x * (end2 - end1)
