@@ -1,5 +1,4 @@
 from random import uniform
-from time import sleep
 
 import speedtest
 

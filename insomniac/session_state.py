@@ -84,28 +84,3 @@ class SessionState:
 
     def is_finished(self):
         return self.finishTime is not None
-
-
-class SessionStateEncoder(JSONEncoder):
-
-    def default(self, session_state: SessionState):
-        return {
-            "id": session_state.id,
-            "app_version": session_state.app_version,
-            "total_interactions": sum(session_state.totalInteractions.values()),
-            "successful_interactions": sum(session_state.successfulInteractions.values()),
-            "total_followed": sum(session_state.totalFollowed.values()),
-            "total_likes": session_state.totalLikes,
-            "total_unfollowed": session_state.totalUnfollowed,
-            "total_stories_watched": session_state.totalStoriesWatched,
-            "total_get_profile": session_state.totalGetProfile,
-            "total_scraped": session_state.totalScraped,
-            "removed_mass_followers": session_state.removedMassFollowers,
-            "start_time": str(session_state.startTime),
-            "finish_time": str(session_state.finishTime),
-            "args": session_state.args,
-            "profile": {
-                "followers": str(session_state.my_followers_count),
-                "following": str(session_state.my_following_count)
-            }
-        }

@@ -32,7 +32,8 @@ def unfollow(device, on_action, storage, unfollow_restriction, session_state, is
                 print("Skip @" + following_name + ". Following status: " + following_status.name + ".")
                 return False
 
-        if unfollow_restriction == UnfollowRestriction.ANY:
+        if unfollow_restriction == UnfollowRestriction.ANY or \
+                unfollow_restriction == UnfollowRestriction.ANY_NON_FOLLOWERS:
             following_status = storage.get_following_status(following_name)
             if following_status == FollowingStatus.UNFOLLOWED:
                 print("Skip @" + following_name + ". Following status: " + following_status.name + ".")
@@ -62,7 +63,8 @@ def unfollow(device, on_action, storage, unfollow_restriction, session_state, is
                               get_profile_reached_source_limit, action_status, "Get-Profile"):
             return False
 
-        check_if_is_follower = unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS
+        check_if_is_follower = unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS or \
+                               unfollow_restriction == UnfollowRestriction.ANY_NON_FOLLOWERS
         unfollowed = do_unfollow(device, following_name, session_state.my_username, check_if_is_follower, on_action)
 
         if unfollowed:
@@ -76,6 +78,18 @@ def unfollow(device, on_action, storage, unfollow_restriction, session_state, is
 
 @unique
 class UnfollowRestriction(Enum):
-    ANY = 0
-    FOLLOWED_BY_SCRIPT = 1
-    FOLLOWED_BY_SCRIPT_NON_FOLLOWERS = 2
+    ANY = "profiles"
+    FOLLOWED_BY_SCRIPT = "followed-by-bot profiles"
+    FOLLOWED_BY_SCRIPT_NON_FOLLOWERS = "followed-by-bot non-followers-profiles"
+    ANY_NON_FOLLOWERS = "non-followers-profiles"
+
+
+def get_unfollow_restriction(followed_by_anyone, unfollow_non_followers):
+    # followed_by_anyone -> unfollow_non_followers -> restriction
+    unfollow_restriction_matrix = {
+        True:  {True: UnfollowRestriction.ANY_NON_FOLLOWERS,
+                False: UnfollowRestriction.ANY},
+        False: {True: UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS,
+                False: UnfollowRestriction.FOLLOWED_BY_SCRIPT}
+    }
+    return unfollow_restriction_matrix[followed_by_anyone][unfollow_non_followers]

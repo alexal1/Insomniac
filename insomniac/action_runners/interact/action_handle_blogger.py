@@ -1,15 +1,17 @@
 from functools import partial
 
-from insomniac.actions_impl import interact_with_user, open_user_followers, \
-    scroll_to_bottom, iterate_over_followers, InteractionStrategy, is_private_account, do_have_story, \
-    open_user_followings
-from insomniac.actions_runners import ActionState
+from insomniac.action_runners.actions_runners_manager import ActionState
+from insomniac.actions_impl import interact_with_user, InteractionStrategy
+from insomniac.actions_providers import Provider
 from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, StoryWatchAction, \
     BloggerInteractionType
 from insomniac.limits import process_limits
 from insomniac.report import print_short_report, print_interaction_types
+from insomniac.sleeper import sleeper
+from insomniac.softban_indicator import softban_indicator
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
+from insomniac.views import TabBarView, ProfileView
 
 
 def extract_blogger_instructions(source):
@@ -55,15 +57,27 @@ def handle_blogger(device,
                           my_username=session_state.my_username,
                           on_action=on_action)
 
+    search_view = TabBarView(device).navigate_to_search()
+    blogger_profile_view = search_view.navigate_to_username(username, on_action)
+
+    if blogger_profile_view is None:
+        return
+
+    sleeper.random_sleep()
+    is_profile_empty = softban_indicator.detect_empty_profile(device)
+
+    if is_profile_empty:
+        return
+
+    followers_following_list_view = None
     if instructions == BloggerInteractionType.FOLLOWERS:
-        if not open_user_followers(device=device, username=username, on_action=on_action):
-            return
+        followers_following_list_view = blogger_profile_view.navigate_to_followers()
     elif instructions == BloggerInteractionType.FOLLOWING:
-        if not open_user_followings(device=device, username=username, on_action=on_action):
-            return
+        followers_following_list_view = blogger_profile_view.navigate_to_following()
 
     if is_myself:
-        scroll_to_bottom(device)
+        followers_following_list_view.scroll_to_bottom()
+        followers_following_list_view.scroll_to_top()
 
     def pre_conditions(follower_name, follower_name_view):
         if storage.is_user_in_blacklist(follower_name):
@@ -79,7 +93,7 @@ def handle_blogger(device,
             print("@" + follower_name + ": already interacted in the last week. Skip.")
             return False
         elif is_passed_filters is not None:
-            if not is_passed_filters(device, follower_name, ['BEFORE_PROFILE_CLICK']):
+            if not is_passed_filters(device, follower_name, reset=True, filters_tags=['BEFORE_PROFILE_CLICK']):
                 storage.add_filtered_user(follower_name)
                 return False
 
@@ -104,8 +118,18 @@ def handle_blogger(device,
         follower_name_view.click()
         on_action(GetProfileAction(user=follower_name))
 
+        sleeper.random_sleep()
+        is_profile_empty = softban_indicator.detect_empty_profile(device)
+
+        if is_profile_empty:
+            print("Back to followers list")
+            device.back()
+            return True
+
+        follower_profile_view = ProfileView(device, follower_name == session_state.my_username)
+
         if is_passed_filters is not None:
-            if not is_passed_filters(device, follower_name):
+            if not is_passed_filters(device, follower_name, reset=False):
                 storage.add_filtered_user(follower_name)
                 # Continue to next follower
                 print("Back to profiles list")
@@ -121,11 +145,11 @@ def handle_blogger(device,
         is_watch_limit_reached, watch_reached_source_limit, watch_reached_session_limit = \
             is_limit_reached(StoryWatchAction(user=follower_name), session_state)
 
-        is_private = is_private_account(device)
+        is_private = follower_profile_view.is_private_account()
         if is_private:
             print("@" + follower_name + ": Private account - images wont be liked.")
 
-        do_have_stories = do_have_story(device)
+        do_have_stories = follower_profile_view.is_story_available()
         if not do_have_stories:
             print("@" + follower_name + ": seems there are no stories to be watched.")
 
@@ -143,7 +167,11 @@ def handle_blogger(device,
 
         if not can_interact:
             print("@" + follower_name + ": Cant be interacted (due to limits / already followed). Skip.")
-            storage.add_interacted_user(follower_name, followed=False)
+            storage.add_interacted_user(follower_name,
+                                        followed=False,
+                                        source=f"@{username}",
+                                        interaction_type=instructions.value,
+                                        provider=Provider.INTERACTION)
             on_action(InteractAction(source=username, user=follower_name, succeed=False))
         else:
             print_interaction_types(follower_name, can_like, can_follow, can_watch)
@@ -157,11 +185,19 @@ def handle_blogger(device,
 
             is_liked, is_followed, is_watch = interaction(username=follower_name, interaction_strategy=interaction_strategy)
             if is_liked or is_followed or is_watch:
-                storage.add_interacted_user(follower_name, followed=is_followed)
+                storage.add_interacted_user(follower_name,
+                                            followed=is_followed,
+                                            source=f"@{username}",
+                                            interaction_type=instructions.value,
+                                            provider=Provider.INTERACTION)
                 on_action(InteractAction(source=username, user=follower_name, succeed=True))
                 print_short_report(username, session_state)
             else:
-                storage.add_interacted_user(follower_name, followed=False)
+                storage.add_interacted_user(follower_name,
+                                            followed=False,
+                                            source=f"@{username}",
+                                            interaction_type=instructions.value,
+                                            provider=Provider.INTERACTION)
                 on_action(InteractAction(source=username, user=follower_name, succeed=False))
 
         can_continue = True
@@ -186,4 +222,4 @@ def handle_blogger(device,
 
         return can_continue
 
-    iterate_over_followers(device, is_myself, interact_with_follower, pre_conditions)
+    followers_following_list_view.iterate_over_followers(is_myself, interact_with_follower, pre_conditions)

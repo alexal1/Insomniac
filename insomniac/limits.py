@@ -1,7 +1,7 @@
 from abc import ABC
 from enum import unique, Enum
 
-from insomniac.actions_runners import ActionState
+from insomniac.action_runners.actions_runners_manager import ActionState
 from insomniac.actions_types import LikeAction, InteractAction, FollowAction, UnfollowAction, StoryWatchAction, \
     GetProfileAction
 from insomniac.utils import *
@@ -132,9 +132,8 @@ class TotalInteractionsLimit(CoreLimit):
     LIMIT_TYPE = LimitType.SESSION
     LIMIT_ARGS = {
         "total_interactions_limit": {
-            "help": "number of total interactions per session, disabled by default. "
-                    "It can be a number (e.g. 70) or a range (e.g. 60-80). "
-                    "Only successful interactions count",
+            "help": "number of total interactions (successful & unsuccessful) per session, disabled by default. "
+                    "It can be a number (e.g. 70) or a range (e.g. 60-80)",
             "metavar": '60-80'
         }
     }
@@ -152,7 +151,41 @@ class TotalInteractionsLimit(CoreLimit):
         if not type(action) == InteractAction:
             return False
 
-        return sum(session_state.successfulInteractions.values()) >= self.total_interactions_limit
+        return sum(session_state.totalInteractions.values()) >= self.total_interactions_limit
+
+    def reset(self):
+        pass
+
+    def update_state(self, action):
+        pass
+
+
+class TotalSuccessfulInteractionsLimit(CoreLimit):
+    LIMIT_ID = "total_successful_interactions_limit"
+    LIMIT_TYPE = LimitType.SESSION
+    LIMIT_ARGS = {
+        "total_successful_interactions_limit": {
+            "help": "number of total successful interactions per session, disabled by default. "
+                    "It can be a number (e.g. 70) or a range (e.g. 60-80)",
+            "metavar": '60-80'
+        }
+    }
+
+    total_successful_interactions_limit = None
+
+    def set_limit(self, args):
+        if args.total_successful_interactions_limit is not None:
+            self.total_successful_interactions_limit = get_value(args.total_successful_interactions_limit,
+                                                                 "Total successful-interactions limit: {}", 1000)
+
+    def is_reached_for_action(self, action, session_state):
+        if self.total_successful_interactions_limit is None:
+            return False
+
+        if not type(action) == InteractAction:
+            return False
+
+        return sum(session_state.successfulInteractions.values()) >= self.total_successful_interactions_limit
 
     def reset(self):
         pass
@@ -305,10 +338,6 @@ class UnfollowingLimit(CoreLimit):
     def set_limit(self, args):
         if args.unfollow is not None:
             self.unfollow_limit = get_value(args.unfollow, "Unfollow: {}", 100)
-        elif args.unfollow_non_followers is not None:
-            self.unfollow_limit = get_value(args.unfollow_non_followers, "Unfollow non followers: {}", 100)
-        elif args.unfollow_any is not None:
-            self.unfollow_limit = get_value(args.unfollow_any, "Unfollow any: {}", 100)
 
     def is_reached_for_action(self, action, session_state):
         if self.unfollow_limit is None:

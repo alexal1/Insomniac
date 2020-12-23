@@ -1,48 +1,37 @@
-from insomniac.actions_impl import update_interaction_rect
-from insomniac.counters_parser import parse
-from insomniac.device_facade import DeviceFacade
-from insomniac.navigation import navigate, Tabs, LanguageChangedException
+from insomniac.navigation import switch_to_english
 from insomniac.sleeper import sleeper
 from insomniac.utils import *
-
-TITLE_VIEW_ID_REGEX = 'com.instagram.android:id/title_view|com.instagram.android:id/action_bar_large_title'
+from insomniac.views import TabBarView, ActionBarView
 
 
 def get_my_profile_info(device):
-    navigate(device, Tabs.PROFILE)
-    sleeper.random_sleep()
-
-    print("Refreshing your profile status...")
-    coordinator_layout = device.find(resourceId='com.instagram.android:id/coordinator_root_layout')
-    if coordinator_layout.exists():
-        coordinator_layout.scroll(DeviceFacade.Direction.TOP)
-
-    sleeper.random_sleep()
-
-    update_interaction_rect(device)
-
-    username = None
-    title_view = device.find(resourceIdMatches=TITLE_VIEW_ID_REGEX,
-                             className='android.widget.TextView')
-    if title_view.exists():
-        username = title_view.get_text()
-    else:
-        print(COLOR_FAIL + "Failed to get username" + COLOR_ENDC)
-        save_crash(device)
-
     try:
-        followers = _get_followers_count(device)
-    except LanguageChangedException:
-        # Try again on the correct language
-        navigate(device, Tabs.PROFILE)
-        followers = _get_followers_count(device)
+        profile_view = TabBarView(device).navigate_to_profile()
+        sleeper.random_sleep()
 
-    try:
-        following = get_following_count(device)
-    except LanguageChangedException:
+        print("Refreshing your profile status...")
+        profile_view.refresh()
+        sleeper.random_sleep()
+
+        ActionBarView.update_interaction_rect(device)
+
+        username, followers, following = profile_view.get_profile_info()
+    except Exception as e:
+        print(COLOR_FAIL + f"Exception: {e}" + COLOR_ENDC)
+        save_crash(device, e)
+        switch_to_english(device)
+
         # Try again on the correct language
-        navigate(device, Tabs.PROFILE)
-        following = get_following_count(device)
+        profile_view = TabBarView(device).navigate_to_profile()
+        sleeper.random_sleep()
+
+        print("Refreshing your profile status...")
+        profile_view.refresh()
+        sleeper.random_sleep()
+
+        ActionBarView.update_interaction_rect(device)
+
+        username, followers, following = profile_view.get_profile_info()
 
     report_string = ""
     if username:
@@ -57,35 +46,3 @@ def get_my_profile_info(device):
         print(report_string)
 
     return username, followers, following
-
-
-def _get_followers_count(device):
-    followers = None
-    followers_text_view = device.find(resourceId='com.instagram.android:id/row_profile_header_textview_followers_count',
-                                      className='android.widget.TextView')
-    if followers_text_view.exists():
-        followers_text = followers_text_view.get_text()
-        if followers_text:
-            followers = parse(device, followers_text)
-        else:
-            print(COLOR_FAIL + "Cannot get your followers count text" + COLOR_ENDC)
-    else:
-        print(COLOR_FAIL + "Cannot find your followers count view" + COLOR_ENDC)
-
-    return followers
-
-
-def get_following_count(device):
-    following = None
-    following_text_view = device.find(resourceId='com.instagram.android:id/row_profile_header_textview_following_count',
-                                      className='android.widget.TextView')
-    if following_text_view.exists():
-        following_text = following_text_view.get_text()
-        if following_text:
-            following = parse(device, following_text)
-        else:
-            print(COLOR_FAIL + "Cannot get your following count text" + COLOR_ENDC)
-    else:
-        print(COLOR_FAIL + "Cannot find your following count view" + COLOR_ENDC)
-
-    return following

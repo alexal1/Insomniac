@@ -1,8 +1,9 @@
 from functools import partial
 
+from insomniac.action_runners.actions_runners_manager import ActionState
 from insomniac.actions_impl import interact_with_user, ScrollEndDetector, open_likers, iterate_over_likers, \
     is_private_account, InteractionStrategy, do_have_story
-from insomniac.actions_runners import ActionState
+from insomniac.actions_providers import Provider
 from insomniac.actions_types import InteractAction, LikeAction, FollowAction, GetProfileAction, StoryWatchAction, \
     HashtagInteractionType
 from insomniac.device_facade import DeviceFacade
@@ -10,6 +11,7 @@ from insomniac.limits import process_limits
 from insomniac.navigation import search_for
 from insomniac.report import print_short_report, print_interaction_types
 from insomniac.sleeper import sleeper
+from insomniac.softban_indicator import softban_indicator
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
@@ -68,7 +70,7 @@ def handle_hashtag(device,
             print("@" + liker_username + ": already interacted. Skip.")
             return False
         elif is_passed_filters is not None:
-            if not is_passed_filters(device, liker_username, ['BEFORE_PROFILE_CLICK']):
+            if not is_passed_filters(device, liker_username, reset=True, filters_tags=['BEFORE_PROFILE_CLICK']):
                 storage.add_filtered_user(liker_username)
                 return False
 
@@ -93,8 +95,16 @@ def handle_hashtag(device,
         liker_username_view.click()
         on_action(GetProfileAction(user=liker_username))
 
+        sleeper.random_sleep()
+        is_profile_empty = softban_indicator.detect_empty_profile(device)
+
+        if is_profile_empty:
+            print("Back to followers list")
+            device.back()
+            return True
+
         if is_passed_filters is not None:
-            if not is_passed_filters(device, liker_username):
+            if not is_passed_filters(device, liker_username, reset=False):
                 storage.add_filtered_user(liker_username)
                 # Continue to next follower
                 print("Back to followers list")
@@ -132,7 +142,11 @@ def handle_hashtag(device,
 
         if not can_interact:
             print("@" + liker_username + ": Cant be interacted (due to limits / already followed). Skip.")
-            storage.add_interacted_user(liker_username, followed=False)
+            storage.add_interacted_user(liker_username,
+                                        followed=False,
+                                        source=f"#{hashtag}",
+                                        interaction_type=instructions.value,
+                                        provider=Provider.INTERACTION)
             on_action(InteractAction(source=interaction_source, user=liker_username, succeed=False))
         else:
             print_interaction_types(liker_username, can_like, can_follow, can_watch)
@@ -147,11 +161,19 @@ def handle_hashtag(device,
             is_liked, is_followed, is_watch = interaction(username=liker_username,
                                                           interaction_strategy=interaction_strategy)
             if is_liked or is_followed or is_watch:
-                storage.add_interacted_user(liker_username, followed=is_followed)
+                storage.add_interacted_user(liker_username,
+                                            followed=is_followed,
+                                            source=f"#{hashtag}",
+                                            interaction_type=instructions.value,
+                                            provider=Provider.INTERACTION)
                 on_action(InteractAction(source=interaction_source, user=liker_username, succeed=True))
                 print_short_report(interaction_source, session_state)
             else:
-                storage.add_interacted_user(liker_username, followed=False)
+                storage.add_interacted_user(liker_username,
+                                            followed=False,
+                                            source=f"#{hashtag}",
+                                            interaction_type=instructions.value,
+                                            provider=Provider.INTERACTION)
                 on_action(InteractAction(source=interaction_source, user=liker_username, succeed=False))
 
         can_continue = True
@@ -198,7 +220,7 @@ def extract_hashtag_profiles_and_interact(device,
     # Switch to Recent tab
     if instructions == HashtagInteractionType.RECENT_LIKERS:
         print("Switching to Recent tab")
-        tab_layout = device.find(resourceId='com.instagram.android:id/tab_layout',
+        tab_layout = device.find(resourceId=f'{device.app_id}:id/tab_layout',
                                  className='android.widget.LinearLayout')
         if tab_layout.exists():
             tab_layout.child(index=1).click()
@@ -211,7 +233,7 @@ def extract_hashtag_profiles_and_interact(device,
     print("Opening the first post")
     # Index 1 is reserved for hot Reels by this tag
     first_post_index = 2 if instructions == HashtagInteractionType.TOP_LIKERS else 1
-    first_post_view = device.find(resourceId='com.instagram.android:id/image_button',
+    first_post_view = device.find(resourceId=f'{device.app_id}:id/image_button',
                                   className='android.widget.ImageView',
                                   index=first_post_index)
     first_post_view.click()
@@ -235,7 +257,10 @@ def extract_hashtag_profiles_and_interact(device,
         posts_end_detector.notify_new_page()
         sleeper.random_sleep()
 
-        iterate_over_likers(device, iteration_callback, pre_conditions)
+        should_continue_using_source = iterate_over_likers(device, iteration_callback, pre_conditions)
+
+        if not should_continue_using_source:
+            break
 
         if posts_end_detector.is_the_end():
             break
