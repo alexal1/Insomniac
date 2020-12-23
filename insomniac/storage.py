@@ -79,11 +79,8 @@ class Storage:
 
         # Scraping
         if scrape_for_account is not None:
-            if isinstance(scrape_for_account, list):
-                for acc in scrape_for_account:
-                    self.scrapping_databases.append(get_database(acc))
-            else:
-                self.scrapping_databases = [get_database(scrape_for_account)]
+            for acc in scrape_for_account:
+                self.scrapping_databases.append(get_database(acc))
 
             # TODO: implement 'dump-followers' feature or remove these lines
             self.followers_path = os.path.join(scrape_for_account, FILENAME_FOLLOWERS)
