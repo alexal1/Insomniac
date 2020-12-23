@@ -16,7 +16,8 @@ def navigate(device, tab):
         _navigate_to_search(device)
         return
 
-    tab_bar = device.find(resourceId='com.instagram.android:id/tab_bar', className='android.widget.LinearLayout')
+    device.close_keyboard()
+    tab_bar = device.find(resourceId=f'{device.app_id}:id/tab_bar', className='android.widget.LinearLayout')
     button = tab_bar.child(index=tab_index)
 
     # Two clicks to reset tab content
@@ -26,14 +27,14 @@ def navigate(device, tab):
 
 def search_for(device, username=None, hashtag=None, on_action=None):
     navigate(device, Tabs.SEARCH)
-    search_edit_text = device.find(resourceId='com.instagram.android:id/action_bar_search_edit_text',
+    search_edit_text = device.find(resourceId=f'{device.app_id}:id/action_bar_search_edit_text',
                                    className='android.widget.EditText')
     search_edit_text.click()
 
     if username is not None:
         print("Open user @" + username)
         search_edit_text.set_text(username)
-        username_view = device.find(resourceId='com.instagram.android:id/row_search_user_username',
+        username_view = device.find(resourceId=f'{device.app_id}:id/row_search_user_username',
                                     className='android.widget.TextView',
                                     text=username)
 
@@ -51,7 +52,7 @@ def search_for(device, username=None, hashtag=None, on_action=None):
 
     if hashtag is not None:
         print("Open hashtag #" + hashtag)
-        tab_layout = device.find(resourceId='com.instagram.android:id/fixed_tabbar_tabs_container',
+        tab_layout = device.find(resourceId=f'{device.app_id}:id/fixed_tabbar_tabs_container',
                                  className='android.widget.LinearLayout')
         if not tab_layout.exists():
             print(COLOR_FAIL + "Cannot find tabs." + COLOR_ENDC)
@@ -59,7 +60,7 @@ def search_for(device, username=None, hashtag=None, on_action=None):
         tab_layout.child(index=2).click()
 
         search_edit_text.set_text(hashtag)
-        hashtag_view = device.find(resourceId='com.instagram.android:id/row_hashtag_textview_tag_name',
+        hashtag_view = device.find(resourceId=f'{device.app_id}:id/row_hashtag_textview_tag_name',
                                    className='android.widget.TextView',
                                    text=f"#{hashtag}")
 
@@ -79,7 +80,7 @@ def switch_to_english(device):
     navigate(device, Tabs.PROFILE)
     print("Changing language in settings")
 
-    action_bar = device.find(resourceId='com.instagram.android:id/action_bar',
+    action_bar = device.find(resourceId=f'{device.app_id}:id/action_bar',
                              className='android.widget.LinearLayout')
     # We wanna pick last ImageView in the action bar
     options_view = None
@@ -90,7 +91,7 @@ def switch_to_english(device):
         return
     options_view.click()
 
-    settings_button = device.find(resourceId='com.instagram.android:id/menu_settings_row',
+    settings_button = device.find(resourceId=f'{device.app_id}:id/menu_settings_row',
                                   className='android.widget.TextView')
     settings_button.click()
 
@@ -113,7 +114,7 @@ def switch_to_english(device):
             continue
         language_item.click()
 
-        search_edit_text = device.find(resourceId='com.instagram.android:id/search',
+        search_edit_text = device.find(resourceId=f'{device.app_id}:id/search',
                                        className='android.widget.EditText')
         if not search_edit_text.exists():
             print("Opened a wrong tab, going back")
@@ -122,7 +123,7 @@ def switch_to_english(device):
             continue
         search_edit_text.set_text("english")
 
-        list_view = device.find(resourceId='com.instagram.android:id/language_locale_list',
+        list_view = device.find(resourceId=f'{device.app_id}:id/language_locale_list',
                                 className='android.widget.ListView')
         english_item = list_view.child(index=0)
         english_item.click()
@@ -134,7 +135,9 @@ def _navigate_to_search(device):
     # Search tab is a special case, because on some accounts there is "Reels" tab instead. If so, we have to go to the
     # "Home" tab and press search in the action bar.
 
-    tab_bar = device.find(resourceId='com.instagram.android:id/tab_bar', className='android.widget.LinearLayout')
+    device.close_keyboard()
+
+    tab_bar = device.find(resourceId=f'{device.app_id}:id/tab_bar', className='android.widget.LinearLayout')
     search_in_tab_bar = tab_bar.child(descriptionMatches=SEARCH_CONTENT_DESC_REGEX)
     if search_in_tab_bar.exists():
         # Two clicks to reset tab content
@@ -145,7 +148,7 @@ def _navigate_to_search(device):
     print("Didn't find search in the tab bar...")
     navigate(device, Tabs.HOME)
     print("Press search in the action bar")
-    action_bar = device.find(resourceId='com.instagram.android:id/action_bar', className='android.widget.LinearLayout')
+    action_bar = device.find(resourceId=f'{device.app_id}:id/action_bar', className='android.widget.LinearLayout')
     search_in_action_bar = action_bar.child(descriptionMatches=SEARCH_CONTENT_DESC_REGEX)
     if search_in_action_bar.exists():
         search_in_action_bar.click()

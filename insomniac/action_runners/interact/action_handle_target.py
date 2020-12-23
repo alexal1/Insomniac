@@ -1,7 +1,7 @@
 from functools import partial
 
+from insomniac.action_runners.actions_runners_manager import ActionState
 from insomniac.actions_impl import interact_with_user, InteractionStrategy, is_private_account, open_user, do_have_story
-from insomniac.actions_runners import ActionState
 from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, StoryWatchAction
 from insomniac.limits import process_limits
 from insomniac.report import print_short_report, print_interaction_types
@@ -39,7 +39,7 @@ def handle_target(device,
             print("@" + target_name + ": already interacted. Skip.")
             return False
         elif is_passed_filters is not None:
-            if not is_passed_filters(device, target_name, ['BEFORE_PROFILE_CLICK']):
+            if not is_passed_filters(device, target_name, reset=True, filters_tags=['BEFORE_PROFILE_CLICK']):
                 storage.add_filtered_user(target_name)
                 return False
 
@@ -63,7 +63,7 @@ def handle_target(device,
         print("@" + target_name + ": interact")
 
         if is_passed_filters is not None:
-            if not is_passed_filters(device, target_name):
+            if not is_passed_filters(device, target_name, reset=False):
                 storage.add_filtered_user(target_name)
                 print("Moving to next target")
                 return
@@ -143,3 +143,6 @@ def handle_target(device,
     if pre_conditions(username, None):
         if open_user(device=device, username=username, refresh=False, on_action=on_action):
             interact_with_target(username, None)
+        else:
+            print("@" + username + " profile couldn't be opened. Skip.")
+            storage.add_interacted_user(username, followed=False)

@@ -1,15 +1,21 @@
 import json
 import os
+import sys
+from os import path
 import re
 import shutil
 import ssl
+import subprocess
+import traceback
 import urllib.request
 from datetime import datetime
 from random import randint
+from subprocess import PIPE
+from time import sleep
 from urllib.error import URLError
-import traceback
+from urllib.parse import urlparse
 
-from insomniac.__version__ import __version__
+from insomniac.__version__ import __version__, __debug_mode__
 
 COLOR_HEADER = '\033[95m'
 COLOR_OKBLUE = '\033[94m'
@@ -31,9 +37,9 @@ def print_version():
     print_timeless("")
 
 
-def get_instagram_version(device_id):
+def get_instagram_version(device_id, app_id):
     stream = os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
-                      " shell dumpsys package com.instagram.android")
+                      f" shell dumpsys package {app_id}")
     output = stream.read()
     version_match = re.findall('versionName=(\\S+)', output)
     if len(version_match) == 1:
@@ -44,11 +50,39 @@ def get_instagram_version(device_id):
     return version
 
 
-def check_adb_connection(is_device_id_provided):
-    stream = os.popen('adb devices')
-    output = stream.read()
-    devices_count = len(re.findall('device\n', output))
-    stream.close()
+def check_adb_connection(device_id, wait_for_device):
+    is_device_id_provided = device_id is not None
+
+    while True:
+        print_timeless("Looking for ADB devices...")
+        stream = os.popen('adb devices')
+        output = stream.read()
+        devices_count = len(re.findall('device\n', output))
+        stream.close()
+
+        if not wait_for_device:
+            break
+
+        if devices_count == 0:
+            print_timeless(COLOR_HEADER + "Couldn't find any ADB-device available, sleeping a bit and trying again..." + COLOR_ENDC)
+            sleep(10)
+            continue
+
+        if not is_device_id_provided:
+            break
+
+        found_device = False
+        for line in output.split('\n'):
+            if device_id in line and 'device' in line:
+                found_device = True
+                break
+
+        if found_device:
+            break
+
+        print_timeless(COLOR_HEADER + "Couldn't find ADB-device " + device_id + " available, sleeping a bit and trying again..." + COLOR_ENDC)
+        sleep(10)
+        continue
 
     is_ok = True
     message = "That's ok."
@@ -64,72 +98,90 @@ def check_adb_connection(is_device_id_provided):
     return is_ok
 
 
-def open_instagram(device_id):
+def open_instagram(device_id, app_id):
     print("Open Instagram app")
-    os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
-             " shell am start -n com.instagram.android/com.instagram.mainactivity.MainActivity").close()
+    cmd = ("adb" + ("" if device_id is None else " -s " + device_id) +
+           f" shell am start -n {app_id}/com.instagram.mainactivity.MainActivity")
+
+    cmd_res = subprocess.run(cmd, stdout=PIPE, stderr=PIPE, shell=True, encoding="utf8")
+    err = cmd_res.stderr.strip()
+    if err:
+        print(COLOR_FAIL + err + COLOR_ENDC)
 
 
-def close_instagram(device_id):
+def open_instagram_with_url(device_id, url):
+    print("Open Instagram app with url: {}".format(url))
+    cmd = ("adb" + ("" if device_id is None else " -s " + device_id) +
+           " shell am start -a android.intent.action.VIEW -d {}".format(url))
+    cmd_res = subprocess.run(cmd, stdout=PIPE, stderr=PIPE, shell=True, encoding="utf8")
+    err = cmd_res.stderr.strip()
+
+    if err:
+        print(COLOR_FAIL + err + COLOR_ENDC)
+        return False
+
+    return True
+
+
+def close_instagram(device_id, app_id):
     print("Close Instagram app")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
-             " shell am force-stop com.instagram.android").close()
+             f" shell am force-stop {app_id}").close()
 
 
 def save_crash(device, ex=None):
     global print_log
 
-    directory_name = "Crash-" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    device.wake_up()
+
     try:
-        os.makedirs(os.path.join("crashes", directory_name), exist_ok=False)
-    except OSError:
-        print(COLOR_FAIL + "Directory " + directory_name + " already exists." + COLOR_ENDC)
-        return
+        directory_name = "Crash-" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        try:
+            os.makedirs(os.path.join("crashes", directory_name), exist_ok=False)
+        except OSError:
+            print(COLOR_FAIL + "Directory " + directory_name + " already exists." + COLOR_ENDC)
+            return
 
-    screenshot_format = ".png" if device.is_old() else ".jpg"
-    try:
-        device.screenshot(os.path.join("crashes", directory_name, "screenshot" + screenshot_format))
-    except RuntimeError:
-        print(COLOR_FAIL + "Cannot save screenshot." + COLOR_ENDC)
+        screenshot_format = ".png" if device.is_old() else ".jpg"
+        try:
+            device.screenshot(os.path.join("crashes", directory_name, "screenshot" + screenshot_format))
+        except RuntimeError:
+            print(COLOR_FAIL + "Cannot save screenshot." + COLOR_ENDC)
 
-    view_hierarchy_format = ".xml"
-    try:
-        device.dump_hierarchy(os.path.join("crashes", directory_name, "view_hierarchy" + view_hierarchy_format))
-    except RuntimeError:
-        print(COLOR_FAIL + "Cannot save view hierarchy." + COLOR_ENDC)
+        view_hierarchy_format = ".xml"
+        try:
+            device.dump_hierarchy(os.path.join("crashes", directory_name, "view_hierarchy" + view_hierarchy_format))
+        except RuntimeError:
+            print(COLOR_FAIL + "Cannot save view hierarchy." + COLOR_ENDC)
 
-    with open(os.path.join("crashes", directory_name, "logs.txt"), 'w', encoding="utf-8") as outfile:
-        outfile.write(print_log)
+        with open(os.path.join("crashes", directory_name, "logs.txt"), 'w', encoding="utf-8") as outfile:
+            outfile.write(print_log)
 
-        if ex:
-            outfile.write("\n")
-            outfile.write(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
+            if ex:
+                outfile.write("\n")
+                outfile.write(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
 
-    shutil.make_archive(os.path.join("crashes", directory_name), 'zip', os.path.join("crashes", directory_name))
-    shutil.rmtree(os.path.join("crashes", directory_name))
+        shutil.make_archive(os.path.join("crashes", directory_name), 'zip', os.path.join("crashes", directory_name))
+        shutil.rmtree(os.path.join("crashes", directory_name))
 
-    print(COLOR_OKGREEN + "Crash saved as \"crashes/" + directory_name + ".zip\"." + COLOR_ENDC)
-    print(COLOR_OKGREEN + "Please attach this file if you gonna report the crash at" + COLOR_ENDC)
-    print(COLOR_OKGREEN + "https://github.com/alexal1/Insomniac/issues\n" + COLOR_ENDC)
-
-
-def detect_block(device):
-    block_dialog = device.find(resourceId='com.instagram.android:id/dialog_root_view',
-                               className='android.widget.FrameLayout')
-    is_blocked = block_dialog.exists()
-    if is_blocked:
-        print(COLOR_FAIL + "Probably block dialog is shown." + COLOR_ENDC)
-        raise ActionBlockedError("Seems that action is blocked. Consider reinstalling Instagram app and be more careful"
-                                 " with limits!")
+        print(COLOR_OKGREEN + "Crash saved as \"crashes/" + directory_name + ".zip\"." + COLOR_ENDC)
+        print(COLOR_OKGREEN + "Please attach this file if you gonna report the crash at" + COLOR_ENDC)
+        print(COLOR_OKGREEN + "https://github.com/alexal1/Insomniac/issues\n" + COLOR_ENDC)
+    except Exception as e:
+        print(COLOR_FAIL + f"Could not save crash after an error. Crash-save-error: {str(e)}" + COLOR_ENDC)
+        print(COLOR_FAIL + traceback.format_exc() + COLOR_ENDC)
 
 
 def print_copyright():
-    print_timeless("\nIf you like this script, please " + COLOR_BOLD + "give us a star" + COLOR_ENDC + ":")
+    print_timeless("\nIf you like this bot, please " + COLOR_BOLD + "give us a star" + COLOR_ENDC + ":")
     print_timeless(COLOR_BOLD + "https://github.com/alexal1/Insomniac\n" + COLOR_ENDC)
 
 
-def _print_with_time_decorator(standard_print, print_time):
+def _print_with_time_decorator(standard_print, print_time, debug):
     def wrapper(*args, **kwargs):
+        if debug and not __debug_mode__:
+            return
+
         global print_log
         if print_time:
             time = datetime.now().strftime("%m/%d %H:%M:%S")
@@ -225,10 +277,43 @@ def get_count_of_nums_in_str(string):
     return count
 
 
+def validate_url(x):
+    try:
+        result = urlparse(x)
+        return all([result.scheme, result.netloc, result.path])
+    except Exception as e:
+        print(COLOR_FAIL + f"Error validating URL {x}. Error: {e}" + COLOR_ENDC)
+        return False
+
+
+def _get_log_file_name():
+    logs_directory_name = "logs"
+    os.makedirs(os.path.join(logs_directory_name), exist_ok=True)
+    curr_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    log_name = "insomniac_log-" + curr_time + ".log"
+    log_path = os.path.join(logs_directory_name, log_name)
+    return log_path
+
+
+class Logger(object):
+    def __init__(self):
+        self.terminal = sys.stdout
+        self.log = open(_get_log_file_name(), "a", encoding="utf-8")
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+        self.log.flush()
+
+    def flush(self):
+        pass
+
+    def fileno(self):
+        return self.terminal.fileno()
+
+
+sys.stdout = Logger()
 print_log = ""
-print_timeless = _print_with_time_decorator(print, False)
-print = _print_with_time_decorator(print, True)
-
-
-class ActionBlockedError(Exception):
-    pass
+print_timeless = _print_with_time_decorator(print, False, False)
+print_debug = _print_with_time_decorator(print, True, True)
+print = _print_with_time_decorator(print, True, False)

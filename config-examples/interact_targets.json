@@ -6,6 +6,30 @@
     "description" : "device identifier. Should be used only when multiple devices are connected at once"
   },
   {
+    "parameter-name": "app_id",
+    "enabled": false,
+    "value": "com.instagram.android",
+    "description" : "apk package identifier. Should be used only if you are using cloned-app. Using 'com.instagram.android' by default"
+  },
+  {
+    "parameter-name": "wait_for_device",
+    "enabled": true,
+    "value": "True",
+    "description" : "keep waiting for ADB-device to be ready for connection (if no device-id is provided using --device flag, will wait for any available device)"
+  },
+  {
+    "parameter-name": "dont_indicate_softban",
+    "enabled": false,
+    "value": "True",
+    "description" : "by default, Insomniac tried to indicate if there is a softban on your account. set this flag in order to ignore those soft-ban indicators"
+  },
+  {
+    "parameter-name": "debug",
+    "enabled": false,
+    "value": "True",
+    "description" : "add this flag to insomniac in debug mode (more verbose logs)"
+  },
+  {
     "parameter-name": "old",
     "enabled": false,
     "value": "True",
@@ -89,16 +113,16 @@
     "description" : "maximum amount of followings, after reaching this amount follow stops. disabled by default"
   },
   {
-    "parameter-name": "unfollow_non_followers",
+    "parameter-name": "unfollow_followed_by_anyone",
     "enabled": false,
-    "value": "20-40",
-    "description" : "unfollow at most given number of users, that don\\'t follow you back. Only users followed by this script will be unfollowed. The order is from oldest to newest followings. It can be a number (e.g. 100) or a range (e.g. 100-200)"
+    "value": "True",
+    "description" : "By default, only profiles that been followed by the bot will be unfollowed. Set this parameter if you want to unfollow any profile (even if not been followed by the bot)"
   },
   {
-    "parameter-name": "unfollow_any",
+    "parameter-name": "unfollow_non_followers",
     "enabled": false,
-    "value": "20-40",
-    "description" : "unfollow at most given number of users. The order is from oldest to newest followings. It can be a number (e.g. 100) or a range (e.g. 100-200)"
+    "value": "True",
+    "description" : "unfollow only profiles that are not following you"
   },
   {
     "parameter-name": "total_likes_limit",
@@ -109,8 +133,14 @@
   {
     "parameter-name": "total_interactions_limit",
     "enabled": true,
+    "value": "100-120",
+    "description" : "number of total interactions (successful & unsuccessful) per session, disabled by default. It can be a number (e.g. 70) or a range (e.g. 60-80)"
+  },
+  {
+    "parameter-name": "total_successful_interactions_limit",
+    "enabled": true,
     "value": "50-60",
-    "description" : "number of total interactions per session, disabled by default. It can be a number (e.g. 70) or a range (e.g. 60-80). Only successful interactions count"
+    "description" : "number of total successful interactions per session, disabled by default. It can be a number (e.g. 70) or a range (e.g. 60-80)"
   },
   {
     "parameter-name": "total_follow_limit",
