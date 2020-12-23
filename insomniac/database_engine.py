@@ -333,7 +333,7 @@ def add_targets(address, usernames, provider, source=None, interaction_type=None
             connection.close()
 
 
-def get_target(address):
+def get_target(address, user_false_validators):
     """
     Takes a user from interacted_user table which satisfies the following conditions:
     1. Has zero interactions_count
@@ -351,9 +351,14 @@ def get_target(address):
         cursor.execute(SQL_SELECT_TARGETS_FROM_INTERACTED_USERS)
         target = cursor.fetchone()
         while target is not None:
-            user = get_filtered_user(address, target["username"])
-            if user is None:
-                # Wasn't filtered before so returning that one
+            is_user_validated = True
+            for validator in user_false_validators:
+                if validator(target["username"]):
+                    is_user_validated = False
+                    break
+
+            if is_user_validated:
+                # Wasn't filtered before / blacklisted so returning that one
                 break
 
             target = cursor.fetchone()
