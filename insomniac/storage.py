@@ -83,10 +83,10 @@ class Storage:
                 self.scrapping_databases.append(get_database(acc))
 
             # TODO: implement 'dump-followers' feature or remove these lines
-            self.followers_path = os.path.join(scrape_for_account, FILENAME_FOLLOWERS)
-            if os.path.exists(self.followers_path):
-                with open(self.followers_path, encoding="utf-8") as json_file:
-                    self.account_followers = json.load(json_file)
+            # self.followers_path = os.path.join(scrape_for_account, FILENAME_FOLLOWERS)
+            # if os.path.exists(self.followers_path):
+            #     with open(self.followers_path, encoding="utf-8") as json_file:
+            #         self.account_followers = json.load(json_file)
 
     def check_user_was_interacted(self, username):
         user = get_interacted_user(self.database, username)
