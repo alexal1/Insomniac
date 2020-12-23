@@ -31,7 +31,7 @@ STORAGE_ARGS = {
 
 class Storage:
     database = None
-    scrapping_database = None
+    scrapping_databases = []
     reinteract_after = None
     whitelist = []
     blacklist = []
@@ -79,7 +79,11 @@ class Storage:
 
         # Scraping
         if scrape_for_account is not None:
-            self.scrapping_database = get_database(scrape_for_account)
+            if isinstance(scrape_for_account, list):
+                for acc in scrape_for_account:
+                    self.scrapping_databases.append(get_database(acc))
+            else:
+                self.scrapping_databases = [get_database(scrape_for_account)]
 
             # TODO: implement 'dump-followers' feature or remove these lines
             self.followers_path = os.path.join(scrape_for_account, FILENAME_FOLLOWERS)
@@ -146,7 +150,8 @@ class Storage:
         """
         Add a target to the scrapping_database (it's a database of original account for which we are scrapping).
         """
-        add_targets(self.scrapping_database, (username,), Provider.SCRAPING, source, interaction_type)
+        for scrapping_database in self.scrapping_databases:
+            add_targets(scrapping_database, (username,), Provider.SCRAPING, source, interaction_type)
 
     def get_target(self):
         """
