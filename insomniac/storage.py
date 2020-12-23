@@ -156,7 +156,7 @@ class Storage:
 
         :return: a target or None if table is empty.
         """
-        return get_target(self.database)
+        return get_target(self.database, [self.is_user_in_blacklist, self.check_user_was_filtered])
 
     def save_followers_for_today(self, followers_list, override=False):
         # TODO: implement 'dump-followers' feature or remove this function
