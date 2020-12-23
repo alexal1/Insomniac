@@ -350,6 +350,14 @@ def get_target(address):
         cursor = connection.cursor()
         cursor.execute(SQL_SELECT_TARGETS_FROM_INTERACTED_USERS)
         target = cursor.fetchone()
+        while target is not None:
+            user = get_filtered_user(address, target["username"])
+            if user is None:
+                # Wasn't filtered before so returning that one
+                break
+
+            target = cursor.fetchone()
+
     except Exception as e:
         print(COLOR_FAIL + f"[Database] Cannot pop target: {e}" + COLOR_ENDC)
     finally:
