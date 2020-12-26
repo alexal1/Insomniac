@@ -161,7 +161,7 @@ def handle_blogger(device,
         stories_value = get_value(stories_count, "Stories to watch: {}", 1)
 
         can_like = not is_like_limit_reached and not is_private and likes_value > 0
-        can_follow = (not is_follow_limit_reached) and storage.get_following_status(username) == FollowingStatus.NONE and follow_percentage > 0
+        can_follow = (not is_follow_limit_reached) and storage.get_following_status(follower_name) == FollowingStatus.NONE and follow_percentage > 0
         can_watch = (not is_watch_limit_reached) and do_have_stories and stories_value > 0
         can_interact = can_like or can_follow or can_watch
 

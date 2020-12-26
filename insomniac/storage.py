@@ -25,6 +25,11 @@ STORAGE_ARGS = {
         "help": "set a time (in hours) to wait before re-interact with an already interacted profile, disabled by default (won't interact again). "
                 "It can be a number (e.g. 48) or a range (e.g. 50-80)",
         "metavar": "150"
+    },
+    "refilter_after": {
+        "help": "set a time (in hours) to wait before re-filter an already filtered profile, disabled by default (will drop the profile and won't filter again). "
+                "It can be a number (e.g. 48) or a range (e.g. 50-80)",
+        "metavar": "150"
     }
 }
 
@@ -33,6 +38,7 @@ class Storage:
     database = None
     scrapping_databases = []
     reinteract_after = None
+    refilter_after = None
     whitelist = []
     blacklist = []
     account_followers = {}
@@ -42,6 +48,9 @@ class Storage:
 
         if args.reinteract_after is not None:
             self.reinteract_after = get_value(args.reinteract_after, "Re-interact after {} hours", 168)
+
+        if args.refilter_after is not None:
+            self.refilter_after = get_value(args.refilter_after, "Re-filter after {} hours", 168)
 
         scrape_for_account = args.__dict__.get('scrape_for_account', None)
         if my_username is None:
@@ -68,7 +77,9 @@ class Storage:
             with open(targets_path, 'r+', encoding="utf-8") as file_targets:
                 targets = [line.rstrip() for line in file_targets]
                 # Add targets to the database
+                print("Loading targets from targets.txt into the database...")
                 add_targets(self.database, targets, Provider.TARGETS_LIST)
+                print("Targets loaded successfully.")
                 targets_loaded_path = os.path.join(my_username, FILENAME_LOADED_TARGETS)
                 # Add targets to targets_loaded.txt
                 with open(targets_loaded_path, 'a+', encoding="utf-8") as file_loaded_targets:
@@ -79,8 +90,11 @@ class Storage:
 
         # Scraping
         if scrape_for_account is not None:
-            for acc in scrape_for_account:
-                self.scrapping_databases.append(get_database(acc))
+            if isinstance(scrape_for_account, list):
+                for acc in scrape_for_account:
+                    self.scrapping_databases.append(get_database(acc))
+            else:
+                self.scrapping_databases = [get_database(scrape_for_account)]
 
             # TODO: implement 'dump-followers' feature or remove these lines
             # self.followers_path = os.path.join(scrape_for_account, FILENAME_FOLLOWERS)
@@ -100,7 +114,7 @@ class Storage:
         if user is None or user[USER_INTERACTIONS_COUNT] == 0:
             return False
 
-        last_interaction = datetime.strptime(user[USER_LAST_INTERACTION], '%Y-%m-%d %H:%M:%S')
+        last_interaction = datetime.strptime(user[USER_LAST_INTERACTION], '%Y-%m-%d %H:%M:%S.%f')
         return datetime.now() - last_interaction <= timedelta(hours=hours)
 
     def check_user_was_scrapped(self, username):
@@ -109,7 +123,18 @@ class Storage:
 
     def check_user_was_filtered(self, username):
         user = get_filtered_user(self.database, username)
-        return user is not None
+        if self.refilter_after is None:
+            return user is not None
+
+        return self.check_user_was_filtered_recently(username, hours=self.refilter_after)
+
+    def check_user_was_filtered_recently(self, username, hours=72):
+        user = get_filtered_user(self.database, username)
+        if user is None:
+            return False
+
+        last_filtration = datetime.strptime(user[USER_FILTERED_AT], '%Y-%m-%d %H:%M:%S.%f')
+        return datetime.now() - last_filtration <= timedelta(hours=hours)
 
     def get_following_status(self, username):
         user = get_interacted_user(self.database, username)
@@ -156,7 +181,9 @@ class Storage:
 
         :return: a target or None if table is empty.
         """
-        return get_target(self.database, [self.is_user_in_blacklist, self.check_user_was_filtered])
+        return get_target(self.database, [self.is_user_in_blacklist,
+                                          self.check_user_was_filtered,
+                                          self.check_user_was_interacted])
 
     def save_followers_for_today(self, followers_list, override=False):
         # TODO: implement 'dump-followers' feature or remove this function

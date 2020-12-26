@@ -230,6 +230,8 @@ def interact_with_user(device,
     is_followed = False
     is_watched = False
 
+    is_scrolled_down = False
+
     if username == my_username:
         print("It's you, skip.")
         return liked_count == interaction_strategy.likes_count, is_followed, is_watched
@@ -239,12 +241,13 @@ def interact_with_user(device,
     if interaction_strategy.do_story_watch:
         is_watched = _watch_stories(device, username, interaction_strategy.stories_count, on_action)
 
-    coordinator_layout = device.find(resourceId=f'{device.app_id}:id/coordinator_root_layout')
-    if coordinator_layout.exists():
-        print("Scroll down to see more photos.")
-        coordinator_layout.scroll(DeviceFacade.Direction.BOTTOM)
-
     if interaction_strategy.do_like:
+        coordinator_layout = device.find(resourceId=f'{device.app_id}:id/coordinator_root_layout')
+        if coordinator_layout.exists():
+            print("Scroll down to see more photos.")
+            coordinator_layout.scroll(DeviceFacade.Direction.BOTTOM)
+            is_scrolled_down = True
+
         number_of_rows_to_use = min((interaction_strategy.likes_count * 2) // 3 + 1, 4)
         photos_indices = list(range(0, number_of_rows_to_use * 3))
         shuffle(photos_indices)
@@ -269,7 +272,7 @@ def interact_with_user(device,
                 break
 
     if interaction_strategy.do_follow:
-        is_followed = _follow(device, username, interaction_strategy.follow_percentage)
+        is_followed = _follow(device, username, interaction_strategy.follow_percentage, is_scrolled_down)
         if is_followed:
             print(COLOR_OKGREEN + "Following @{}.".format(username) + COLOR_ENDC)
             on_action(FollowAction(source=user_source, user=username))
@@ -332,17 +335,17 @@ def _open_photo_and_like(device, row, column, like_percentage, on_like):
     return True
 
 
-def _follow(device, username, follow_percentage):
+def _follow(device, username, follow_percentage, is_scrolled_down):
     follow_chance = randint(1, 100)
     if follow_chance > follow_percentage:
         return False
 
     print("Following...")
-    coordinator_layout = device.find(resourceId=f'{device.app_id}:id/coordinator_root_layout')
-    if coordinator_layout.exists():
-        coordinator_layout.scroll(DeviceFacade.Direction.TOP)
-
-    sleeper.random_sleep()
+    if is_scrolled_down:
+        coordinator_layout = device.find(resourceId=f'{device.app_id}:id/coordinator_root_layout')
+        if coordinator_layout.exists():
+            coordinator_layout.scroll(DeviceFacade.Direction.TOP)
+            sleeper.random_sleep()
 
     profile_header_main_layout = device.find(resourceId=f"{device.app_id}:id/profile_header_fixed_list",
                                              className='android.widget.LinearLayout')

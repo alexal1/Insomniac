@@ -240,3 +240,9 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
                 break
 
             target = storage.get_target()
+
+        if target is None:
+            print("There are no more new targets to interact with in the database (all been already interacted / filtered).")
+            print("If you wish to continue interacting with targets, add new targets to the database using scrapping / targets.txt "
+                  "or use the reinteract-after & refilter-after parameters in order to interact with the targets that are already loaded "
+                  "in the database.")

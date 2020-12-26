@@ -201,6 +201,7 @@ class InsomniacSession(object):
                     raise ex
                 else:
                     print_timeless(COLOR_FAIL + f"\nCaught an exception:\n{ex}" + COLOR_ENDC)
+                    print(COLOR_FAIL + traceback.format_exc() + COLOR_ENDC)
                     save_crash(device_wrapper.get(), ex)
             
             self.end_session(device_wrapper)
