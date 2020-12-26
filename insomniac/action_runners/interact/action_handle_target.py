@@ -29,16 +29,7 @@ def handle_target(device,
                           on_action=on_action)
 
     def pre_conditions(target_name, target_name_view):
-        if storage.is_user_in_blacklist(target_name):
-            print("@" + target_name + " is in blacklist. Skip.")
-            return False
-        elif storage.check_user_was_filtered(target_name):
-            print("@" + target_name + ": already filtered in past. Skip.")
-            return False
-        elif storage.check_user_was_interacted(target_name):
-            print("@" + target_name + ": already interacted. Skip.")
-            return False
-        elif is_passed_filters is not None:
+        if is_passed_filters is not None:
             if not is_passed_filters(device, target_name, reset=True, filters_tags=['BEFORE_PROFILE_CLICK']):
                 storage.add_filtered_user(target_name)
                 return False
@@ -93,7 +84,7 @@ def handle_target(device,
         stories_value = get_value(stories_count, "Stories to watch: {}", 1)
 
         can_like = not is_like_limit_reached and not is_private and likes_value > 0
-        can_follow = (not is_follow_limit_reached) and storage.get_following_status(username) == FollowingStatus.NONE and follow_percentage > 0
+        can_follow = (not is_follow_limit_reached) and storage.get_following_status(target_name) == FollowingStatus.NONE and follow_percentage > 0
         can_watch = (not is_watch_limit_reached) and do_have_stories and stories_value > 0
         can_interact = can_like or can_follow or can_watch
 

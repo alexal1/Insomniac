@@ -15,11 +15,13 @@ class UnfollowActionRunner(CoreActionsRunner):
         "unfollow_followed_by_anyone": {
             'help': 'By default, only profiles that been followed by the bot will be unfollowed. Set this parameter '
                     'if you want to unfollow any profile (even if not been followed by the bot)',
-            'action': 'store_true'
+            'action': 'store_true',
+            'default': None
         },
         "unfollow_non_followers": {
             'help': 'unfollow only profiles that are not following you',
-            'action': 'store_true'
+            'action': 'store_true',
+            'default': None
         }
     }
 
