@@ -23,6 +23,7 @@
     * [Full list of command line arguments](#full-list-of-command-line-arguments)
     * [FAQ](#faq)
 - [Extra features](#extra-features)
+- [Udemy course for beginners](#udemy-course-for-beginners)
 - [Source code](#source-code)
 - [Filtering](#filtering)
 - [Whitelist and Blacklist](#whitelist-and-blacklist)
@@ -119,6 +120,18 @@ All core features in this project are free to use. But you may want to get more 
 
 Activate these features by supporting our small team on Patreon: [https://insomniac-bot.com/activate/](https://insomniac-bot.com/activate/).
 
+### Udemy course for beginners
+We've recorded a video course to _show_ and _explain_ everything you need to know to start using Insomniac. In these videos we explain how to:
+- Install Python
+- Install Insomniac
+- Install platform-tools
+- Enable and set developer options on a mobile phone / emulator
+- Run Insomniac from Terminal / Command Prompt
+
+All videos are recorded for 4 platforms: Windows, macOS, Linux and Raspberry Pi. Via this link you can get the course with a great discount: [Udemy Сourse Сoupon](https://insomniac-bot.com/udemy_course/).
+
+Purchase the course and get one month of extra features for free!
+
 ### Source code
 You can see contents of the `insomniac` PyPi package in the [insomniac](https://github.com/alexal1/Insomniac/tree/master/insomniac) folder. So, you can work with the source code directly.
 1. Clone the project: `git clone https://github.com/alexal1/Insomniac.git`
@@ -187,16 +200,19 @@ There already are Instagram automation tools that work either on Instagram web v
 That's why need arised in a solution for mobile devices. Instagram can't distinguish bot from a human when it comes to your phone. However, even a human can reach limits when using the app, so don't fail to be careful. Always set `--total-likes-limit` to 300 or less. Also it's better to use `--repeat` to act periodically for 2-3 hours, because Instagram keeps track of how long the app works.
 
 ### Community
-We have a [Discord server](https://discord.gg/59pUYCw) which is the most convenient place to discuss all bugs, new features, Instagram limits, etc. If you're not familiar with Discord, you can also join our [Telegram chat](https://t.me/insomniac_chat). And finally, all useful info is posted on our [Patreon page](https://www.patreon.com/insomniac_bot).
+We are now **approved training providers for Udemy**. Try our [course for beginners](https://insomniac-bot.com/udemy_course/)! <br>The most convenient place to discuss all bugs, new features, Instagram limits, etc. is the [Discord server](https://discord.gg/59pUYCw). If you're not familiar with Discord, you can also join our [Telegram chat](https://t.me/insomniac_chat). And finally, all useful info is posted on our [Patreon page](https://www.patreon.com/insomniac_bot).
 
 <p>
+  <a href="https://insomniac-bot.com/udemy_course/">
+    <img alt="Udemy Course" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/udemy.png" height=80/>
+  </a>
   <a href="https://discord.gg/59pUYCw">
-    <img hspace="3" alt="Discord Server" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/discord.png" height=84/>
+    <img alt="Discord Server" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/discord.png" height=80/>
   </a>
   <a href="https://t.me/insomniac_chat">
-    <img hspace="3" alt="Telegram Chat" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/telegram.png" height=84/>
+    <img alt="Telegram Chat" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/telegram.png" height=80/>
   </a>
   <a href="https://www.patreon.com/insomniac_bot">
-    <img hspace="3" alt="Patreon Page" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/patreon.png" height=84/>
+    <img alt="Patreon Page" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/patreon.png" height=80/>
   </a>
 </p>
