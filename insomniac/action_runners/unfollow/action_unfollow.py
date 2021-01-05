@@ -1,23 +1,25 @@
 from enum import unique, Enum
 
-from insomniac.actions_impl import open_user_followings, sort_followings_by_date, iterate_over_followings, do_unfollow
+from insomniac.actions_impl import open_user_followings, sort_followings_by_date, iterate_over_my_followings, \
+    do_unfollow, FOLLOW_REGEX
 from insomniac.actions_types import UnfollowAction, GetProfileAction
 from insomniac.limits import process_limits
+from insomniac.report import print_short_unfollow_report
 from insomniac.sleeper import sleeper
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
 
-def unfollow(device, on_action, storage, unfollow_restriction, session_state, is_limit_reached, action_status):
+def unfollow(device, on_action, storage, unfollow_restriction, sort_order, session_state, is_limit_reached, action_status):
     if not open_user_followings(device=device, username=None, on_action=on_action):
         return
     sleeper.random_sleep()
-    sort_followings_by_date(device)
+    sort_followings_by_date(device, sort_order)
     sleeper.random_sleep()
 
     # noinspection PyUnusedLocal
     # following_name_view is a standard callback argument
-    def iteration_callback_pre_conditions(following_name, following_name_view):
+    def iteration_callback_pre_conditions(following_name, following_name_view, follow_status_button_view):
         """
         :return: True to start unfollowing for given user, False to skip
         """
@@ -29,25 +31,35 @@ def unfollow(device, on_action, storage, unfollow_restriction, session_state, is
                 unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS:
             following_status = storage.get_following_status(following_name)
             if not following_status == FollowingStatus.FOLLOWED:
-                print("Skip @" + following_name + ". Following status: " + following_status.name + ".")
+                print("Skip @" + following_name + ". Following status: " + following_status.name +
+                      " (probably not followed by the bot...)")
                 return False
 
-        if unfollow_restriction == UnfollowRestriction.ANY or \
-                unfollow_restriction == UnfollowRestriction.ANY_NON_FOLLOWERS:
+        if follow_status_button_view is not None:
             following_status = storage.get_following_status(following_name)
-            if following_status == FollowingStatus.UNFOLLOWED:
-                print("Skip @" + following_name + ". Following status: " + following_status.name + ".")
+            follow_status_from_row = follow_status_button_view.get_text()
+            print("Follow-status-button text: " + follow_status_from_row + ".")
+            if follow_status_from_row in FOLLOW_REGEX.split('|') or following_status == FollowingStatus.UNFOLLOWED:
+                print("Skip @" + following_name + ". Following status: " + FollowingStatus.UNFOLLOWED.name
+                      + "(already been unfollowed by the bot...)")
+                return False
+
+        if unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS or \
+                unfollow_restriction == UnfollowRestriction.ANY_NON_FOLLOWERS:
+            if storage.is_profile_follows_me_by_cache(following_name):
+                print("Skip @" + following_name + ". Following status (according to cache): "
+                      + FollowingStatus.FOLLOWED.name)
                 return False
 
         return True
 
     # noinspection PyUnusedLocal
     # following_name_view is a standard callback argument
-    def iteration_callback(following_name, following_name_view):
+    def iteration_callback(following_name, following_name_view, follow_status_button_view):
         """
         :return: True to continue unfollowing after given user, False to stop
         """
-        print("Unfollow @" + following_name)
+        print("Running Unfollow-action on @" + following_name)
 
         is_unfollow_limit_reached, unfollow_reached_source_limit, unfollow_reached_session_limit = \
             is_limit_reached(UnfollowAction(user=following_name), session_state)
@@ -65,15 +77,19 @@ def unfollow(device, on_action, storage, unfollow_restriction, session_state, is
 
         check_if_is_follower = unfollow_restriction == UnfollowRestriction.FOLLOWED_BY_SCRIPT_NON_FOLLOWERS or \
                                unfollow_restriction == UnfollowRestriction.ANY_NON_FOLLOWERS
-        unfollowed = do_unfollow(device, following_name, session_state.my_username, check_if_is_follower, on_action)
+
+        unfollowed = do_unfollow(device, session_state.my_username, following_name, storage, check_if_is_follower,
+                                 following_name_view, follow_status_button_view, on_action)
 
         if unfollowed:
             storage.add_interacted_user(following_name, unfollowed=True)
             on_action(UnfollowAction(user=following_name))
+            print(COLOR_OKGREEN + f"Unfollowed @{following_name}" + COLOR_ENDC)
+            print_short_unfollow_report(session_state)
 
         return True
 
-    iterate_over_followings(device, iteration_callback, iteration_callback_pre_conditions)
+    iterate_over_my_followings(device, iteration_callback, iteration_callback_pre_conditions)
 
 
 @unique

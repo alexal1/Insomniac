@@ -9,6 +9,7 @@ InteractAction = namedtuple('InteractAction', 'source user succeed')
 GetProfileAction = namedtuple('GetProfileAction', 'user')
 ScrapeAction = namedtuple('ScrapeAction', 'source user')
 RemoveMassFollowerAction = namedtuple('RemoveMassFollowerAction', 'user')
+CommentAction = namedtuple('CommentAction', 'source user comment')
 
 
 @unique
@@ -19,5 +20,11 @@ class BloggerInteractionType(Enum):
 
 @unique
 class HashtagInteractionType(Enum):
+    TOP_LIKERS = 'top-likers'
+    RECENT_LIKERS = 'recent-likers'
+
+
+@unique
+class PlaceInteractionType(Enum):
     TOP_LIKERS = 'top-likers'
     RECENT_LIKERS = 'recent-likers'

@@ -3,6 +3,7 @@ from enum import Enum, unique
 from insomniac.actions_types import GetProfileAction
 from insomniac.sleeper import sleeper
 from insomniac.utils import *
+from insomniac.views import TabBarView
 
 SEARCH_CONTENT_DESC_REGEX = '[Ss]earch and [Ee]xplore'
 
@@ -25,54 +26,20 @@ def navigate(device, tab):
     button.click()
 
 
-def search_for(device, username=None, hashtag=None, on_action=None):
-    navigate(device, Tabs.SEARCH)
-    search_edit_text = device.find(resourceId=f'{device.app_id}:id/action_bar_search_edit_text',
-                                   className='android.widget.EditText')
-    search_edit_text.click()
+def search_for(device, username=None, hashtag=None, place=None, on_action=None):
+    search_view = TabBarView(device).navigate_to_search()
+    target_view = None
 
     if username is not None:
-        print("Open user @" + username)
-        search_edit_text.set_text(username)
-        username_view = device.find(resourceId=f'{device.app_id}:id/row_search_user_username',
-                                    className='android.widget.TextView',
-                                    text=username)
-
-        sleeper.random_sleep()
-        if not username_view.exists():
-            print_timeless(COLOR_FAIL + "Cannot find user @" + username + ", abort." + COLOR_ENDC)
-            return False
-
-        username_view.click()
-
-        if on_action is not None:
-            on_action(GetProfileAction(user=username))
-
-        return True
+        target_view = search_view.navigate_to_username(username, on_action)
 
     if hashtag is not None:
-        print("Open hashtag #" + hashtag)
-        tab_layout = device.find(resourceId=f'{device.app_id}:id/fixed_tabbar_tabs_container',
-                                 className='android.widget.LinearLayout')
-        if not tab_layout.exists():
-            print(COLOR_FAIL + "Cannot find tabs." + COLOR_ENDC)
-            return False
-        tab_layout.child(index=2).click()
+        target_view = search_view.navigate_to_hashtag(hashtag)
 
-        search_edit_text.set_text(hashtag)
-        hashtag_view = device.find(resourceId=f'{device.app_id}:id/row_hashtag_textview_tag_name',
-                                   className='android.widget.TextView',
-                                   text=f"#{hashtag}")
+    if place is not None:
+        target_view = search_view.navigate_to_place(place)
 
-        sleeper.random_sleep()
-        if not hashtag_view.exists():
-            print_timeless(COLOR_FAIL + "Cannot find hashtag #" + hashtag + ", abort." + COLOR_ENDC)
-            return False
-
-        hashtag_view.click()
-        return True
-
-    return False
+    return target_view is not None
 
 
 def switch_to_english(device):

@@ -46,9 +46,11 @@ class InstagramView:
         self.device = device
 
     def is_block_dialog_present(self):
-        block_dialog = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_root_view',
-                                        className='android.widget.FrameLayout')
-        return block_dialog.exists()
+        block_dialog_v1 = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_root_view',
+                                           className='android.widget.FrameLayout')
+        block_dialog_v2 = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_container',
+                                           className='android.view.ViewGroup')
+        return block_dialog_v1.exists(quick=True) or block_dialog_v2.exists(quick=True)
 
 
 class TabBarView(InstagramView):
@@ -210,6 +212,25 @@ class HashTagView(InstagramView):
         )
 
 
+class PlacesView(InstagramView):
+    def _get_recycler_view(self):
+        CLASSNAME = "(androidx.recyclerview.widget.RecyclerView|android.view.View)"
+
+        return self.device.find(classNameMatches=CLASSNAME)
+
+    def _get_first_image_view(self, recycler):
+        return recycler.child(
+            className="android.widget.ImageView",
+            resourceIdMatches=f"{self.device.app_id}:id/image_button",
+        )
+
+    def _get_recent_tab(self):
+        return self.device.find(
+            className="android.widget.TextView",
+            text="Recent",
+        )
+
+
 class SearchView(InstagramView):
     def _get_search_edit_text(self):
         return self.device.find(
@@ -235,6 +256,14 @@ class SearchView(InstagramView):
             ),
             className="android.widget.TextView",
             text=f"#{hashtag}",
+        )
+
+    def _get_place_row(self):
+        return self.device.find(
+            resourceIdMatches=case_insensitive_re(
+                f"{self.device.app_id}:id/row_place_title"
+            ),
+            className="android.widget.TextView",
         )
 
     def _get_tab_text_view(self, tab: SearchTabs):
@@ -289,15 +318,37 @@ class SearchView(InstagramView):
         return None
 
     def navigate_to_username(self, username, on_action):
-        print_debug("Navigate to profile @" + username)
+        print_debug(f"Navigate to profile @{username}")
         search_edit_text = self._get_search_edit_text()
         search_edit_text.click()
+        sleeper.random_sleep()
 
+        accounts_tab = self._get_tab_text_view(SearchTabs.ACCOUNTS)
+        if not accounts_tab.exists():
+            print_debug("Cannot find tab: Accounts. Going to attempt to search for placeholder in all tabs")
+            accounts_tab = self._search_tab_with_text_placeholder(SearchTabs.ACCOUNTS)
+            if accounts_tab is None:
+                print(COLOR_FAIL + "Cannot find tab: Accounts." + COLOR_ENDC)
+                save_crash(self.device)
+                return None
+        accounts_tab.click()
+        self.device.close_keyboard()
+
+        # Check if username already exists in the recent search list -> act as human
+        username_view_recent = self._get_username_row(username)
+        if username_view_recent.exists():
+            username_view_recent.click()
+            on_action(GetProfileAction(user=username))
+            return ProfileView(self.device, is_own_profile=False)
+
+        print(f"@{username} is not in recent searching history...")
         search_edit_text.set_text(username)
+        self.device.close_keyboard()
         username_view = self._get_username_row(username)
 
         if not username_view.exists():
-            print(COLOR_FAIL + "Cannot find user @" + username + ", abort." + COLOR_ENDC)
+            print(COLOR_FAIL + f"Cannot find profile @{username}, abort." + COLOR_ENDC)
+            save_crash(self.device)
             return None
 
         username_view.click()
@@ -306,47 +357,77 @@ class SearchView(InstagramView):
         return ProfileView(self.device, is_own_profile=False)
 
     def navigate_to_hashtag(self, hashtag):
-        print(f"Navigate to hashtag {hashtag}")
+        print_debug(f"Navigate to hashtag #{hashtag}")
         search_edit_text = self._get_search_edit_text()
         search_edit_text.click()
-
         sleeper.random_sleep()
+
         hashtag_tab = self._get_tab_text_view(SearchTabs.TAGS)
         if not hashtag_tab.exists():
-            print_debug(
-                "Cannot find tab: Tags. Going to attempt to search for placeholder in all tabs"
-            )
+            print_debug("Cannot find tab: Tags. Going to attempt to search for placeholder in all tabs")
             hashtag_tab = self._search_tab_with_text_placeholder(SearchTabs.TAGS)
             if hashtag_tab is None:
                 print(COLOR_FAIL + "Cannot find tab: Tags." + COLOR_ENDC)
                 save_crash(self.device)
                 return None
-
         hashtag_tab.click()
-        sleeper.random_sleep()
-        DeviceFacade.back(self.device)
-        sleeper.random_sleep()
-        # check if that hashtag already exists in the recent search list -> act as human
-        hashtag_view_recent = self._get_hashtag_row(hashtag[1:])
+        self.device.close_keyboard()
 
+        # Check if hashtag already exists in the recent search list -> act as human
+        hashtag_view_recent = self._get_hashtag_row(hashtag)
         if hashtag_view_recent.exists():
             hashtag_view_recent.click()
             sleeper.random_sleep()
             return HashTagView(self.device)
 
-        print(f"{hashtag} is not in recent searching history..")
+        print(f"#{hashtag} is not in recent searching history...")
         search_edit_text.set_text(hashtag)
-        hashtag_view = self._get_hashtag_row(hashtag[1:])
+        self.device.close_keyboard()
+        hashtag_view = self._get_hashtag_row(hashtag)
 
         if not hashtag_view.exists():
-            print(COLOR_FAIL + f"Cannot find hashtag {hashtag}, abort." + COLOR_ENDC)
+            print(COLOR_FAIL + f"Cannot find hashtag #{hashtag}, abort." + COLOR_ENDC)
             save_crash(self.device)
             return None
 
         hashtag_view.click()
+        return HashTagView(self.device)
+
+    def navigate_to_place(self, place):
+        print(f"Navigate to place {place}")
+        search_edit_text = self._get_search_edit_text()
+        search_edit_text.click()
+
+        sleeper.random_sleep()
+        places_tab = self._get_tab_text_view(SearchTabs.PLACES)
+        if not places_tab.exists():
+            print_debug(
+                "Cannot find tab: Places. Going to attempt to search for placeholder in all tabs"
+            )
+            places_tab = self._search_tab_with_text_placeholder(SearchTabs.PLACES)
+            if places_tab is None:
+                print(COLOR_FAIL + "Cannot find tab: Places." + COLOR_ENDC)
+                save_crash(self.device)
+                return None
+
+        places_tab.click()
+        sleeper.random_sleep()
+        self.device.close_keyboard()
         sleeper.random_sleep()
 
-        return HashTagView(self.device)
+        search_edit_text.set_text(place)
+        self.device.close_keyboard()
+        place_view = self._get_place_row()
+
+        if not place_view.exists():
+            print(COLOR_FAIL + f"Cannot find place {place}, abort." + COLOR_ENDC)
+            save_crash(self.device)
+            return None
+
+        place_view.click()
+        sleeper.random_sleep()
+
+        return PlacesView(self.device)
 
 
 class PostsViewList(InstagramView):
@@ -419,7 +500,7 @@ class LanguageView(InstagramView):
 
 
 class AccountView(InstagramView):
-    def navigateToLanguage(self):
+    def navigate_to_language(self):
         print_debug("Navigate to Language")
         button = self.device.find(
             textMatches=case_insensitive_re("Language"),
@@ -429,6 +510,29 @@ class AccountView(InstagramView):
         button.click()
 
         return LanguageView(self.device)
+
+    def change_to_username(self, username):
+        action_bar = self.device.find(resourceId=f"{self.device.app_id}:id/action_bar_large_title")
+        current_profile_name = action_bar.get_text().upper()
+        if current_profile_name == username.upper():
+            print(COLOR_OKBLUE + f"You are already logged as {username}!" + COLOR_ENDC)
+            return True
+        if action_bar.exists():
+            action_bar.click()
+            sleeper.random_sleep()
+            found_obj = self.device.find(
+                resourceId=f"{self.device.app_id}:id/row_user_textview",
+                textMatches=case_insensitive_re(username),
+            )
+            if found_obj.exists():
+                print(f"Switching to {username}...")
+                found_obj.click()
+                sleeper.random_sleep()
+                action_bar = self.device.find(resourceId=f"{self.device.app_id}:id/action_bar_large_title")
+                current_profile_name = action_bar.get_text().upper()
+                if current_profile_name == username.upper():
+                    return True
+        return False
 
 
 class SettingsView(InstagramView):
@@ -714,10 +818,15 @@ class ProfileView(ActionBarView):
         )
         return followers_text_view
 
-    def get_followers_count(self, should_parse=True):
+    def get_followers_count(self, should_parse=True, swipe_up_if_needed=False):
         followers = None
         followers_text_view = self._get_followers_text_view()
-        if followers_text_view.exists():
+        if swipe_up_if_needed and not followers_text_view.exists(quick=True):
+            print("Cannot find followers count text, maybe its a little bit upper.")
+            print("Swiping up a bit.")
+            self.device.swipe(DeviceFacade.Direction.BOTTOM)
+
+        if followers_text_view.exists(quick=True):
             followers_text = followers_text_view.get_text()
             if followers_text:
                 if should_parse:
@@ -740,9 +849,14 @@ class ProfileView(ActionBarView):
         )
         return following_text_view
 
-    def get_following_count(self):
+    def get_following_count(self, swipe_up_if_needed=False):
         following = None
         following_text_view = self._get_following_text_view()
+        if swipe_up_if_needed and not following_text_view.exists(quick=True):
+            print("Cannot find following count text, maybe its a little bit upper.")
+            print("Swiping up a bit.")
+            self.device.swipe(DeviceFacade.Direction.BOTTOM)
+
         if following_text_view.exists():
             following_text = following_text_view.get_text()
             if following_text:
@@ -795,11 +909,11 @@ class ProfileView(ActionBarView):
         else:
             return 0, 0
 
-    def get_profile_info(self):
+    def get_profile_info(self, swipe_up_if_needed=False):
 
         username = self.get_username()
-        followers = self.get_followers_count()
-        following = self.get_following_count()
+        followers = self.get_followers_count(swipe_up_if_needed=swipe_up_if_needed)
+        following = self.get_following_count(swipe_up_if_needed=swipe_up_if_needed)
 
         return username, followers, following
 
@@ -997,7 +1111,7 @@ class FollowersFollowingListView(InstagramView):
         # Looking for any profile in the list, just to make sure its loaded with profiles
         any_username_view = self.device.find(resourceId=f'{self.device.app_id}:id/follow_list_username',
                                              className='android.widget.TextView')
-        is_list_empty_from_profiles = not any_username_view.exists()
+        is_list_empty_from_profiles = not any_username_view.exists(quick=True)
         return is_list_empty_from_profiles
 
     def iterate_over_followers(self, is_myself, iteration_callback,
@@ -1145,4 +1259,8 @@ class CurrentStoryView(InstagramView):
 
 
 class LanguageNotEnglishException(Exception):
+    pass
+
+
+class UserSwitchFailedException(Exception):
     pass

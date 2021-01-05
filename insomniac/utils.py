@@ -1,11 +1,10 @@
 import json
 import os
-import sys
-from os import path
 import re
 import shutil
 import ssl
 import subprocess
+import sys
 import traceback
 import urllib.request
 from datetime import datetime
@@ -28,10 +27,13 @@ COLOR_UNDERLINE = '\033[4m'
 
 
 def print_version():
+    def versiontuple(v):
+        return tuple(map(int, (v.split("."))))
+
     current_version = __version__
     print_timeless(COLOR_HEADER + f"Insomniac v{current_version}" + COLOR_ENDC)
     latest_version = _get_latest_version('insomniac')
-    if latest_version is not None and latest_version > current_version:
+    if latest_version is not None and versiontuple(latest_version) > versiontuple(current_version):
         print_timeless(COLOR_HEADER + f"Newer version is available (v{latest_version}). Please run" + COLOR_ENDC)
         print_timeless(COLOR_HEADER + COLOR_BOLD + "python3 -m pip install insomniac --upgrade" + COLOR_ENDC)
     print_timeless("")

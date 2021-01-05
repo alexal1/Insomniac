@@ -2,7 +2,8 @@ from functools import partial
 
 from insomniac.action_runners.actions_runners_manager import ActionState
 from insomniac.actions_impl import interact_with_user, InteractionStrategy, is_private_account, open_user, do_have_story
-from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, StoryWatchAction
+from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, StoryWatchAction, \
+    CommentAction
 from insomniac.limits import process_limits
 from insomniac.report import print_short_report, print_interaction_types
 from insomniac.storage import FollowingStatus
@@ -11,11 +12,14 @@ from insomniac.utils import *
 
 def handle_target(device,
                   username,
+                  provider,
                   session_state,
                   likes_count,
                   stories_count,
                   follow_percentage,
                   like_percentage,
+                  comment_percentage,
+                  comments_list,
                   storage,
                   on_action,
                   is_limit_reached,
@@ -68,6 +72,9 @@ def handle_target(device,
         is_watch_limit_reached, watch_reached_source_limit, watch_reached_session_limit = \
             is_limit_reached(StoryWatchAction(user=target_name), session_state)
 
+        is_comment_limit_reached, comment_reached_source_limit, comment_reached_session_limit = \
+            is_limit_reached(CommentAction(source=target_name, user=target_name, comment=""), session_state)
+
         is_private = is_private_account(device)
         if is_private:
             print("@" + target_name + ": Private account - images wont be liked.")
@@ -79,6 +86,7 @@ def handle_target(device,
         is_likes_enabled = likes_count != '0'
         is_stories_enabled = stories_count != '0'
         is_follow_enabled = follow_percentage != 0
+        is_comment_enabled = comment_percentage != 0
 
         likes_value = get_value(likes_count, "Likes count: {}", 2, max_count=12)
         stories_value = get_value(stories_count, "Stories to watch: {}", 1)
@@ -86,35 +94,39 @@ def handle_target(device,
         can_like = not is_like_limit_reached and not is_private and likes_value > 0
         can_follow = (not is_follow_limit_reached) and storage.get_following_status(target_name) == FollowingStatus.NONE and follow_percentage > 0
         can_watch = (not is_watch_limit_reached) and do_have_stories and stories_value > 0
-        can_interact = can_like or can_follow or can_watch
+        can_comment = (not is_comment_limit_reached) and not is_private and comment_percentage > 0
+        can_interact = can_like or can_follow or can_watch or can_comment
 
         if not can_interact:
             print("@" + target_name + ": Cant be interacted (due to limits / already followed). Skip.")
-            storage.add_interacted_user(target_name, followed=False)
+            storage.add_interacted_user(target_name, followed=False, provider=provider)
             on_action(InteractAction(source=target_name, user=target_name, succeed=False))
         else:
-            print_interaction_types(target_name, can_like, can_follow, can_watch)
+            print_interaction_types(target_name, can_like, can_follow, can_watch, can_comment)
             interaction_strategy = InteractionStrategy(do_like=can_like,
                                                        do_follow=can_follow,
                                                        do_story_watch=can_watch,
+                                                       do_comment=can_comment,
                                                        likes_count=likes_value,
                                                        follow_percentage=follow_percentage,
                                                        like_percentage=like_percentage,
-                                                       stories_count=stories_value)
+                                                       stories_count=stories_value,
+                                                       comment_percentage=comment_percentage,
+                                                       comments_list=comments_list)
 
-            is_liked, is_followed, is_watch = interaction(username=target_name,
-                                                          interaction_strategy=interaction_strategy)
-            if is_liked or is_followed or is_watch:
-                storage.add_interacted_user(target_name, followed=is_followed)
+            is_liked, is_followed, is_watch, is_commented = interaction(username=target_name, interaction_strategy=interaction_strategy)
+            if is_liked or is_followed or is_watch or is_commented:
+                storage.add_interacted_user(target_name, followed=is_followed, provider=provider)
                 on_action(InteractAction(source=target_name, user=target_name, succeed=True))
                 print_short_report(target_name, session_state)
             else:
-                storage.add_interacted_user(target_name, followed=False)
+                storage.add_interacted_user(target_name, followed=False, provider=provider)
                 on_action(InteractAction(source=target_name, user=target_name, succeed=False))
 
         if ((is_like_limit_reached and is_likes_enabled) or not is_likes_enabled) and \
-                ((is_follow_limit_reached and is_follow_enabled) or not is_follow_enabled) and \
-                ((is_watch_limit_reached and is_stories_enabled) or not is_stories_enabled):
+           ((is_follow_limit_reached and is_follow_enabled) or not is_follow_enabled) and \
+           ((is_comment_limit_reached and is_comment_enabled) or not is_comment_enabled) and \
+           ((is_watch_limit_reached and is_stories_enabled) or not is_stories_enabled):
             # If one of the limits reached for source-limit, move to next source
             if (like_reached_source_limit is not None and like_reached_session_limit is None) or \
                     (follow_reached_source_limit is not None and follow_reached_session_limit is None):
@@ -136,4 +148,4 @@ def handle_target(device,
             interact_with_target(username, None)
         else:
             print("@" + username + " profile couldn't be opened. Skip.")
-            storage.add_interacted_user(username, followed=False)
+            storage.add_interacted_user(username, followed=False, provider=provider)

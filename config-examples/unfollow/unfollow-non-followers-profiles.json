@@ -1,0 +1,104 @@
+[
+  {
+    "parameter-name": "device",
+    "enabled": false,
+    "value": "2443de990e017ece",
+    "description" : "device identifier. Should be used only when multiple devices are connected at once"
+  },
+  {
+    "parameter-name": "wait_for_device",
+    "enabled": true,
+    "value": "True",
+    "description" : "keep waiting for ADB-device to be ready for connection (if no device-id is provided using --device flag, will wait for any available device)"
+  },
+  {
+    "parameter-name": "app_id",
+    "enabled": false,
+    "value": "com.instagram.android",
+    "description" : "apk package identifier. Should be used only if you are using cloned-app. Using 'com.instagram.android' by default"
+  },
+  {
+    "parameter-name": "old",
+    "enabled": false,
+    "value": "True",
+    "description" : "add this flag to use an old version of uiautomator. Use it only if you experience problems with the default version"
+  },
+  {
+    "parameter-name": "dont_indicate_softban",
+    "enabled": false,
+    "value": "True",
+    "description" : "by default, Insomniac tries to indicate if there is a softban on your account. set this flag in order to ignore those soft-ban indicators"
+  },
+  {
+    "parameter-name": "debug",
+    "enabled": false,
+    "value": "True",
+    "description" : "add this flag to insomniac in debug mode (more verbose logs)"
+  },
+  {
+    "parameter-name": "no_speed_check",
+    "enabled": false,
+    "value": "True",
+    "description" : "skip internet speed check at start"
+  },
+  {
+    "parameter-name": "username",
+    "enabled": false,
+    "value": "my_username",
+    "description" : "if you have configured multiple Instagram accounts in your app, use this parameter in order to switch into a specific one. Not trying to switch account by default. If the account does not exist - the session wont started"
+  },
+  {
+    "parameter-name": "repeat",
+    "enabled": false,
+    "value": "160-220",
+    "description" : "repeat the same session again after N minutes after completion, disabled by default. It can be a number of minutes (e.g. 180) or a range (e.g. 120-180)"
+  },
+  {
+    "parameter-name": "unfollow",
+    "enabled": true,
+    "value": "20-40",
+    "description" : "unfollow at most given number of users. Only users followed by this script will be unfollowed. The order is from oldest to newest followings. It can be a number (e.g. 100) or a range (e.g. 100-200)"
+  },
+  {
+    "parameter-name": "unfollow_followed_by_anyone",
+    "enabled": true,
+    "value": "True",
+    "description" : "By default, only profiles that been followed by the bot will be unfollowed. Set this parameter if you want to unfollow any profile (even if not been followed by the bot)"
+  },
+  {
+    "parameter-name": "unfollow_non_followers",
+    "enabled": true,
+    "value": "True",
+    "description" : "unfollow only profiles that are not following you"
+  },
+  {
+    "parameter-name": "recheck_follow_status_after",
+    "enabled": true,
+    "value": "168",
+    "description" : "set a time (in hours) to wait before re-check follow status of a profile, disabled by default (will check every time when needed).It can be a number (e.g. 48) or a range (e.g. 50-80)"
+  },
+  {
+    "parameter-name": "following_sort_order",
+    "enabled": false,
+    "value": "latest",
+    "description" : "sort the following-list when unfollowing users from the profile-following list. Can be one of values: default / latest / earliest. By default sorting by earliest"
+  },
+  {
+    "parameter-name": "min_following",
+    "enabled": false,
+    "value": "150",
+    "description" : "minimum amount of followings, after reaching this amount unfollow stops"
+  },
+  {
+    "parameter-name": "total_get_profile_limit",
+    "enabled": true,
+    "value": "300-400",
+    "description" : "limit on total amount of get-profile actions during the session, disabled by default. It can be a number (e.g. 600) or a range (e.g. 500-700)"
+  },
+  {
+    "parameter-name": "session_length_in_mins_limit",
+    "enabled": true,
+    "value": "50-60",
+    "description" : "limit the session length by time (minutes), disabled by default. It can be a number (e.g. 60) or a range (e.g. 40-70)"
+  }
+]

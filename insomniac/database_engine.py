@@ -4,16 +4,26 @@ from insomniac.actions_providers import Provider
 from insomniac.utils import *
 
 DB_NAME = "interaction_data.db"
-DB_VERSIONS = {'3.5.0': 1}
+DB_VERSIONS = {'3.5.0': 1,
+               '3.5.18': 2}
 
 SQL_SELECT_FROM_METADATA = "SELECT * from metadata"
+SQL_SELECT_MAX_VERSION_FROM_METADATA = "SELECT MAX(version) from metadata"
+SQL_SELECT_FROM_FOLLOW_STATUS_BY_USERNAME = "SELECT * from users_follow_status WHERE username = :username"
 SQL_SELECT_FROM_INTERACTED_USERS_BY_USERNAME = "SELECT * from interacted_users WHERE username = :username"
-SQL_SELECT_TARGETS_FROM_INTERACTED_USERS = "SELECT * from interacted_users WHERE interactions_count = 0 " \
-                                           "AND (provider = 'TARGETS_LIST' OR provider = 'SCRAPING')"
+SQL_SELECT_TARGETS_FROM_INTERACTED_USERS = "SELECT * from interacted_users WHERE " \
+                                           "provider = 'TARGETS_LIST' OR provider = 'SCRAPING'"
+SQL_COUNT_LOADED_TARGETS_FROM_INTERACTED_USERS_BY_SCRAPE = "SELECT COUNT(*) from interacted_users WHERE provider = 'SCRAPING'"
+SQL_COUNT_LOADED_TARGETS_FROM_INTERACTED_USERS_BY_TARGETS_LIST = "SELECT COUNT(*) from interacted_users WHERE provider = 'TARGETS_LIST'"
+SQL_COUNT_LOADED_NOT_INTERACTED_TARGETS_FROM_INTERACTED_USERS_BY_SCRAPE = "SELECT COUNT(*) from interacted_users WHERE " \
+                                                                          "provider = 'SCRAPING' AND interactions_count = 0"
+SQL_COUNT_LOADED_NOT_INTERACTED_TARGETS_FROM_INTERACTED_USERS_BY_TARGETS_LIST = "SELECT COUNT(*) from interacted_users WHERE " \
+                                                                                "provider = 'TARGETS_LIST' AND interactions_count = 0"
 SQL_SELECT_FROM_FILTERED_USERS_BY_USERNAME = "SELECT * from filtered_users WHERE username = :username"
 SQL_SELECT_FROM_SCRAPED_USERS_BY_USERNAME = "SELECT * from scraped_users WHERE username = :username"
 
-SQL_INSERT_INTO_METADATA = "INSERT INTO metadata DEFAULT VALUES"
+SQL_INSERT_DEFAULT_INTO_METADATA = "INSERT INTO metadata DEFAULT VALUES"
+SQL_INSERT_INTO_METADATA = "INSERT INTO metadata (version) VALUES (?)"
 SQL_INSERT_INTO_INTERACTED_USERS = "INSERT INTO interacted_users (username, last_interaction, " \
                                    "source, interaction_type, provider) VALUES (?, ?, ?, ?, ?)"
 SQL_INSERT_INTO_FILTERED_USERS = "INSERT INTO filtered_users (username, filtered_at) VALUES (?, ?)"
@@ -36,6 +46,8 @@ SQL_INSERT_INTO_SESSIONS = """
         args,
         profile_id
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+SQL_INSERT_INTO_FOLLOW_STATUS = "INSERT INTO users_follow_status (username, is_follow_me, " \
+                                   "do_i_follow_him, updated_at) VALUES (?, ?, ?, ?)"
 
 SQL_DELETE_FROM_TARGETS_BY_USERNAME = "DELETE from targets WHERE username = :username"
 
@@ -44,6 +56,8 @@ SQL_UPDATE_INTERACTED_USER = "UPDATE interacted_users set following_status = ?, 
 SQL_UPDATE_INTERACTED_USER_INTERACTIONS_COUNT = "UPDATE interacted_users set interactions_count = ? where username = ?"
 SQL_UPDATE_FILTERED_USER = "UPDATE filtered_users set filtered_at = ? where username = ?"
 SQL_UPDATE_SCRAPED_USER = "UPDATE scraped_users set scraping_status = ?, last_interaction = ? where username = ?"
+SQL_UPDATE_FOLLOW_STATUS = "UPDATE users_follow_status set is_follow_me = ?, do_i_follow_him = ?, " \
+                           "updated_at = ? where username = ?"
 
 SQL_CREATE_METADATA_TABLE = f"""
     CREATE TABLE IF NOT EXISTS `metadata` (
@@ -94,11 +108,20 @@ SQL_CREATE_SESSIONS_TABLE = """
         `args` TEXT NOT NULL,
         `profile_id` INTEGER REFERENCES `profiles` (id));"""
 
+SQL_CREATE_USERS_FOLLOW_STATUS_TABLE = """
+    CREATE TABLE IF NOT EXISTS `users_follow_status` (
+        `username` TEXT PRIMARY KEY,
+        `is_follow_me` TEXT CHECK(`is_follow_me` IN ('UNKNOWN', 'TRUE', 'FALSE')) NOT NULL DEFAULT 'UNKNOWN',
+        `do_i_follow_him` TEXT CHECK(`do_i_follow_him` IN ('UNKNOWN', 'TRUE', 'FALSE')) NOT NULL DEFAULT 'UNKNOWN',
+        `updated_at` DATETIME NOT NULL);"""
+
 
 def get_database(username):
     address = os.path.join(username, DB_NAME)
     if not check_database_exists(username):
         create_database(address)
+    else:
+        migrate_database_if_needed(address)
     return address
 
 
@@ -106,6 +129,25 @@ def check_database_exists(username):
     address = os.path.join(username, DB_NAME)
     verify_database_directories(address)
     return os.path.isfile(address)
+
+
+def migrate_database_if_needed(address):
+    connection = None
+    try:
+        connection = sqlite3.connect(address)
+        with connection:
+            connection.row_factory = sqlite3.Row
+            cursor = connection.cursor()
+            _run_migrations(cursor)
+            connection.commit()
+    except DatabaseMigrationFailedException as e:
+        raise e
+    except Exception as e:
+        print(COLOR_FAIL + f"[Database] Cannot create/open database at {address}: {e}" + COLOR_ENDC)
+    finally:
+        if connection:
+            # Close the opened connection
+            connection.close()
 
 
 def create_database(address):
@@ -124,10 +166,11 @@ def create_database(address):
                     "filtered_users",
                     "profiles",
                     "sessions",
-                    "targets"
+                    "targets",
+                    "users_follow_status"
                 ]
             )
-            _update_database(cursor)
+            cursor.execute(SQL_INSERT_DEFAULT_INTO_METADATA)
             connection.commit()
     except Exception as e:
         print(COLOR_FAIL + f"[Database] Cannot create/open database at {address}: {e}" + COLOR_ENDC)
@@ -155,6 +198,9 @@ def create_tables(cursor, tables):
 
     if "sessions" in tables:
         cursor.execute(SQL_CREATE_SESSIONS_TABLE)
+
+    if "users_follow_status" in tables:
+        cursor.execute(SQL_CREATE_USERS_FOLLOW_STATUS_TABLE)
 
 
 def verify_database_directories(address):
@@ -218,6 +264,55 @@ def update_interacted_users(address,
         connection.commit()
     except Exception as e:
         print(COLOR_FAIL + f"[Database] Cannot update interacted users: {e}" + COLOR_ENDC)
+    finally:
+        if connection:
+            # Close the opened connection
+            connection.close()
+
+
+def get_user_follow_status(address, username):
+    connection = None
+    follow_status = None
+    try:
+        connection = sqlite3.connect(address)
+        connection.row_factory = sqlite3.Row
+        cursor = connection.cursor()
+        follow_status = _select_follow_status_by_username(cursor, username)
+    except Exception as e:
+        print(COLOR_FAIL + f"[Database] Cannot get user's follow status of {username}: {e}" + COLOR_ENDC)
+    finally:
+        if connection:
+            # Close the opened connection
+            connection.close()
+
+    return dict(follow_status) if follow_status is not None else None
+
+
+def update_user_follow_status(address,
+                              username,
+                              is_follow_me,
+                              do_i_follow_him,
+                              updated_at):
+    connection = None
+    try:
+        connection = sqlite3.connect(address)
+        connection.row_factory = sqlite3.Row
+        cursor = connection.cursor()
+        interacted_user = _select_follow_status_by_username(cursor, username)
+        if interacted_user is None:
+            cursor.execute(SQL_INSERT_INTO_FOLLOW_STATUS, (username, 'UNKNOWN', 'UNKNOWN', updated_at))
+        cursor.execute(
+            SQL_UPDATE_FOLLOW_STATUS,
+            (
+                'TRUE' if is_follow_me else 'FALSE',
+                'TRUE' if do_i_follow_him else 'FALSE',
+                updated_at,
+                username
+            )
+        )
+        connection.commit()
+    except Exception as e:
+        print(COLOR_FAIL + f"[Database] Cannot update user's follow-status: {e}" + COLOR_ENDC)
     finally:
         if connection:
             # Close the opened connection
@@ -370,7 +465,43 @@ def get_target(address, user_false_validators):
             # Close the opened connection
             connection.close()
 
-    return target["username"] if target is not None else None
+    target_username = None
+    provider = None
+    if target is not None:
+        target_username = target["username"]
+        provider = Provider.SCRAPING if target["provider"] == "SCRAPING" else Provider.TARGETS_LIST
+    return target_username, provider
+
+
+def count_targets(address):
+    connection = None
+    not_interacted_targets = {"scraped": None, "targets": None}
+    total_loaded_targets = {"scraped": None, "targets": None}
+    try:
+        connection = sqlite3.connect(address)
+        connection.row_factory = sqlite3.Row
+        cursor = connection.cursor()
+        cursor.execute(SQL_COUNT_LOADED_TARGETS_FROM_INTERACTED_USERS_BY_SCRAPE)
+        total_loaded_targets["scraped"] = cursor.fetchone()[0]
+        cursor = connection.cursor()
+        cursor.execute(SQL_COUNT_LOADED_TARGETS_FROM_INTERACTED_USERS_BY_TARGETS_LIST)
+        total_loaded_targets["targets"] = cursor.fetchone()[0]
+        cursor = connection.cursor()
+        cursor.execute(SQL_COUNT_LOADED_NOT_INTERACTED_TARGETS_FROM_INTERACTED_USERS_BY_SCRAPE)
+        not_interacted_targets["scraped"] = cursor.fetchone()[0]
+        cursor = connection.cursor()
+        cursor.execute(SQL_COUNT_LOADED_NOT_INTERACTED_TARGETS_FROM_INTERACTED_USERS_BY_TARGETS_LIST)
+        not_interacted_targets["targets"] = cursor.fetchone()[0]
+    except Exception as e:
+        print(COLOR_FAIL + f"[Database] Cannot count targets target: {e}" + COLOR_ENDC)
+        total_loaded_targets = None
+        not_interacted_targets = None
+    finally:
+        if connection:
+            # Close the opened connection
+            connection.close()
+
+    return total_loaded_targets, not_interacted_targets
 
 
 def add_sessions(address, session_states):
@@ -390,30 +521,44 @@ def add_sessions(address, session_states):
             connection.close()
 
 
-def _update_database(cursor):
+def _run_migrations(cursor):
     current_version = _get_database_version(cursor)
     latest_version = max(DB_VERSIONS.values())
+
     if current_version is None:
-        cursor.execute(SQL_INSERT_INTO_METADATA)
-    elif current_version < latest_version:
-        # TODO: here we can add migration logic between database versions
-        raise NotImplemented()
-    elif current_version > latest_version:
-        raise Exception(f"[Database] Current DB version (v{current_version}) is not supported. Please update.")
+        return
+
+    if current_version > latest_version:
+        raise Exception(f"[Database] Current DB version (v{current_version}) is newer from your Insomniac version and "
+                        f"not supported. Please update Insomniac.")
+
+    if current_version < latest_version:
+        print(f"[Database] Going to migrate database to a newer version...")
+        while current_version < latest_version:
+            _migrate(current_version, cursor)
+            current_version = _get_database_version(cursor)
 
 
 def _get_database_version(cursor):
-    cursor.execute(SQL_SELECT_FROM_METADATA)
+    cursor.execute(SQL_SELECT_MAX_VERSION_FROM_METADATA)
     metadata_row = cursor.fetchone()
     if metadata_row is None:
+        print(COLOR_FAIL + f"[Database] Couldn't find database-version on metadata. "
+                           f"Using database as is (without trying to migrate)." + COLOR_ENDC)
         return None
-    return dict(metadata_row)["version"]
+    return dict(metadata_row)["MAX(version)"]
 
 
 def _select_interacted_user_by_username(cursor, username):
     cursor.execute(SQL_SELECT_FROM_INTERACTED_USERS_BY_USERNAME, {"username": username})
     interacted_user = cursor.fetchone()
     return dict(interacted_user) if interacted_user is not None else None
+
+
+def _select_follow_status_by_username(cursor, username):
+    cursor.execute(SQL_SELECT_FROM_FOLLOW_STATUS_BY_USERNAME, {"username": username})
+    user_follow_status = cursor.fetchone()
+    return dict(user_follow_status) if user_follow_status is not None else None
 
 
 def _select_filtered_user_by_username(cursor, username):
@@ -450,3 +595,43 @@ def _add_session(cursor, session_state):
             profile_id
         )
     )
+
+
+def _migrate_db_from_version_1_to_2(cursor):
+    """
+    Changes added on DB version 2:
+      * Added users_follow_status database
+
+    """
+
+    create_tables(
+        cursor,
+        [
+            "users_follow_status"
+        ]
+    )
+
+
+def _migrate(curr_version, cursor):
+    print(f"[Database] Going to run database migration from version {curr_version} to {curr_version+1}")
+
+    migration_method = database_migrations[f"{curr_version}->{curr_version + 1}"]
+    try:
+        migration_method(cursor)
+    except Exception as e:
+        print(COLOR_FAIL + f"[Database] Got an error while migrating database from version "
+                           f"{curr_version} to {curr_version + 1}, Error: {str(e)}" + COLOR_ENDC)
+        raise DatabaseMigrationFailedException()
+
+    print(f"[Database] database migration from version {curr_version} to {curr_version+1} has been done successfully")
+    print(f"[Database] Updating database version to be {curr_version+1}")
+    cursor.execute(SQL_INSERT_INTO_METADATA, (curr_version+1,))
+
+
+database_migrations = {
+    "1->2": _migrate_db_from_version_1_to_2
+}
+
+
+class DatabaseMigrationFailedException(Exception):
+    pass

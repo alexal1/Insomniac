@@ -4,7 +4,7 @@ from insomniac.action_runners.actions_runners_manager import ActionState
 from insomniac.actions_impl import interact_with_user, InteractionStrategy
 from insomniac.actions_providers import Provider
 from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, StoryWatchAction, \
-    BloggerInteractionType
+    BloggerInteractionType, CommentAction
 from insomniac.limits import process_limits
 from insomniac.report import print_short_report, print_interaction_types
 from insomniac.sleeper import sleeper
@@ -45,6 +45,8 @@ def handle_blogger(device,
                    stories_count,
                    follow_percentage,
                    like_percentage,
+                   comment_percentage,
+                   comments_list,
                    storage,
                    on_action,
                    is_limit_reached,
@@ -145,6 +147,9 @@ def handle_blogger(device,
         is_watch_limit_reached, watch_reached_source_limit, watch_reached_session_limit = \
             is_limit_reached(StoryWatchAction(user=follower_name), session_state)
 
+        is_comment_limit_reached, comment_reached_source_limit, comment_reached_session_limit = \
+            is_limit_reached(CommentAction(source=username, user=follower_name, comment=""), session_state)
+
         is_private = follower_profile_view.is_private_account()
         if is_private:
             print("@" + follower_name + ": Private account - images wont be liked.")
@@ -156,6 +161,7 @@ def handle_blogger(device,
         is_likes_enabled = likes_count != '0'
         is_stories_enabled = stories_count != '0'
         is_follow_enabled = follow_percentage != 0
+        is_comment_enabled = comment_percentage != 0
 
         likes_value = get_value(likes_count, "Likes count: {}", 2, max_count=12)
         stories_value = get_value(stories_count, "Stories to watch: {}", 1)
@@ -163,7 +169,8 @@ def handle_blogger(device,
         can_like = not is_like_limit_reached and not is_private and likes_value > 0
         can_follow = (not is_follow_limit_reached) and storage.get_following_status(follower_name) == FollowingStatus.NONE and follow_percentage > 0
         can_watch = (not is_watch_limit_reached) and do_have_stories and stories_value > 0
-        can_interact = can_like or can_follow or can_watch
+        can_comment = (not is_comment_limit_reached) and not is_private and comment_percentage > 0
+        can_interact = can_like or can_follow or can_watch or can_comment
 
         if not can_interact:
             print("@" + follower_name + ": Cant be interacted (due to limits / already followed). Skip.")
@@ -174,17 +181,20 @@ def handle_blogger(device,
                                         provider=Provider.INTERACTION)
             on_action(InteractAction(source=username, user=follower_name, succeed=False))
         else:
-            print_interaction_types(follower_name, can_like, can_follow, can_watch)
+            print_interaction_types(follower_name, can_like, can_follow, can_watch, can_comment)
             interaction_strategy = InteractionStrategy(do_like=can_like,
                                                        do_follow=can_follow,
                                                        do_story_watch=can_watch,
+                                                       do_comment=can_comment,
                                                        likes_count=likes_value,
                                                        follow_percentage=follow_percentage,
                                                        like_percentage=like_percentage,
-                                                       stories_count=stories_value)
+                                                       stories_count=stories_value,
+                                                       comment_percentage=comment_percentage,
+                                                       comments_list=comments_list)
 
-            is_liked, is_followed, is_watch = interaction(username=follower_name, interaction_strategy=interaction_strategy)
-            if is_liked or is_followed or is_watch:
+            is_liked, is_followed, is_watch, is_commented = interaction(username=follower_name, interaction_strategy=interaction_strategy)
+            if is_liked or is_followed or is_watch or is_commented:
                 storage.add_interacted_user(follower_name,
                                             followed=is_followed,
                                             source=f"@{username}",
@@ -204,6 +214,7 @@ def handle_blogger(device,
 
         if ((is_like_limit_reached and is_likes_enabled) or not is_likes_enabled) and \
            ((is_follow_limit_reached and is_follow_enabled) or not is_follow_enabled) and \
+           ((is_comment_limit_reached and is_comment_enabled) or not is_comment_enabled) and \
            ((is_watch_limit_reached and is_stories_enabled) or not is_stories_enabled):
             # If one of the limits reached for source-limit, move to next source
             if (like_reached_source_limit is not None and like_reached_session_limit is None) or \

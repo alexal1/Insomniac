@@ -10,5 +10,4 @@ class Sessions(list):
         Save the sessions list to the database and then clear this list.
         """
         database = get_database(username)
-        add_sessions(database, self)
-        self.clear()
+        add_sessions(database, [self[-1]])

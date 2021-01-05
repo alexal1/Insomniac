@@ -16,8 +16,9 @@ from insomniac.session_state import SessionState
 from insomniac.sessions import Sessions
 from insomniac.sleeper import sleeper
 from insomniac.softban_indicator import ActionBlockedError
-from insomniac.storage import STORAGE_ARGS, Storage
+from insomniac.storage import STORAGE_ARGS, Storage, DatabaseMigrationFailedException
 from insomniac.utils import *
+from insomniac.views import UserSwitchFailedException
 
 sessions = Sessions()
 
@@ -63,12 +64,31 @@ class InsomniacSession(object):
         "debug": {
             'help': 'add this flag to insomniac in debug mode (more verbose logs)',
             'action': 'store_true'
-        }
+        },
+        "username": {
+            "help": 'if you have configured multiple Instagram accounts in your app, use this parameter in order to '
+                    'switch into a specific one. Not trying to switch account by default. '
+                    'If the account does not exist - the session wont started',
+            "metavar": 'my_account_name',
+            "default": None
+        },
+        "next_config_file": {
+            "help": 'if you want to run multiple insomniac sessions one-by-one but with different parameters, '
+                    'for example - different action (interact and then unfollow), or same config but with different username, '
+                    'or any other variation of parameters you can think of, you can combine this parameter with the "repeat"-parameter, '
+                    'and after the sleep of the "repeat"-parameter, a new config file (referenced by this parameter) will be loaded. '
+                    'By default using the same config that been loaded in the first Insominac session. You must use "repeat"-parameter '
+                    'in order for that parameter take action!',
+            "metavar": 'next_session_config_file_path',
+            "default": None
+        },
     }
 
     repeat = None
     device = None
     old = None
+    username = None
+    next_config_file = None
 
     def __init__(self):
         random.seed()
@@ -99,21 +119,29 @@ class InsomniacSession(object):
         if args.dont_indicate_softban:
             insomniac.softban_indicator.should_indicate_softban = False
 
-    def parse_args_and_get_device_wrapper(self):
+        if args.username is not None:
+            self.username = args.username
+
+        if args.next_config_file is not None:
+            self.next_config_file = args.next_config_file
+
+    def parse_args(self):
         ok, args = parse_arguments(self.get_session_args())
         if not ok:
-            return None, None, None
+            return None
+        return args
 
+    def get_device_wrapper(self, args):
         device_wrapper = DeviceWrapper(args.device, args.old, args.wait_for_device, args.app_id)
         device = device_wrapper.get()
         if device is None:
-            return None, None, None
+            return None, None
 
         app_version = get_instagram_version(args.device, args.app_id)
 
         print("Instagram version: " + app_version)
 
-        return args, device_wrapper, app_version
+        return device_wrapper, app_version
 
     def start_session(self, args, device_wrapper, app_version):
         self.session_state = SessionState()
@@ -125,11 +153,14 @@ class InsomniacSession(object):
 
         print_timeless(COLOR_REPORT + "\n-------- START: " + str(self.session_state.startTime) + " --------" + COLOR_ENDC)
 
+        close_instagram(device_wrapper.device_id, device_wrapper.app_id)
+        sleeper.random_sleep()
+
         open_instagram(args.device, args.app_id)
         sleeper.random_sleep()
         self.session_state.my_username, \
             self.session_state.my_followers_count, \
-            self.session_state.my_following_count = get_my_profile_info(device_wrapper.get())
+            self.session_state.my_following_count = get_my_profile_info(device_wrapper.get(), self.username)
 
         return self.session_state
 
@@ -147,7 +178,7 @@ class InsomniacSession(object):
         print("Sleep for {} minutes".format(self.repeat))
         try:
             sleep(60 * self.repeat)
-            refresh_args_by_conf_file(args)
+            return refresh_args_by_conf_file(args, self.next_config_file)
         except KeyboardInterrupt:
             print_full_report(self.sessions)
             self.sessions.persist(self.session_state.my_username)
@@ -157,9 +188,14 @@ class InsomniacSession(object):
         self.session_state.add_action(action)
         self.limits_mgr.update_state(action)
 
+    def print_session_params(self, args):
+        print_debug("All parameters:")
+        for k, v in vars(args).items():
+            print_debug(f"{k}: {v} (value-type: {type(v)})")
+
     def run(self):
-        args, device_wrapper, app_version = self.parse_args_and_get_device_wrapper()
-        if args is None or device_wrapper is None:
+        args = self.parse_args()
+        if args is None:
             return
 
         if not args.no_speed_check:
@@ -168,6 +204,11 @@ class InsomniacSession(object):
             sleeper.update_random_sleep_range()
 
         while True:
+            self.print_session_params(args)
+            device_wrapper, app_version = self.get_device_wrapper(args)
+            if device_wrapper is None:
+                return
+
             self.set_session_args(args)
 
             action_runner = self.actions_mgr.select_action_runner(args)
@@ -188,7 +229,7 @@ class InsomniacSession(object):
                                   self.session_state,
                                   self.on_action_callback,
                                   self.limits_mgr.is_limit_reached_for_action)
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, UserSwitchFailedException, DatabaseMigrationFailedException):
                 self.end_session(device_wrapper)
                 return
             except ActionBlockedError as ex:
@@ -206,6 +247,7 @@ class InsomniacSession(object):
             
             self.end_session(device_wrapper)
             if self.repeat is not None:
-                self.repeat_session(args)
+                if not self.repeat_session(args):
+                    break
             else:
                 break
