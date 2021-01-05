@@ -26,8 +26,11 @@ class Sleeper:
     def __init__(self):
         pass
 
-    def random_sleep(self):
+    def random_sleep(self, twice=False):
         delay = uniform(self.sleep_range_start, self.sleep_range_end)
+        if twice:
+            print(f"Sleeping a little bit longer this time (probably before action that takes time...)")
+            delay *= 2.0
         print(f"Sleep for {delay:.2f} seconds")
         sleep(delay)
 

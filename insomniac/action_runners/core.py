@@ -43,6 +43,9 @@ class ActionsRunner(object):
     def set_params(self, args):
         raise NotImplementedError()
 
+    def reset_params(self):
+        raise NotImplementedError()
+
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
         raise NotImplementedError()
 

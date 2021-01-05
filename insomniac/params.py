@@ -40,15 +40,34 @@ def parse_arguments(all_args_dict):
     return True, args
 
 
-def refresh_args_by_conf_file(args):
-    if args.config_file is not None:
-        if not os.path.exists(args.config_file):
-            print(COLOR_FAIL + "Config file {0} could not be found. Continue with previous args".format(args.config_file) + COLOR_ENDC)
-            return
+def refresh_args_by_conf_file(args, conf_file_name=None):
+    config_file = conf_file_name
+    if config_file is None:
+        config_file = args.config_file
 
-        with open(args.config_file, encoding="utf-8") as json_file:
+    if config_file is not None:
+        if not os.path.exists(config_file):
+            print(COLOR_FAIL + "Config file {0} could not be found - aborting. "
+                               "Please check your file-path and try again.".format(config_file) + COLOR_ENDC)
+            return False
+
+        try:
+            args_by_conf_file = args.__getattribute__('args_by_conf_file')
+            for arg_name in args_by_conf_file:
+                args.__setattr__(arg_name, None)
+        except AttributeError:
+            pass
+
+        args_by_conf_file = []
+
+        with open(config_file, encoding="utf-8") as json_file:
             params = json.load(json_file)
 
             for param in params:
                 if param["enabled"]:
                     args.__setattr__(param["parameter-name"], param["value"])
+                    args_by_conf_file.append(param["parameter-name"])
+
+        args.__setattr__('args_by_conf_file', args_by_conf_file)
+
+    return True

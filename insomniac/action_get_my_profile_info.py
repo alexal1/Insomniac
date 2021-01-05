@@ -1,13 +1,19 @@
 from insomniac.navigation import switch_to_english
 from insomniac.sleeper import sleeper
 from insomniac.utils import *
-from insomniac.views import TabBarView, ActionBarView
+from insomniac.views import TabBarView, ActionBarView, AccountView, UserSwitchFailedException
 
 
-def get_my_profile_info(device):
+def get_my_profile_info(device, username):
     try:
         profile_view = TabBarView(device).navigate_to_profile()
         sleeper.random_sleep()
+
+        if username is not None:
+            if not AccountView(device).change_to_username(username):
+                print(COLOR_FAIL + f"Couldn't switch user to {username}, abort!")
+                device.back()
+                raise UserSwitchFailedException()
 
         print("Refreshing your profile status...")
         profile_view.refresh()
@@ -15,7 +21,9 @@ def get_my_profile_info(device):
 
         ActionBarView.update_interaction_rect(device)
 
-        username, followers, following = profile_view.get_profile_info()
+        username, followers, following = profile_view.get_profile_info(swipe_up_if_needed=True)
+    except UserSwitchFailedException as e:
+        raise e
     except Exception as e:
         print(COLOR_FAIL + f"Exception: {e}" + COLOR_ENDC)
         save_crash(device, e)
@@ -24,6 +32,12 @@ def get_my_profile_info(device):
         # Try again on the correct language
         profile_view = TabBarView(device).navigate_to_profile()
         sleeper.random_sleep()
+
+        if username is not None:
+            if not AccountView(device).change_to_username(username):
+                print(COLOR_FAIL + f"Couldn't switch user to {username}, abort!")
+                device.back()
+                raise UserSwitchFailedException()
 
         print("Refreshing your profile status...")
         profile_view.refresh()

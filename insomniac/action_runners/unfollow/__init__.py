@@ -1,4 +1,5 @@
 from insomniac.action_runners import *
+from insomniac.actions_impl import FollowingsSortOrder
 from insomniac.safely_runner import run_safely
 from insomniac.utils import *
 
@@ -22,21 +23,43 @@ class UnfollowActionRunner(CoreActionsRunner):
             'help': 'unfollow only profiles that are not following you',
             'action': 'store_true',
             'default': None
+        },
+        "following_sort_order": {
+            "help": 'sort the following-list when unfollowing users from the list. Can be one of values: '
+                    'default / latest / earliest. By default sorting by earliest',
+            "metavar": '100-200',
+            "default": 'earliest'
         }
     }
 
     unfollow_followed_by_anyone = False
     unfollow_non_followers = False
+    followings_sort_order = FollowingsSortOrder.EARLIEST
 
     def is_action_selected(self, args):
         return args.unfollow is not None
 
+    def reset_params(self):
+        self.unfollow_followed_by_anyone = False
+        self.unfollow_non_followers = False
+        self.followings_sort_order = FollowingsSortOrder.EARLIEST
+
     def set_params(self, args):
+        self.reset_params()
+
         if args.unfollow_followed_by_anyone is not None:
             self.unfollow_followed_by_anyone = True
 
         if args.unfollow_non_followers is not None:
             self.unfollow_non_followers = True
+
+        if args.following_sort_order is not None:
+            if args.following_sort_order == 'default':
+                self.followings_sort_order = FollowingsSortOrder.DEFAULT
+            elif args.following_sort_order == 'latest':
+                self.followings_sort_order = FollowingsSortOrder.LATEST
+            else:
+                self.followings_sort_order = FollowingsSortOrder.EARLIEST
 
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
         from insomniac.action_runners.unfollow.action_unfollow import unfollow, get_unfollow_restriction
@@ -52,6 +75,7 @@ class UnfollowActionRunner(CoreActionsRunner):
                      on_action=on_action,
                      storage=storage,
                      unfollow_restriction=unfollow_restriction,
+                     sort_order=self.followings_sort_order,
                      session_state=session_state,
                      is_limit_reached=is_limit_reached,
                      action_status=self.action_status)

@@ -1,0 +1,339 @@
+[
+  {
+    "parameter-name": "device",
+    "enabled": false,
+    "value": "2443de990e017ece",
+    "description" : "device identifier. Should be used only when multiple devices are connected at once"
+  },
+  {
+    "parameter-name": "wait_for_device",
+    "enabled": false,
+    "value": "True",
+    "description" : "keep waiting for ADB-device to be ready for connection (if no device-id is provided using --device flag, will wait for any available device)"
+  },
+  {
+    "parameter-name": "app_id",
+    "enabled": false,
+    "value": "com.instagram.android",
+    "description" : "apk package identifier. Should be used only if you are using cloned-app. Using 'com.instagram.android' by default"
+  },
+  {
+    "parameter-name": "old",
+    "enabled": false,
+    "value": "True",
+    "description" : "add this flag to use an old version of uiautomator. Use it only if you experience problems with the default version"
+  },
+  {
+    "parameter-name": "dont_indicate_softban",
+    "enabled": false,
+    "value": "True",
+    "description" : "by default, Insomniac tries to indicate if there is a softban on your account. set this flag in order to ignore those soft-ban indicators"
+  },
+  {
+    "parameter-name": "debug",
+    "enabled": false,
+    "value": "True",
+    "description" : "add this flag to insomniac in debug mode (more verbose logs)"
+  },
+  {
+    "parameter-name": "no_speed_check",
+    "enabled": false,
+    "value": "True",
+    "description" : "skip internet speed check at start"
+  },
+  {
+    "parameter-name": "next_config_file",
+    "enabled": false,
+    "value": "2.json",
+    "description" : "if you want to run multiple insomniac sessions one-by-one but with different parameters, for example - different action (interact and then unfollow), or same config but with different username, or any other variation of parameters you can think of, you can combine this parameter with the \"repeat\"-parameter, and after the sleep of the \"repeat\"-parameter, a new config file (referenced by this parameter) will be loaded. By default using the same config that been loaded in the first Insominac session. You must use \"repeat\"-parameter in order for that parameter take action!"
+  },
+  {
+    "parameter-name": "username",
+    "enabled": false,
+    "value": "my_username",
+    "description" : "if you have configured multiple Instagram accounts in your app, use this parameter in order to switch into a specific one. Not trying to switch account by default. If the account does not exist - the session wont started"
+  },
+  {
+    "parameter-name": "pre_session_script",
+    "enabled": false,
+    "value": "/path/to/script.bat or sh",
+    "description" : "use this parameter if you want to run a predefined script when session starts"
+  },
+  {
+    "parameter-name": "post_session_script",
+    "enabled": false,
+    "value": "/path/to/script.bat or sh",
+    "description" : "use this parameter if you want to run a predefined script when session ends"
+  },
+  {
+    "parameter-name": "working_hours",
+    "enabled": false,
+    "value": "8-21",
+    "description" : "set working hours to the script, disabled by default. It can be a number presenting specific hour (e.g. 13) or a range (e.g. 9-21)"
+  },
+  {
+    "parameter-name": "recheck_follow_status_after",
+    "enabled": false,
+    "value": "2",
+    "description" : "set a time (in hours) to wait before re-check follow status of a profile, disabled by default (will check every time when needed).It can be a number (e.g. 48) or a range (e.g. 50-80)"
+  },
+  {
+    "parameter-name": "repeat",
+    "enabled": false,
+    "value": "160-220",
+    "description" : "repeat the same session again after N minutes after completion, disabled by default. It can be a number of minutes (e.g. 180) or a range (e.g. 120-180)"
+  },
+  {
+    "parameter-name": "likes_count",
+    "enabled": false,
+    "value": "1-2",
+    "description" : "number of likes for each interacted user, 2 by default. It can be a number (e.g. 2) or a range (e.g. 2-4)"
+  },
+  {
+    "parameter-name": "likes_percentage",
+    "enabled": false,
+    "value": "80",
+    "description" : "likes given percentage of interacted users, 100 by default"
+  },
+  {
+    "parameter-name": "stories_count",
+    "enabled": false,
+    "value": "1-2",
+    "description" : "number of stories to watch for each user, disabled by default. It can be a number (e.g. 2) or a range (e.g. 2-4)"
+  },
+  {
+    "parameter-name": "follow_percentage",
+    "enabled": false,
+    "value": "80",
+    "description" : "follow given percentage of interacted users, 0 by default"
+  },
+  {
+    "parameter-name": "comment_percentage",
+    "enabled": false,
+    "value": "15",
+    "description" : "comment given percentage of interacted users, 0 by default"
+  },
+  {
+    "parameter-name": "comments_list",
+    "enabled": false,
+    "value": ["Wow.", "Love that one ;)", "Amazing!", "In love with that view..."],
+    "description" : "list of comments you wish to comment on posts during interaction"
+  },
+  {
+    "parameter-name": "interact",
+    "enabled": false,
+    "value": [
+      "@natgeo-followers",
+      "@natgeo-following",
+      "amazingtrips-top-likers",
+      "amazingtrips-recent-likers",
+      "P-antartica-top-likers",
+      "P-antartica-recent-likers"
+    ],
+    "description" : "list of hashtags and usernames. Usernames should start with \"@\" symbol. The script will interact with hashtags\\' posts likers and with users\\' followers"
+  },
+  {
+    "parameter-name": "interact_targets",
+    "enabled": false,
+    "value": "True",
+    "description" : "use this argument in order to interact with profiles from targets.txt / scrapped profiles"
+  },
+  {
+    "parameter-name": "reinteract_after",
+    "enabled": false,
+    "value": "72-96",
+    "description" : "set a time (in hours) to wait before re-interact with an already interacted profile, disabled by default (won't interact again). It can be a number (e.g. 48) or a range (e.g. 50-80)"
+  },
+  {
+    "parameter-name": "refilter_after",
+    "enabled": false,
+    "value": "72-96",
+    "description" : "set a time (in hours) to wait before re-filter an already filtered profile, disabled by default (will drop the profile and won't filter again). It can be a number (e.g. 48) or a range (e.g. 50-80)"
+  },
+  {
+    "parameter-name": "interaction_users_amount",
+    "enabled": false,
+    "value": "6-8",
+    "description" : "add this argument to select an amount of users from the interact-list (users are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)"
+  },
+  {
+    "parameter-name": "unfollow",
+    "enabled": false,
+    "value": "20-40",
+    "description" : "unfollow at most given number of users. Only users followed by this script will be unfollowed. The order is from oldest to newest followings. It can be a number (e.g. 100) or a range (e.g. 100-200)"
+  },
+  {
+    "parameter-name": "min_following",
+    "enabled": false,
+    "value": "150",
+    "description" : "minimum amount of followings, after reaching this amount unfollow stops"
+  },
+  {
+    "parameter-name": "max_following",
+    "enabled": false,
+    "value": "150",
+    "description" : "maximum amount of followings, after reaching this amount follow stops. disabled by default"
+  },
+  {
+    "parameter-name": "unfollow_followed_by_anyone",
+    "enabled": false,
+    "value": "True",
+    "description" : "By default, only profiles that been followed by the bot will be unfollowed. Set this parameter if you want to unfollow any profile (even if not been followed by the bot)"
+  },
+  {
+    "parameter-name": "unfollow_non_followers",
+    "enabled": false,
+    "value": "True",
+    "description" : "unfollow only profiles that are not following you"
+  },
+  {
+    "parameter-name": "following_sort_order",
+    "enabled": false,
+    "value": "latest",
+    "description" : "sort the following-list when unfollowing users from the profile-following list. Can be one of values: default / latest / earliest. By default sorting by earliest"
+  },
+  {
+    "parameter-name": "total_likes_limit",
+    "enabled": false,
+    "value": "50-60",
+    "description" : "limit on total amount of likes during the session, 300 by default. It can be a number presenting specific limit (e.g. 300) or a range (e.g. 100-120)"
+  },
+  {
+    "parameter-name": "total_interactions_limit",
+    "enabled": false,
+    "value": "100-120",
+    "description" : "number of total interactions (successful & unsuccessful) per session, disabled by default. It can be a number (e.g. 70) or a range (e.g. 60-80)"
+  },
+  {
+    "parameter-name": "total_successful_interactions_limit",
+    "enabled": false,
+    "value": "50-60",
+    "description" : "number of total successful interactions per session, disabled by default. It can be a number (e.g. 70) or a range (e.g. 60-80)"
+  },
+  {
+    "parameter-name": "total_follow_limit",
+    "enabled": false,
+    "value": "15-20",
+    "description" : "limit on total amount of follows during the session, disabled by default. It can be a number (e.g. 27) or a range (e.g. 20-30)"
+  },
+  {
+    "parameter-name": "successful_interactions_limit_per_source",
+    "enabled": false,
+    "value": "6-8",
+    "description" : "number of successful-interactions per each blogger/hashtag, 70 by default. It can be a number (e.g. 70) or a range (e.g. 60-80)."
+  },
+  {
+    "parameter-name": "interactions_limit_per_source",
+    "enabled": false,
+    "value": "6-8",
+    "description" : "number of interactions (successful & non-successful) per each blogger/hashtag, 140 by default. It can be a number (e.g. 70) or a range (e.g. 60-80)."
+  },
+  {
+    "parameter-name": "follow_limit_per_source",
+    "enabled": false,
+    "value": "1-2",
+    "description" : "limit on amount of follows during interaction with each one user's followers, disabled by default. It can be a number (e.g. 10) or a range (e.g. 6-9)"
+  },
+  {
+    "parameter-name": "total_story_limit",
+    "enabled": false,
+    "value": "50-60",
+    "description" : "limit on total amount of stories watches during the session, disabled by default. It can be a number (e.g. 27) or a range (e.g. 20-30)"
+  },
+  {
+    "parameter-name": "total_comments_limit",
+    "enabled": false,
+    "value": "50-60",
+    "description" : "limit on total amount of comments during the session, 50 by default. It can be a number presenting specific limit (e.g. 300) or a range (e.g. 100-120)"
+  },
+  {
+    "parameter-name": "total_get_profile_limit",
+    "enabled": false,
+    "value": "300-400",
+    "description" : "limit on total amount of get-profile actions during the session, disabled by default. It can be a number (e.g. 600) or a range (e.g. 500-700)"
+  },
+  {
+    "parameter-name": "session_length_in_mins_limit",
+    "enabled": false,
+    "value": "50-60",
+    "description" : "limit the session length by time (minutes), disabled by default. It can be a number (e.g. 60) or a range (e.g. 40-70)"
+  },
+  {
+    "parameter-name": "scrape_for_account",
+    "enabled": false,
+    "value": ["real_account_name", "another_real_account_name"],
+    "description" : "add this argument in order to just scrape targeted profiles for an account. The scraped profiles names will be added to db-file at target account directory"
+  },
+  {
+    "parameter-name": "scrapping_main_db_directory_name",
+    "enabled": false,
+    "value": "scrappers_db",
+    "description" : "when using this parameter the scrapper will use a database-file that located under the directoy-name provided. use this parameter if you have multiple scrappers, and you want them to be synchronized within the same database in order to not scrape the same account multiple times. By default using scrapper account-directory to store the scrapping history"
+  },
+  {
+    "parameter-name": "scrape",
+    "enabled": false,
+    "value": [
+      "@natgeo-followers",
+      "@natgeo-following",
+      "amazingtrips-top-likers",
+      "amazingtrips-recent-likers",
+      "P-antartica-top-likers",
+      "P-antartica-recent-likers"
+    ],
+    "description" : "list of hashtags and usernames. Usernames should start with \\\"@\\\" symbol. The script will scrape with hashtags\\' posts likers and with users\\' followers"
+  },
+  {
+    "parameter-name": "scrape_users_amount",
+    "enabled": false,
+    "value": "6-8",
+    "description" : "add this argument to select an amount of users from the scrape-list (users are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)"
+  },
+  {
+    "parameter-name": "total_scrape_limit",
+    "enabled": false,
+    "value": "60-70",
+    "description" : "limit on total amount of profiles-scrapping during the session, disabled by default. It can be a number (e.g. 100) or a range (e.g. 90-120)"
+  },
+  {
+    "parameter-name": "scrape_limit_per_source",
+    "enabled": false,
+    "value": "5-7",
+    "description" : "number of profiles-scrapping per each blogger/hashtag, disabled by default. It can be a number (e.g. 70) or a range (e.g. 50-80)"
+  },
+  {
+    "parameter-name": "remove_mass_followers",
+    "enabled": false,
+    "value": "1-2",
+    "description" : "Remove given number of mass followers from the list of your followers. \"Mass followers\" are those who has more than N followings, where N can be set via --max-following"
+  },
+  {
+    "parameter-name": "mass_follower_min_following",
+    "enabled": false,
+    "value": "1-2",
+    "description" : "Should be used together with --remove-mass-followers. Specifies max number of followings for any your follower, 1000 by default"
+  },
+  {
+    "parameter-name": "filters",
+    "enabled": false,
+    "value": {
+      "skip_business": false,
+      "skip_non_business": false,
+      "min_followers": 150,
+      "max_followers": 100000,
+      "min_followings": 10,
+      "max_followings": 10000,
+      "min_potency_ratio": 0.45,
+      "max_potency_ratio": 100,
+      "min_posts": 7,
+      "max_digits_in_profile_name": 4,
+      "privacy_relation": "private_and_public",
+      "skip_profiles_without_stories": false,
+      "blacklist_words": ["word1", "word2"],
+      "mandatory_words": ["word1", "word2"],
+      "specific_alphabet": ["LATIN", "ARABIC", "HEBREW"],
+      "skip_already_following_profiles": true
+    },
+    "description" : "add this argument if you want to pass filters as an argument and not from filters.json file"
+  }
+]

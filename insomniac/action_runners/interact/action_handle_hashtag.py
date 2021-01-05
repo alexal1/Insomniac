@@ -5,7 +5,7 @@ from insomniac.actions_impl import interact_with_user, ScrollEndDetector, open_l
     is_private_account, InteractionStrategy, do_have_story
 from insomniac.actions_providers import Provider
 from insomniac.actions_types import InteractAction, LikeAction, FollowAction, GetProfileAction, StoryWatchAction, \
-    HashtagInteractionType
+    HashtagInteractionType, CommentAction
 from insomniac.device_facade import DeviceFacade
 from insomniac.limits import process_limits
 from insomniac.navigation import search_for
@@ -47,6 +47,8 @@ def handle_hashtag(device,
                    stories_count,
                    follow_percentage,
                    like_percentage,
+                   comment_percentage,
+                   comments_list,
                    storage,
                    on_action,
                    is_limit_reached,
@@ -99,7 +101,7 @@ def handle_hashtag(device,
         is_profile_empty = softban_indicator.detect_empty_profile(device)
 
         if is_profile_empty:
-            print("Back to followers list")
+            print("Back to likers list")
             device.back()
             return True
 
@@ -107,7 +109,7 @@ def handle_hashtag(device,
             if not is_passed_filters(device, liker_username, reset=False):
                 storage.add_filtered_user(liker_username)
                 # Continue to next follower
-                print("Back to followers list")
+                print("Back to likers list")
                 device.back()
                 return True
 
@@ -120,6 +122,9 @@ def handle_hashtag(device,
         is_watch_limit_reached, watch_reached_source_limit, watch_reached_session_limit = \
             is_limit_reached(StoryWatchAction(user=liker_username), session_state)
 
+        is_comment_limit_reached, comment_reached_source_limit, comment_reached_session_limit = \
+            is_limit_reached(CommentAction(source=interaction_source, user=liker_username, comment=""), session_state)
+
         is_private = is_private_account(device)
         if is_private:
             print("@" + liker_username + ": Private account - images wont be liked.")
@@ -131,6 +136,7 @@ def handle_hashtag(device,
         is_likes_enabled = likes_count != '0'
         is_stories_enabled = stories_count != '0'
         is_follow_enabled = follow_percentage != 0
+        is_comment_enabled = comment_percentage != 0
 
         likes_value = get_value(likes_count, "Likes count: {}", 2, max_count=12)
         stories_value = get_value(stories_count, "Stories to watch: {}", 1)
@@ -138,7 +144,8 @@ def handle_hashtag(device,
         can_like = not is_like_limit_reached and not is_private and likes_value > 0
         can_follow = (not is_follow_limit_reached) and storage.get_following_status(liker_username) == FollowingStatus.NONE and follow_percentage > 0
         can_watch = (not is_watch_limit_reached) and do_have_stories and stories_value > 0
-        can_interact = can_like or can_follow or can_watch
+        can_comment = (not is_comment_limit_reached) and not is_private and comment_percentage > 0
+        can_interact = can_like or can_follow or can_watch or can_comment
 
         if not can_interact:
             print("@" + liker_username + ": Cant be interacted (due to limits / already followed). Skip.")
@@ -149,18 +156,20 @@ def handle_hashtag(device,
                                         provider=Provider.INTERACTION)
             on_action(InteractAction(source=interaction_source, user=liker_username, succeed=False))
         else:
-            print_interaction_types(liker_username, can_like, can_follow, can_watch)
+            print_interaction_types(liker_username, can_like, can_follow, can_watch, can_comment)
             interaction_strategy = InteractionStrategy(do_like=can_like,
                                                        do_follow=can_follow,
                                                        do_story_watch=can_watch,
+                                                       do_comment=can_comment,
                                                        likes_count=likes_value,
                                                        follow_percentage=follow_percentage,
                                                        like_percentage=like_percentage,
-                                                       stories_count=stories_value)
+                                                       stories_count=stories_value,
+                                                       comment_percentage=comment_percentage,
+                                                       comments_list=comments_list)
 
-            is_liked, is_followed, is_watch = interaction(username=liker_username,
-                                                          interaction_strategy=interaction_strategy)
-            if is_liked or is_followed or is_watch:
+            is_liked, is_followed, is_watch, is_commented = interaction(username=liker_username, interaction_strategy=interaction_strategy)
+            if is_liked or is_followed or is_watch or is_commented:
                 storage.add_interacted_user(liker_username,
                                             followed=is_followed,
                                             source=f"#{hashtag}",
@@ -179,8 +188,9 @@ def handle_hashtag(device,
         can_continue = True
 
         if ((is_like_limit_reached and is_likes_enabled) or not is_likes_enabled) and \
-                ((is_follow_limit_reached and is_follow_enabled) or not is_follow_enabled) and \
-                ((is_watch_limit_reached and is_stories_enabled) or not is_stories_enabled):
+           ((is_follow_limit_reached and is_follow_enabled) or not is_follow_enabled) and \
+           ((is_comment_limit_reached and is_comment_enabled) or not is_comment_enabled) and \
+           ((is_watch_limit_reached and is_stories_enabled) or not is_stories_enabled):
             # If one of the limits reached for source-limit, move to next source
             if (like_reached_source_limit is not None and like_reached_session_limit is None) or \
                     (follow_reached_source_limit is not None and follow_reached_session_limit is None):

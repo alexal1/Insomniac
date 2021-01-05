@@ -3,7 +3,7 @@ from enum import unique, Enum
 
 from insomniac.action_runners.actions_runners_manager import ActionState
 from insomniac.actions_types import LikeAction, InteractAction, FollowAction, UnfollowAction, StoryWatchAction, \
-    GetProfileAction
+    GetProfileAction, CommentAction
 from insomniac.utils import *
 
 
@@ -260,16 +260,44 @@ class TotalStoryWatchLimit(CoreLimit):
         pass
 
 
+class TotalCommentsLimit(CoreLimit):
+    LIMIT_ID = "total_comments_limit"
+    LIMIT_TYPE = LimitType.SESSION
+    LIMIT_ARGS = {
+        "total_comments_limit": {
+            "help": "limit on total amount of comments during the session, 50 by default. "
+                    "It can be a number presenting specific limit (e.g. 300) or a range (e.g. 100-120)",
+            "metavar": "300",
+            "default": "50"
+        }
+    }
+
+    total_comments_limit = 50
+
+    def set_limit(self, args):
+        if args.total_comments_limit is not None:
+            self.total_comments_limit = get_value(args.total_comments_limit, "Total comments limit: {}", 50)
+
+    def is_reached_for_action(self, action, session_state):
+        if not type(action) == CommentAction:
+            return False
+
+        return session_state.totalComments >= self.total_comments_limit
+
+    def reset(self):
+        pass
+
+    def update_state(self, action):
+        pass
+
+
 class SourceInteractionsLimit(CoreLimit):
     LIMIT_ID = "interactions_count"
     LIMIT_TYPE = LimitType.SOURCE
     LIMIT_ARGS = {
         "interactions_count": {
-            "help": "number of interactions per each blogger/hashtag, 70 by default. "
-                    "It can be a number (e.g. 70) or a range (e.g. 60-80). "
-                    "Only successful interactions count",
-            "metavar": "40",
-            "default": "70"
+            "help": "Deprecated - use 'successful_interactions_limit_per_source' instead",
+            "metavar": "40"
         }
     }
 
@@ -277,6 +305,9 @@ class SourceInteractionsLimit(CoreLimit):
 
     def set_limit(self, args):
         if args.interactions_count is not None:
+            print(COLOR_REPORT + "You are using a deprecated limit. The limit new name is called "
+                                 "'successful_interactions_limit_per_source'. Using interactions_count this time. "
+                                 "Please switch to that name on next runs." + COLOR_ENDC)
             self.interactions_count = get_value(args.interactions_count, "Interactions count: {}", 70)
 
     def is_reached_for_action(self, action, session_state):
@@ -294,13 +325,80 @@ class SourceInteractionsLimit(CoreLimit):
         pass
 
 
+class SuccessfulInteractionsLimitPerSource(CoreLimit):
+    LIMIT_ID = "successful_interactions_limit_per_source"
+    LIMIT_TYPE = LimitType.SOURCE
+    LIMIT_ARGS = {
+        "successful_interactions_limit_per_source": {
+            "help": "number of successful-interactions per each blogger/hashtag, 70 by default. "
+                    "It can be a number (e.g. 70) or a range (e.g. 60-80)",
+            "metavar": "40",
+            "default": "70"
+        }
+    }
+
+    successful_interactions_limit_per_source = 70
+
+    def set_limit(self, args):
+        if args.successful_interactions_limit_per_source is not None:
+            self.successful_interactions_limit_per_source = get_value(args.successful_interactions_limit_per_source,
+                                                                      "Successful interactions limit per source: {}", 70)
+
+    def is_reached_for_action(self, action, session_state):
+        if not type(action) == InteractAction:
+            return False
+
+        successful_interactions_count = session_state.successfulInteractions.get(action.source)
+
+        return successful_interactions_count and successful_interactions_count >= self.successful_interactions_limit_per_source
+
+    def reset(self):
+        pass
+
+    def update_state(self, action):
+        pass
+
+
+class InteractionsLimitPerSource(CoreLimit):
+    LIMIT_ID = "interactions_limit_per_source"
+    LIMIT_TYPE = LimitType.SOURCE
+    LIMIT_ARGS = {
+        "interactions_limit_per_source": {
+            "help": "number of interactions (successful & non-successful) per each blogger/hashtag, 140 by default. "
+                    "It can be a number (e.g. 140) or a range (e.g. 60-80)",
+            "metavar": "40",
+            "default": "140"
+        }
+    }
+
+    interactions_limit_per_source = 140
+
+    def set_limit(self, args):
+        if args.interactions_limit_per_source is not None:
+            self.interactions_limit_per_source = get_value(args.interactions_limit_per_source,
+                                                           "Interactions limit per source: {}", 140)
+
+    def is_reached_for_action(self, action, session_state):
+        if not type(action) == InteractAction:
+            return False
+
+        interactions_count = session_state.totalInteractions.get(action.source)
+
+        return interactions_count and interactions_count >= self.interactions_limit_per_source
+
+    def reset(self):
+        pass
+
+    def update_state(self, action):
+        pass
+
+
 class SourceFollowLimit(CoreLimit):
     LIMIT_ID = "follow_limit"
     LIMIT_TYPE = LimitType.SOURCE
     LIMIT_ARGS = {
         "follow_limit": {
-            "help": "limit on amount of follows during interaction with each one user's followers, "
-                    "disabled by default. It can be a number (e.g. 10) or a range (e.g. 6-9)",
+            "help": "Deprecated - use 'follow_limit_per_source' instead",
             "metavar": "7-8",
         }
     }
@@ -309,6 +407,9 @@ class SourceFollowLimit(CoreLimit):
 
     def set_limit(self, args):
         if args.follow_limit is not None:
+            print(COLOR_REPORT + "You are using a deprecated limit. The limit new name is called "
+                                 "'follow_limit_per_source'. Using 'follow_limit' this time. "
+                                 "Please switch to that name on next runs." + COLOR_ENDC)
             self.follow_limit = get_value(args.follow_limit, "Follow limit: {}", 10)
 
     def is_reached_for_action(self, action, session_state):
@@ -320,6 +421,40 @@ class SourceFollowLimit(CoreLimit):
 
         followed_count = session_state.totalFollowed.get(action.source)
         return followed_count is not None and followed_count >= self.follow_limit
+
+    def reset(self):
+        pass
+
+    def update_state(self, action):
+        pass
+
+
+class FollowLimitPerSource(CoreLimit):
+    LIMIT_ID = "follow_limit_per_source"
+    LIMIT_TYPE = LimitType.SOURCE
+    LIMIT_ARGS = {
+        "follow_limit_per_source": {
+            "help": "limit on amount of follows during interaction with each one user's followers, "
+                    "disabled by default. It can be a number (e.g. 10) or a range (e.g. 6-9)",
+            "metavar": "7-8",
+        }
+    }
+
+    follow_limit_per_source = None
+
+    def set_limit(self, args):
+        if args.follow_limit_per_source is not None:
+            self.follow_limit_per_source = get_value(args.follow_limit_per_source, "Follow limit: {}", 10)
+
+    def is_reached_for_action(self, action, session_state):
+        if self.follow_limit_per_source is None:
+            return False
+
+        if not type(action) == FollowAction:
+            return False
+
+        followed_count = session_state.totalFollowed.get(action.source)
+        return followed_count is not None and followed_count >= self.follow_limit_per_source
 
     def reset(self):
         pass

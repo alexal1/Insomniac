@@ -17,6 +17,7 @@ FILENAME_WHITELIST = "whitelist.txt"
 FILENAME_BLACKLIST = "blacklist.txt"
 FILENAME_TARGETS = "targets.txt"
 FILENAME_LOADED_TARGETS = "targets_loaded.txt"
+FILENAME_INTERACTED_TARGETS = "targets_interacted.txt"
 FILENAME_FOLLOWERS = "followers.txt"
 
 
@@ -30,6 +31,11 @@ STORAGE_ARGS = {
         "help": "set a time (in hours) to wait before re-filter an already filtered profile, disabled by default (will drop the profile and won't filter again). "
                 "It can be a number (e.g. 48) or a range (e.g. 50-80)",
         "metavar": "150"
+    },
+    "recheck_follow_status_after": {
+        "help": "set a time (in hours) to wait before re-check follow status of a profile, disabled by default (will check every time when needed)."
+                "It can be a number (e.g. 48) or a range (e.g. 50-80)",
+        "metavar": "150"
     }
 }
 
@@ -39,12 +45,23 @@ class Storage:
     scrapping_databases = []
     reinteract_after = None
     refilter_after = None
+    recheck_follow_status_after = None
     whitelist = []
     blacklist = []
     account_followers = {}
 
     def __init__(self, my_username, args):
-        self.database = get_database(my_username)
+        self.my_username = my_username
+        db_directory = my_username
+        scrapping_main_db_directory_name = args.__dict__.get('scrapping_main_db_directory_name', None)
+        if scrapping_main_db_directory_name is not None:
+            print(f"Using {scrapping_main_db_directory_name} as main directory for scrapping process & history")
+            if not os.path.exists(scrapping_main_db_directory_name):
+                print(f"Couldn't find any directory named {scrapping_main_db_directory_name}, "
+                      f"the directory will be created with a db-file in it...")
+            db_directory = scrapping_main_db_directory_name
+
+        self.database = get_database(db_directory)
 
         if args.reinteract_after is not None:
             self.reinteract_after = get_value(args.reinteract_after, "Re-interact after {} hours", 168)
@@ -52,7 +69,12 @@ class Storage:
         if args.refilter_after is not None:
             self.refilter_after = get_value(args.refilter_after, "Re-filter after {} hours", 168)
 
+        if args.recheck_follow_status_after is not None:
+            self.recheck_follow_status_after = get_value(args.recheck_follow_status_after, "Re-check follow status after {} hours", 168)
+
         scrape_for_account = args.__dict__.get('scrape_for_account', None)
+        interact_targets = args.__dict__.get('interact_targets', None)
+
         if my_username is None:
             print(COLOR_FAIL + "No username, thus the script won't get access to interacted users and sessions data" +
                   COLOR_ENDC)
@@ -87,6 +109,17 @@ class Storage:
                         file_loaded_targets.write(f"{target}\n")
                 # Clear targets.txt
                 file_targets.truncate(0)
+
+        if interact_targets is not None:
+            print("Counting available targets...")
+            total_loaded_targets, not_interacted_targets = count_targets(self.database)
+            if total_loaded_targets is None:
+                print("Couldn't count targets...")
+            else:
+                print(f"Total targets loaded: {total_loaded_targets['scraped'] + total_loaded_targets['targets']} "
+                      f"({total_loaded_targets['targets']} from targets file, {total_loaded_targets['scraped']} from scrapping)")
+                print(f"Total non-interacted targets loaded: {not_interacted_targets['scraped'] + not_interacted_targets['targets']} "
+                      f"({not_interacted_targets['targets']} from targets file, {not_interacted_targets['scraped']} from scrapping)")
 
         # Scraping
         if scrape_for_account is not None:
@@ -140,6 +173,23 @@ class Storage:
         user = get_interacted_user(self.database, username)
         return FollowingStatus.NONE if user is None else FollowingStatus[user[USER_FOLLOWING_STATUS].upper()]
 
+    def is_profile_follows_me_by_cache(self, username):
+        if self.recheck_follow_status_after is None:
+            return False
+
+        user_follow_status = get_user_follow_status(self.database, username)
+        if user_follow_status is None:
+            return False
+
+        if not user_follow_status['is_follow_me'] == "TRUE":
+            return False
+
+        last_check_time = datetime.strptime(user_follow_status['updated_at'], '%Y-%m-%d %H:%M:%S.%f')
+        return datetime.now() - last_check_time <= timedelta(hours=self.recheck_follow_status_after)
+
+    def update_follow_status(self, username, is_follow_me, do_i_follow_him):
+        update_user_follow_status(self.database, username, is_follow_me, do_i_follow_him, datetime.now())
+
     def add_interacted_user(self,
                             username,
                             last_interaction=datetime.now(),
@@ -160,6 +210,12 @@ class Storage:
                                 (source,),
                                 (interaction_type,),
                                 (provider,))
+        if provider == Provider.SCRAPING or provider == Provider.TARGETS_LIST:
+            target_provider = "scrapped" if provider == Provider.SCRAPING else "targets.txt"
+            targets_interacted_path = os.path.join(self.my_username, FILENAME_INTERACTED_TARGETS)
+            # Add interacted target to targets_interacted.txt
+            with open(targets_interacted_path, 'a+', encoding="utf-8") as file_interacted_targets:
+                file_interacted_targets.write(f"{username} (source: {target_provider}) - {str(last_interaction)}\n")
 
     def add_scrapped_user(self, username, last_interaction=datetime.now(), success=False):
         scraping_status = ScrappingStatus.SCRAPED if success else ScrappingStatus.NOT_SCRAPED

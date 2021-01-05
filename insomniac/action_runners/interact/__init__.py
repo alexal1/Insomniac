@@ -42,6 +42,17 @@ class InteractBySourceActionRunner(CoreActionsRunner):
                     'It can be a number (e.g. 2) or a range (e.g. 2-4)',
             'metavar': '3-8'
         },
+        "comment_percentage": {
+            "help": "comment given percentage of interacted users, 0 by default",
+            "metavar": '50',
+            "default": '0'
+        },
+        "comments_list": {
+            "nargs": '+',
+            "help": 'list of comments you wish to comment on posts during interaction',
+            "default": [],
+            "metavar": ('WOW!', 'What a picture!')
+        },
     }
 
     likes_count = '2'
@@ -49,11 +60,24 @@ class InteractBySourceActionRunner(CoreActionsRunner):
     like_percentage = 100
     interact = []
     stories_count = '0'
+    comment_percentage = 0
+    comments_list = []
 
     def is_action_selected(self, args):
         return args.interact is not None and len(args.interact) > 0
 
+    def reset_params(self):
+        self.likes_count = '2'
+        self.follow_percentage = 0
+        self.like_percentage = 100
+        self.interact = []
+        self.stories_count = '0'
+        self.comment_percentage = 0
+        self.comments_list = []
+
     def set_params(self, args):
+        self.reset_params()
+
         if args.likes_count is not None:
             self.likes_count = args.likes_count
 
@@ -62,13 +86,23 @@ class InteractBySourceActionRunner(CoreActionsRunner):
 
         if args.interact is not None:
             self.interact = args.interact.copy()
-            self.interact = [source if source[0] == '@' else ('#' + source) for source in self.interact]
+
+            def is_source_hashtag(source):
+                return source[0] != '@' and not source.startswith("P-")
+
+            self.interact = [source if not is_source_hashtag(source) else ('#' + source) for source in self.interact]
 
         if args.follow_percentage is not None:
             self.follow_percentage = int(args.follow_percentage)
 
         if args.like_percentage is not None:
             self.like_percentage = int(args.like_percentage)
+
+        if args.comment_percentage is not None:
+            self.comment_percentage = int(args.comment_percentage)
+
+        if args.comments_list is not None:
+            self.comments_list = args.comments_list
 
         if args.interaction_users_amount is not None:
             if len(self.interact) > 0:
@@ -85,6 +119,7 @@ class InteractBySourceActionRunner(CoreActionsRunner):
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
         from insomniac.action_runners.interact.action_handle_blogger import handle_blogger, extract_blogger_instructions
         from insomniac.action_runners.interact.action_handle_hashtag import handle_hashtag, extract_hashtag_instructions
+        from insomniac.action_runners.interact.action_handle_place import handle_place, extract_place_instructions
 
         random.shuffle(self.interact)
 
@@ -96,6 +131,9 @@ class InteractBySourceActionRunner(CoreActionsRunner):
                 print_timeless("")
                 print(COLOR_BOLD + "Handle " + source + (is_myself and " (it\'s you)" or "") + COLOR_ENDC)
             elif source[0] == '#':
+                print_timeless("")
+                print(COLOR_BOLD + "Handle " + source + COLOR_ENDC)
+            elif source.startswith("P-"):
                 print_timeless("")
                 print(COLOR_BOLD + "Handle " + source + COLOR_ENDC)
 
@@ -112,6 +150,8 @@ class InteractBySourceActionRunner(CoreActionsRunner):
                                    self.stories_count,
                                    self.follow_percentage,
                                    self.like_percentage,
+                                   self.comment_percentage,
+                                   self.comments_list,
                                    storage,
                                    on_action,
                                    is_limit_reached,
@@ -127,12 +167,30 @@ class InteractBySourceActionRunner(CoreActionsRunner):
                                    self.stories_count,
                                    self.follow_percentage,
                                    self.like_percentage,
+                                   self.comment_percentage,
+                                   self.comments_list,
                                    storage,
                                    on_action,
                                    is_limit_reached,
                                    is_passed_filters,
                                    self.action_status)
-
+                elif source.startswith("P-"):
+                    source_name, instructions = extract_place_instructions(source[2:])
+                    handle_place(device_wrapper.get(),
+                                 source_name,
+                                 instructions,
+                                 session_state,
+                                 self.likes_count,
+                                 self.stories_count,
+                                 self.follow_percentage,
+                                 self.like_percentage,
+                                 self.comment_percentage,
+                                 self.comments_list,
+                                 storage,
+                                 on_action,
+                                 is_limit_reached,
+                                 is_passed_filters,
+                                 self.action_status)
                 self.action_status.set(ActionState.DONE)
 
             while not self.action_status.get() == ActionState.DONE:
@@ -175,18 +233,41 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
             "help": 'number of stories to watch for each user, disabled by default. '
                     'It can be a number (e.g. 2) or a range (e.g. 2-4)',
             'metavar': '3-8'
-        }
+        },
+        "comment_percentage": {
+            "help": "comment given percentage of interacted users, 0 by default",
+            "metavar": '50',
+            "default": '0'
+        },
+        "comments_list": {
+            "nargs": '+',
+            "help": 'list of comments you wish to comment on posts during interaction',
+            "default": [],
+            "metavar": ('WOW!', 'What a picture!')
+        },
     }
 
     likes_count = '2'
     follow_percentage = 0
     like_percentage = 100
     stories_count = '0'
+    comment_percentage = 0
+    comments_list = []
 
     def is_action_selected(self, args):
         return args.interact_targets is not None
 
+    def reset_params(self):
+        self.likes_count = '2'
+        self.follow_percentage = 0
+        self.like_percentage = 100
+        self.stories_count = '0'
+        self.comment_percentage = 0
+        self.comments_list = []
+
     def set_params(self, args):
+        self.reset_params()
+
         if args.likes_count is not None:
             self.likes_count = args.likes_count
 
@@ -199,10 +280,16 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
         if args.like_percentage is not None:
             self.like_percentage = int(args.like_percentage)
 
+        if args.comment_percentage is not None:
+            self.comment_percentage = int(args.comment_percentage)
+
+        if args.comments_list is not None:
+            self.comments_list = args.comments_list
+
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
         from insomniac.action_runners.interact.action_handle_target import handle_target
 
-        target = storage.get_target()
+        target, provider = storage.get_target()
         while target is not None:
             self.action_status = ActionStatus(ActionState.PRE_RUN)
 
@@ -214,11 +301,14 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
                 self.action_status.set(ActionState.RUNNING)
                 handle_target(device_wrapper.get(),
                               target,
+                              provider,
                               session_state,
                               self.likes_count,
                               self.stories_count,
                               self.follow_percentage,
                               self.like_percentage,
+                              self.comment_percentage,
+                              self.comments_list,
                               storage,
                               on_action,
                               is_limit_reached,
@@ -239,7 +329,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
             if self.action_status.get_limit() == ActionState.SESSION_LIMIT_REACHED:
                 break
 
-            target = storage.get_target()
+            target, provider = storage.get_target()
 
         if target is None:
             print("There are no more new targets to interact with in the database (all been already interacted / filtered).")

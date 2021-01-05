@@ -1,6 +1,7 @@
-from random import shuffle
+from enum import unique, Enum
+from random import shuffle, choice
 
-from insomniac.actions_types import LikeAction, FollowAction, GetProfileAction, StoryWatchAction
+from insomniac.actions_types import LikeAction, FollowAction, GetProfileAction, StoryWatchAction, CommentAction
 from insomniac.device_facade import DeviceFacade
 from insomniac.navigation import switch_to_english, search_for, LanguageChangedException
 from insomniac.scroll_end_detector import ScrollEndDetector
@@ -13,26 +14,34 @@ FOLLOWERS_BUTTON_ID_REGEX = '{0}:id/row_profile_header_followers_container' \
                             '|{1}:id/row_profile_header_container_followers'
 TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
 FOLLOW_REGEX = 'Follow|Follow Back'
-UNFOLLOW_REGEX = 'Following|Requested'
+ALREADY_FOLLOWING_REGEX = 'Following|Requested'
 SHOP_REGEX = 'Add Shop|View Shop'
+UNFOLLOW_REGEX = 'Unfollow'
 FOLLOWING_BUTTON_ID_REGEX = '{0}:id/row_profile_header_following_container' \
                             '|{1}:id/row_profile_header_container_following'
 USER_AVATAR_VIEW_ID = '{0}:id/circular_image|^$'
+POST_VIEW_ID_REGEX = '{0}:id/zoomable_view_container|{1}:id/carousel_image'
 
 liked_count = 0
 is_followed = False
+is_scrolled_down = False
+is_commented = False
 
 
 class InteractionStrategy(object):
-    def __init__(self, do_like=False, do_follow=False, do_story_watch=False,
-                 likes_count=2, like_percentage=100, follow_percentage=0, stories_count=2):
+    def __init__(self, do_like=False, do_follow=False, do_story_watch=False, do_comment=False,
+                 likes_count=2, like_percentage=100, follow_percentage=0, stories_count=2, comment_percentage=0,
+                 comments_list=None):
         self.do_like = do_like
         self.do_follow = do_follow
         self.do_story_watch = do_story_watch
+        self.do_comment = do_comment
         self.likes_count = likes_count
         self.follow_percentage = follow_percentage
         self.like_percentage = like_percentage
         self.stories_count = stories_count
+        self.comment_percentage = comment_percentage
+        self.comments_list = comments_list
 
 
 def scroll_to_bottom(device):
@@ -61,7 +70,7 @@ def scroll_to_bottom(device):
 
 def is_private_account(device):
     recycler_view = device.find(resourceId='android:id/list')
-    return not recycler_view.exists()
+    return not recycler_view.exists(quick=True)
 
 
 def open_user(device, username, refresh=False, on_action=None):
@@ -225,62 +234,89 @@ def interact_with_user(device,
     """
     :return: (whether some photos was liked, whether @username was followed during the interaction)
     """
-    global liked_count, is_followed
+    global liked_count, is_followed, is_scrolled_down, is_commented
     liked_count = 0
     is_followed = False
     is_watched = False
-
     is_scrolled_down = False
+    is_commented = False
 
     if username == my_username:
         print("It's you, skip.")
-        return liked_count == interaction_strategy.likes_count, is_followed, is_watched
-
-    sleeper.random_sleep()
+        return liked_count == interaction_strategy.likes_count, is_followed, is_watched, is_commented
 
     if interaction_strategy.do_story_watch:
         is_watched = _watch_stories(device, username, interaction_strategy.stories_count, on_action)
 
-    if interaction_strategy.do_like:
-        coordinator_layout = device.find(resourceId=f'{device.app_id}:id/coordinator_root_layout')
-        if coordinator_layout.exists():
-            print("Scroll down to see more photos.")
-            coordinator_layout.scroll(DeviceFacade.Direction.BOTTOM)
-            is_scrolled_down = True
+    def do_like_actions():
+        global is_scrolled_down
+        if interaction_strategy.do_like or interaction_strategy.do_comment:
+            coordinator_layout = device.find(resourceId=f'{device.app_id}:id/coordinator_root_layout')
+            if coordinator_layout.exists():
+                print("Scroll down to see more photos.")
+                coordinator_layout.scroll(DeviceFacade.Direction.BOTTOM)
+                is_scrolled_down = True
 
-        number_of_rows_to_use = min((interaction_strategy.likes_count * 2) // 3 + 1, 4)
-        photos_indices = list(range(0, number_of_rows_to_use * 3))
-        shuffle(photos_indices)
-        photos_indices = photos_indices[:interaction_strategy.likes_count]
-        photos_indices = sorted(photos_indices)
+            number_of_rows_to_use = min((interaction_strategy.likes_count * 2) // 3 + 1, 4)
+            photos_indices = list(range(0, number_of_rows_to_use * 3))
+            shuffle(photos_indices)
+            photos_indices = photos_indices[:interaction_strategy.likes_count]
+            photos_indices = sorted(photos_indices)
 
-        def on_like():
-            global liked_count
-            liked_count += 1
-            print(COLOR_OKGREEN + "@{} - photo been liked.".format(username) + COLOR_ENDC)
-            on_action(LikeAction(source=user_source, user=username))
+            def on_like():
+                global liked_count
+                liked_count += 1
+                print(COLOR_OKGREEN + "@{} - photo been liked.".format(username) + COLOR_ENDC)
+                on_action(LikeAction(source=user_source, user=username))
 
-        for i in range(0, interaction_strategy.likes_count):
-            photo_index = photos_indices[i]
-            row = photo_index // 3
-            column = photo_index - row * 3
+            def on_comment(comment):
+                global is_commented
+                is_commented = True
+                print(COLOR_OKGREEN + "@{} - photo been commented.".format(username) + COLOR_ENDC)
+                on_action(CommentAction(source=user_source, user=username, comment=comment))
 
-            sleeper.random_sleep()
-            print("Open and like photo #" + str(i + 1) + " (" + str(row + 1) + " row, " + str(column + 1) + " column)")
-            if not _open_photo_and_like(device, row, column, interaction_strategy.like_percentage, on_like):
-                print(COLOR_OKGREEN + "Less than " + str(number_of_rows_to_use * 3) + " photos." + COLOR_ENDC)
-                break
+            for i in range(0, interaction_strategy.likes_count):
+                photo_index = photos_indices[i]
+                row = photo_index // 3
+                column = photo_index - row * 3
 
-    if interaction_strategy.do_follow:
-        is_followed = _follow(device, username, interaction_strategy.follow_percentage, is_scrolled_down)
-        if is_followed:
-            print(COLOR_OKGREEN + "Following @{}.".format(username) + COLOR_ENDC)
-            on_action(FollowAction(source=user_source, user=username))
+                sleeper.random_sleep()
+                print("Open and like photo #" + str(i + 1) + " (" + str(row + 1) + " row, " + str(
+                    column + 1) + " column)")
+                if not _open_photo_and_like_and_comment(device, row, column,
+                                                        interaction_strategy.do_like, interaction_strategy.do_comment,
+                                                        interaction_strategy.like_percentage, on_like,
+                                                        interaction_strategy.comment_percentage,
+                                                        interaction_strategy.comments_list, my_username, on_comment):
+                    print(COLOR_OKGREEN + "Less than " + str(number_of_rows_to_use * 3) + " photos." + COLOR_ENDC)
+                    break
 
-    return liked_count > 0, is_followed, is_watched
+    def do_follow_action():
+        global is_followed
+        if interaction_strategy.do_follow:
+            is_followed = _follow(device, username, interaction_strategy.follow_percentage, is_scrolled_down)
+            if is_followed:
+                on_action(FollowAction(source=user_source, user=username))
+
+    if interaction_strategy.do_follow and (interaction_strategy.do_like or interaction_strategy.do_comment):
+        like_first_chance = randint(1, 100)
+        if like_first_chance > 50:
+            print("Going to like-images first and then follow")
+            do_like_actions()
+            do_follow_action()
+        else:
+            print("Going to follow first and then like-images")
+            do_follow_action()
+            do_like_actions()
+    else:
+        do_like_actions()
+        do_follow_action()
+
+    return liked_count > 0, is_followed, is_watched, is_commented
 
 
-def _open_photo_and_like(device, row, column, like_percentage, on_like):
+def _open_photo_and_like_and_comment(device, row, column, do_like, do_comment, like_percentage, on_like,
+                                     comment_percentage, comments_list, my_username, on_comment):
     def open_photo():
         # recycler_view has a className 'androidx.recyclerview.widget.RecyclerView' on modern Android versions and
         # 'android.view.View' on Android 5.0.1 and probably earlier versions
@@ -299,18 +335,42 @@ def _open_photo_and_like(device, row, column, like_percentage, on_like):
 
     sleeper.random_sleep()
 
-    to_like = True
-    like_chance = randint(1, 100)
-    if like_chance > like_percentage:
-        print("Not going to like image due to like-percentage hit")
-        to_like = False
+    to_like = False
+    to_comment = False
+    if do_like:
+        to_like = True
+        like_chance = randint(1, 100)
+        if like_chance > like_percentage:
+            print("Not going to like image due to like-percentage hit")
+            to_like = False
+
+    if do_comment:
+        to_comment = True
+        comment_chance = randint(1, 100)
+        if comment_chance > comment_percentage:
+            print("Not going to comment image due to comment-percentage hit")
+            to_comment = False
 
     if to_like:
         print("Double click!")
-        photo_view = device.find(resourceId=f'{device.app_id}:id/layout_container_main',
-                                 className='android.widget.FrameLayout')
-        photo_view.double_click()
-        sleeper.random_sleep()
+
+        def find_post_view():
+            return device.find(resourceIdMatches=POST_VIEW_ID_REGEX.format(device.app_id, device.app_id),
+                               className='android.widget.FrameLayout')
+
+        post_view = find_post_view()
+        if post_view.exists:
+            post_view.double_click()
+            sleeper.random_sleep()
+            if not find_post_view().exists(quick=True):
+                print(COLOR_OKGREEN + "Accidentally went out of the post page, going back..." + COLOR_ENDC)
+                device.back()
+        else:
+            print(COLOR_FAIL + "Cannot find zoomable_view_container, fallback to the old liking algorithm" + COLOR_ENDC)
+            post_view = device.find(resourceId=f'{device.app_id}:id/layout_container_main',
+                                    className='android.widget.FrameLayout')
+            post_view.double_click()
+            sleeper.random_sleep()
 
         # If double click didn't work, set like by icon click
         try:
@@ -330,9 +390,67 @@ def _open_photo_and_like(device, row, column, like_percentage, on_like):
         softban_indicator.detect_action_blocked_dialog(device)
         on_like()
 
+    if to_comment:
+        _comment(device, my_username, comments_list, on_comment)
+
     print("Back to profile")
     device.back()
     return True
+
+
+def _comment(device, my_username, comments_list, on_comment):
+    comment_button = device.find(
+        resourceId=f'{device.app_id}:id/row_feed_button_comment',
+        className="android.widget.ImageView",
+    )
+    if not comment_button.exists(quick=True):
+        print("Couldn't find comment button - not commenting...")
+
+    comment_box_exists = False
+    comment_box = None
+
+    for _ in range(2):
+        print("Open comments of post")
+        comment_button.click()
+        sleeper.random_sleep()
+
+        comment_box = device.find(resourceId=f'{device.app_id}:id/layout_comment_thread_edittext')
+        if comment_box.exists(quick=True):
+            comment_box_exists = True
+            break
+
+    if not comment_box_exists:
+        print("Couldn't open comments properly - not commenting...")
+        return
+
+    comment = choice(comments_list)
+    print(f"Commenting: {comment}")
+
+    comment_box.set_text(comment)
+    sleeper.random_sleep()
+
+    post_button = device.find(resourceId=f'{device.app_id}:id/layout_comment_thread_post_button_click_area')
+    post_button.click()
+
+    sleeper.random_sleep()
+    softban_indicator.detect_action_blocked_dialog(device)
+
+    device.close_keyboard()
+
+    just_post = device.find(
+        resourceId=f'{device.app_id}:id/row_comment_textview_comment',
+        text=f"{my_username} {comment}",
+    )
+
+    if just_post.exists(True):
+        print("Comment succeed.")
+        on_comment(comment)
+    else:
+        print("Failed to check if comment succeed.")
+
+    sleeper.random_sleep()
+    print("Go back to post view.")
+    device.back()
 
 
 def _follow(device, username, follow_percentage, is_scrolled_down):
@@ -343,7 +461,7 @@ def _follow(device, username, follow_percentage, is_scrolled_down):
     print("Following...")
     if is_scrolled_down:
         coordinator_layout = device.find(resourceId=f'{device.app_id}:id/coordinator_root_layout')
-        if coordinator_layout.exists():
+        if coordinator_layout.exists(quick=True):
             coordinator_layout.scroll(DeviceFacade.Direction.TOP)
             sleeper.random_sleep()
 
@@ -358,13 +476,13 @@ def _follow(device, username, follow_percentage, is_scrolled_down):
         follow_button = profile_header_main_layout.child(className='android.widget.Button',
                                                          clickable=True,
                                                          textMatches=FOLLOW_REGEX)
-        if not follow_button.exists():
+        if not follow_button.exists(quick=True):
             print(COLOR_FAIL + "Look like a shop profile without an option to follow, continue." + COLOR_ENDC)
             return False
     else:
         profile_header_actions_layout = device.find(resourceId=f'{device.app_id}:id/profile_header_actions_top_row',
                                                     className='android.widget.LinearLayout')
-        if not profile_header_actions_layout.exists():
+        if not profile_header_actions_layout.exists(quick=True):
             print(COLOR_FAIL + "Cannot find profile actions." + COLOR_ENDC)
             return False
 
@@ -372,11 +490,11 @@ def _follow(device, username, follow_percentage, is_scrolled_down):
                                                             clickable=True,
                                                             textMatches=FOLLOW_REGEX)
 
-        if not follow_button.exists():
+        if not follow_button.exists(quick=True):
             unfollow_button = profile_header_actions_layout.child(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
                                                                   clickable=True,
-                                                                  textMatches=UNFOLLOW_REGEX)
-            if unfollow_button.exists():
+                                                                  textMatches=ALREADY_FOLLOWING_REGEX)
+            if unfollow_button.exists(quick=True):
                 print(COLOR_OKGREEN + "You already follow @" + username + "." + COLOR_ENDC)
                 return False
             else:
@@ -389,7 +507,6 @@ def _follow(device, username, follow_percentage, is_scrolled_down):
     follow_button.click()
     softban_indicator.detect_action_blocked_dialog(device)
     print(COLOR_OKGREEN + "Followed @" + username + COLOR_ENDC)
-    sleeper.random_sleep()
     return True
 
 
@@ -404,7 +521,7 @@ def is_already_followed(device):
                                              className='android.widget.LinearLayout')
     unfollow_button = profile_header_main_layout.child(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
                                                        clickable=True,
-                                                       textMatches=UNFOLLOW_REGEX)
+                                                       textMatches=ALREADY_FOLLOWING_REGEX)
     return unfollow_button.exists(quick=True)
 
 
@@ -494,7 +611,7 @@ def _open_user(device, username, open_followers=False, open_followings=False, re
     return True
 
 
-def iterate_over_followings(device, iteration_callback, iteration_callback_pre_conditions):
+def iterate_over_my_followings(device, iteration_callback, iteration_callback_pre_conditions):
     # Wait until list is rendered
     device.find(resourceId=f'{device.app_id}:id/follow_list_container',
                 className='android.widget.LinearLayout').wait()
@@ -512,13 +629,17 @@ def iterate_over_followings(device, iteration_callback, iteration_callback_pre_c
                 print(COLOR_OKGREEN + "Next item not found: probably reached end of the screen." + COLOR_ENDC)
                 break
 
+            follow_status_button_view = item.child(index=2)
+            if not follow_status_button_view.exists(quick=True):
+                follow_status_button_view = None
+
             username = user_name_view.get_text()
             screen_iterated_followings += 1
 
-            if not iteration_callback_pre_conditions(username, user_name_view):
+            if not iteration_callback_pre_conditions(username, user_name_view, follow_status_button_view):
                 continue
 
-            to_continue = iteration_callback(username, user_name_view)
+            to_continue = iteration_callback(username, user_name_view, follow_status_button_view)
             if to_continue:
                 sleeper.random_sleep()
             else:
@@ -535,8 +656,15 @@ def iterate_over_followings(device, iteration_callback, iteration_callback_pre_c
             return
 
 
-def sort_followings_by_date(device):
-    print("Sort followings by date: from oldest to newest.")
+@unique
+class FollowingsSortOrder(Enum):
+    DEFAULT = 'default order'
+    LATEST = 'date: from newest to oldest'
+    EARLIEST = 'date: from oldest to newest'
+
+
+def sort_followings_by_date(device, sort_order):
+    print(f"Sort followings by {sort_order.value}.")
     sort_button = device.find(resourceId=f'{device.app_id}:id/sorting_entry_row_icon',
                               className='android.widget.ImageView')
     if not sort_button.exists():
@@ -550,60 +678,76 @@ def sort_followings_by_date(device):
         print(COLOR_FAIL + "Cannot find options to sort followings. Continue without sorting." + COLOR_ENDC)
         return
 
-    sort_options_recycler_view.child(index=2).click()
+    if sort_order == FollowingsSortOrder.DEFAULT:
+        sort_options_recycler_view.child(index=0).child(index=1).click()
+    elif sort_order == FollowingsSortOrder.LATEST:
+        sort_options_recycler_view.child(index=1).child(index=1).click()
+    else:  # EARLIEST
+        sort_options_recycler_view.child(index=2).child(index=1).click()
 
 
-def do_unfollow(device, username, my_username, check_if_is_follower, on_action):
+def do_unfollow(device, my_username, username, storage, check_if_is_follower, username_view, follow_status_button_view, on_action):
     """
     :return: whether unfollow was successful
     """
-    username_view = device.find(resourceId=f'{device.app_id}:id/follow_list_username',
-                                className='android.widget.TextView',
-                                text=username)
-    if not username_view.exists():
-        print(COLOR_FAIL + "Cannot find @" + username + ", skip." + COLOR_ENDC)
-        return False
-    username_view.click()
-    on_action(GetProfileAction(user=username))
-    sleeper.random_sleep()
-    if_profile_empty = softban_indicator.detect_empty_profile(device)
+    need_to_go_back_to_list = True
+    unfollow_from_list_chance = randint(1, 100)
 
-    if if_profile_empty:
-        print("Back to the followings list.")
-        device.back()
-        return False
+    if follow_status_button_view is not None and not check_if_is_follower and unfollow_from_list_chance > 50:
+        # We can unfollow directly here instead of getting inside to profile
+        need_to_go_back_to_list = False
+        print("Unfollowing a profile directly from the following list.")
+        follow_status_button_view.click()
+    else:
+        print("Unfollowing a profile from his profile page.")
+        username_view.click()
+        on_action(GetProfileAction(user=username))
+        sleeper.random_sleep()
+        if_profile_empty = softban_indicator.detect_empty_profile(device)
 
-    if check_if_is_follower and _check_is_follower(device, username, my_username):
-        print("Skip @" + username + ". This user is following you.")
-        print("Back to the followings list.")
-        device.back()
-        return False
+        if if_profile_empty:
+            print("Back to the followings list.")
+            device.back()
+            return False
 
-    unfollow_button = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
-                                  clickable=True,
-                                  text='Following')
-    if not unfollow_button.exists():
-        print(COLOR_FAIL + "Cannot find Following button. Maybe not English language is set?" + COLOR_ENDC)
-        save_crash(device)
-        switch_to_english(device)
-        raise LanguageChangedException()
-    unfollow_button.click()
+        if check_if_is_follower and _check_is_follower(device, username, my_username):
+            print("Skip @" + username + ". This user is following you.")
+            storage.update_follow_status(username, True, True)
+            print("Back to the followings list.")
+            device.back()
+            return False
 
-    confirm_unfollow_button = device.find(resourceId=f'{device.app_id}:id/follow_sheet_unfollow_row',
-                                          className='android.widget.TextView')
-    if not confirm_unfollow_button.exists():
-        print(COLOR_FAIL + "Cannot confirm unfollow." + COLOR_ENDC)
-        save_crash(device)
-        device.back()
-        return False
-    confirm_unfollow_button.click()
+        unfollow_button = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
+                                      clickable=True,
+                                      text='Following')
+        if not unfollow_button.exists():
+            print(COLOR_FAIL + "Cannot find Following button. Maybe not English language is set?" + COLOR_ENDC)
+            save_crash(device)
+            switch_to_english(device)
+            raise LanguageChangedException()
+
+        print(f"Unfollowing @{username}...")
+        unfollow_button.click()
+
+        sleeper.random_sleep()
+
+        confirm_unfollow_button = device.find(resourceId=f'{device.app_id}:id/follow_sheet_unfollow_row',
+                                              className='android.widget.TextView')
+        if not confirm_unfollow_button.exists():
+            print(COLOR_FAIL + "Cannot confirm unfollow." + COLOR_ENDC)
+            save_crash(device)
+            device.back()
+            return False
+        confirm_unfollow_button.click()
 
     sleeper.random_sleep()
     _close_confirm_dialog_if_shown(device)
     softban_indicator.detect_action_blocked_dialog(device)
 
-    print("Back to the followings list.")
-    device.back()
+    if need_to_go_back_to_list:
+        print("Back to the followings list.")
+        device.back()
+
     return True
 
 
@@ -638,29 +782,49 @@ def _check_is_follower(device, username, my_username):
         my_username_view = device.find(resourceId=f'{device.app_id}:id/follow_list_username',
                                        className='android.widget.TextView',
                                        text=my_username)
-        result = my_username_view.exists()
+        result = my_username_view.exists(quick=True)
         print("Back to the profile.")
         device.back()
         return result
 
 
 def _close_confirm_dialog_if_shown(device):
-    dialog_root_view = device.find(resourceId=f'{device.app_id}:id/dialog_root_view',
-                                   className='android.widget.FrameLayout')
-    if not dialog_root_view.exists():
-        return
+    if not _close_confirm_dialog_by_version(device, 2):
+        _close_confirm_dialog_by_version(device, 1)
+
+
+def _close_confirm_dialog_by_version(device, version):
+    if version == 1:
+        dialog_root_view = device.find(resourceId=f'{device.app_id}:id/dialog_root_view',
+                                       className='android.widget.FrameLayout')
+    elif version == 2:
+        dialog_root_view = device.find(resourceId=f'{device.app_id}:id/dialog_container',
+                                       className='android.view.ViewGroup')
+    else:
+        raise ValueError("Close unfollow confrim dialog for vis not exists.")
+
+    if not dialog_root_view.exists(quick=True):
+        return False
 
     # Avatar existence is the way to distinguish confirm dialog from block dialog
     user_avatar_view = device.find(resourceIdMatches=USER_AVATAR_VIEW_ID.format(device.app_id),
                                    className='android.widget.ImageView')
-    if not user_avatar_view.exists():
-        return
+    if not user_avatar_view.exists(quick=True):
+        return False
 
     print(COLOR_OKGREEN + "Dialog shown, confirm unfollowing." + COLOR_ENDC)
     sleeper.random_sleep()
-    unfollow_button = dialog_root_view.child(resourceId=f'{device.app_id}:id/primary_button',
-                                             className='android.widget.TextView')
+    if version == 1:
+        unfollow_button = dialog_root_view.child(resourceId=f'{device.app_id}:id/primary_button',
+                                                 className='android.widget.TextView')
+    elif version == 2:
+        unfollow_button = dialog_root_view.child(resourceId=f'{device.app_id}:id/primary_button',
+                                                 className='android.widget.TextView',
+                                                 textMatches=UNFOLLOW_REGEX)
+
     unfollow_button.click()
+    sleeper.random_sleep()
+    return True
 
 
 def _get_action_bar(device):

@@ -100,7 +100,10 @@ def migrate_from_json_to_sql(my_username):
                     session_state.totalGetProfile = session.get("total_get_profile", 0)
                     session_state.totalUnfollowed = session.get("total_unfollowed", 0)
                     session_state.totalStoriesWatched = session.get("total_stories_watched", 0)
-                    session_state.removedMassFollowers = session["removed_mass_followers"]
+                    if "removed_mass_followers" in session:
+                        session_state.removedMassFollowers = session["removed_mass_followers"]
+                    if "total_removed_mass_followers" in session:
+                        session_state.removedMassFollowers = session["total_removed_mass_followers"]
                     session_state.startTime = datetime.strptime(session["start_time"], '%Y-%m-%d %H:%M:%S.%f')
                     if session.get("finish_time") != "None":
                         session_state.finishTime = datetime.strptime(session["finish_time"], '%Y-%m-%d %H:%M:%S.%f')

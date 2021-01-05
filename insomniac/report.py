@@ -8,7 +8,7 @@ def print_full_report(sessions):
         for index, session in enumerate(sessions):
             finish_time = session.finishTime or datetime.now()
             print_timeless("\n")
-            print_timeless(COLOR_REPORT + "SESSION #" + str(index + 1) + COLOR_ENDC)
+            print_timeless(COLOR_REPORT + "SESSION #" + str(index + 1) + f" - {session.my_username}" + COLOR_ENDC)
             print_timeless(COLOR_REPORT + "Start time: " + str(session.startTime) + COLOR_ENDC)
             print_timeless(COLOR_REPORT + "Finish time: " + str(finish_time) + COLOR_ENDC)
             print_timeless(COLOR_REPORT + "Duration: " + str(finish_time - session.startTime) + COLOR_ENDC)
@@ -19,7 +19,9 @@ def print_full_report(sessions):
             print_timeless(COLOR_REPORT + "Total followed: "
                            + _stringify_interactions(session.totalFollowed) + COLOR_ENDC)
             print_timeless(COLOR_REPORT + "Total likes: " + str(session.totalLikes) + COLOR_ENDC)
+            print_timeless(COLOR_REPORT + "Total comments: " + str(session.totalComments) + COLOR_ENDC)
             print_timeless(COLOR_REPORT + "Total unfollowed: " + str(session.totalUnfollowed) + COLOR_ENDC)
+            print_timeless(COLOR_REPORT + "Total get-profile: " + str(session.totalGetProfile) + COLOR_ENDC)
             print_timeless(COLOR_REPORT + "Removed mass followers: "
                            + _stringify_removed_mass_followers(session.removedMassFollowers) + COLOR_ENDC)
 
@@ -76,24 +78,42 @@ def print_full_report(sessions):
     total_story_watches = sum(session.totalStoriesWatched for session in sessions)
     print_timeless(COLOR_REPORT + "Total stories watches: " + str(total_story_watches) + COLOR_ENDC)
 
+    total_comments = sum(session.totalComments for session in sessions)
+    print_timeless(COLOR_REPORT + "Total comments: " + str(total_comments) + COLOR_ENDC)
+
+    total_get_profile = sum(session.totalGetProfile for session in sessions)
+    print_timeless(COLOR_REPORT + "Total get-profile: " + str(total_get_profile) + COLOR_ENDC)
+
     print_timeless(COLOR_REPORT + "Removed mass followers: "
                    + _stringify_removed_mass_followers(total_removed_mass_followers) + COLOR_ENDC)
 
 
 def print_short_report(source, session_state):
     total_likes = session_state.totalLikes
+    total_comments = session_state.totalComments
     total_followed = sum(session_state.totalFollowed.values())
     interactions = session_state.successfulInteractions.get(source, 0)
     total_successful_interactions = sum(session_state.successfulInteractions.values())
     total_story_views = session_state.totalStoriesWatched
     print(COLOR_REPORT + "Session progress: " + str(total_likes) + " likes, " + str(total_followed) + " followed, " +
-          str(total_story_views) + " stories watched, " + str(interactions) + " successful " +
-          ("interaction" if interactions == 1 else "interactions") +
+          str(total_story_views) + " stories watched, " + str(total_comments) + " comments, " +
+          str(interactions) + " successful " + ("interaction" if interactions == 1 else "interactions") +
           " for " + source + "," +
           " " + str(total_successful_interactions) + " successful interactions for the entire session" + COLOR_ENDC)
 
+    
+def print_short_unfollow_report(session_state):
+    total_unfollowed = session_state.totalUnfollowed
+    print(COLOR_REPORT + "Session progress: " + str(total_unfollowed) + " unfollowed for the entire session" + COLOR_ENDC)
 
-def print_interaction_types(username, can_like, can_follow, can_watch):
+    
+def print_short_scrape_report(session_state):
+    total_scraped = sum(session_state.totalScraped.values())
+    print(COLOR_REPORT + "Session progress: " + str(total_scraped) +
+          " profiles scraped for the entire session" + COLOR_ENDC)
+
+    
+def print_interaction_types(username, can_like, can_follow, can_watch, can_comment):
     interaction_types = []
     if can_like:
         interaction_types.append("like")
@@ -101,6 +121,8 @@ def print_interaction_types(username, can_like, can_follow, can_watch):
         interaction_types.append("follow")
     if can_watch:
         interaction_types.append("watch stories")
+    if can_comment:
+        interaction_types.append("comment")
     print(f"@{username} interaction: going to {', '.join(interaction_types)}")
 
 
