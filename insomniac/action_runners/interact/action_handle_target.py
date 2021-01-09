@@ -10,6 +10,9 @@ from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
 
+is_all_filters_satisfied = False
+
+
 def handle_target(device,
                   username,
                   provider,
@@ -34,9 +37,15 @@ def handle_target(device,
 
     def pre_conditions(target_name, target_name_view):
         if is_passed_filters is not None:
-            if not is_passed_filters(device, target_name, reset=True, filters_tags=['BEFORE_PROFILE_CLICK']):
+            global is_all_filters_satisfied
+            should_continue, is_all_filters_satisfied = is_passed_filters(device, target_name, reset=True,
+                                                                          filters_tags=['BEFORE_PROFILE_CLICK'])
+            if not should_continue:
                 storage.add_filtered_user(target_name)
                 return False
+
+            if not is_all_filters_satisfied:
+                print_debug("Not all filters are satisfied with filter-ahead, continue filtering inside the profile-page")
 
         return True
 
@@ -58,10 +67,12 @@ def handle_target(device,
         print("@" + target_name + ": interact")
 
         if is_passed_filters is not None:
-            if not is_passed_filters(device, target_name, reset=False):
-                storage.add_filtered_user(target_name)
-                print("Moving to next target")
-                return
+            if not is_all_filters_satisfied:
+                should_continue, _ = is_passed_filters(device, target_name, reset=False)
+                if not should_continue:
+                    storage.add_filtered_user(target_name)
+                    print("Moving to next target")
+                    return
 
         is_like_limit_reached, like_reached_source_limit, like_reached_session_limit = \
             is_limit_reached(LikeAction(source=target_name, user=target_name), session_state)

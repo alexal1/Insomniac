@@ -109,7 +109,16 @@ class InsomniacSession(object):
 
         return all_args
 
+    def reset_params(self):
+        self.repeat = None
+        self.username = None
+        self.next_config_file = None
+        insomniac.__version__.__debug_mode__ = False
+        insomniac.softban_indicator.should_indicate_softban = True
+
     def set_session_args(self, args):
+        self.reset_params()
+
         if args.repeat is not None:
             self.repeat = get_value(args.repeat, "Sleep time (min) before repeat: {}", 180)
 
@@ -198,13 +207,14 @@ class InsomniacSession(object):
         if args is None:
             return
 
-        if not args.no_speed_check:
-            print("Checking your Internet speed to adjust the script speed, please wait for a minute...")
-            print("(use " + COLOR_BOLD + "--no-speed-check" + COLOR_ENDC + " to skip this check)")
-            sleeper.update_random_sleep_range()
-
         while True:
             self.print_session_params(args)
+
+            if not args.no_speed_check:
+                print("Checking your Internet speed to adjust the script speed, please wait for a minute...")
+                print("(use " + COLOR_BOLD + "--no-speed-check" + COLOR_ENDC + " to skip this check)")
+                sleeper.update_random_sleep_range()
+
             device_wrapper, app_version = self.get_device_wrapper(args)
             if device_wrapper is None:
                 return

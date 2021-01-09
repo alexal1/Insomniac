@@ -204,7 +204,9 @@ class DeviceFacade:
         cmd_res = subprocess.run(cmd, stdout=PIPE, stderr=PIPE, shell=True, encoding="utf8")
         data = cmd_res.stdout.strip()
         flag = search("mInputShown=(true|false)", data)
-        return True if flag.group(1) == "true" else False
+        if flag is not None:
+            return True if flag.group(1) == "true" else False
+        return False
 
     def close_keyboard(self):
         print("Closing keyboard...")
