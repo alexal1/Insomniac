@@ -332,7 +332,6 @@ class SearchView(InstagramView):
                 save_crash(self.device)
                 return None
         accounts_tab.click()
-        self.device.close_keyboard()
 
         # Check if username already exists in the recent search list -> act as human
         username_view_recent = self._get_username_row(username)
@@ -343,7 +342,6 @@ class SearchView(InstagramView):
 
         print(f"@{username} is not in recent searching history...")
         search_edit_text.set_text(username)
-        self.device.close_keyboard()
         username_view = self._get_username_row(username)
 
         if not username_view.exists():
@@ -371,7 +369,6 @@ class SearchView(InstagramView):
                 save_crash(self.device)
                 return None
         hashtag_tab.click()
-        self.device.close_keyboard()
 
         # Check if hashtag already exists in the recent search list -> act as human
         hashtag_view_recent = self._get_hashtag_row(hashtag)
@@ -382,7 +379,6 @@ class SearchView(InstagramView):
 
         print(f"#{hashtag} is not in recent searching history...")
         search_edit_text.set_text(hashtag)
-        self.device.close_keyboard()
         hashtag_view = self._get_hashtag_row(hashtag)
 
         if not hashtag_view.exists():
@@ -412,11 +408,9 @@ class SearchView(InstagramView):
 
         places_tab.click()
         sleeper.random_sleep()
-        self.device.close_keyboard()
         sleeper.random_sleep()
 
         search_edit_text.set_text(place)
-        self.device.close_keyboard()
         place_view = self._get_place_row()
 
         if not place_view.exists():

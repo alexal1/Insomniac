@@ -27,7 +27,7 @@ class UnfollowActionRunner(CoreActionsRunner):
         "following_sort_order": {
             "help": 'sort the following-list when unfollowing users from the list. Can be one of values: '
                     'default / latest / earliest. By default sorting by earliest',
-            "metavar": '100-200',
+            "metavar": 'latest',
             "default": 'earliest'
         }
     }

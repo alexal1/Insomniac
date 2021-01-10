@@ -94,10 +94,6 @@ def handle_blogger(device,
         elif is_myself and storage.check_user_was_interacted_recently(follower_name):
             print("@" + follower_name + ": already interacted in the last week. Skip.")
             return False
-        elif is_passed_filters is not None:
-            if not is_passed_filters(device, follower_name, reset=True, filters_tags=['BEFORE_PROFILE_CLICK']):
-                storage.add_filtered_user(follower_name)
-                return False
 
         return True
 
@@ -116,6 +112,18 @@ def handle_blogger(device,
                               get_profile_reached_source_limit, action_status, "Get-Profile"):
             return False
 
+        is_all_filters_satisfied = False
+        if is_passed_filters is not None:
+            print_debug(f"Running filter-ahead on @{follower_name}")
+            should_continue, is_all_filters_satisfied = is_passed_filters(device, follower_name, reset=True,
+                                                                          filters_tags=['BEFORE_PROFILE_CLICK'])
+            if not should_continue:
+                storage.add_filtered_user(follower_name)
+                return True
+
+            if not is_all_filters_satisfied:
+                print_debug("Not all filters are satisfied with filter-ahead, continue filtering inside the profile-page")
+
         print("@" + follower_name + ": interact")
         follower_name_view.click()
         on_action(GetProfileAction(user=follower_name))
@@ -131,12 +139,14 @@ def handle_blogger(device,
         follower_profile_view = ProfileView(device, follower_name == session_state.my_username)
 
         if is_passed_filters is not None:
-            if not is_passed_filters(device, follower_name, reset=False):
-                storage.add_filtered_user(follower_name)
-                # Continue to next follower
-                print("Back to profiles list")
-                device.back()
-                return True
+            if not is_all_filters_satisfied:
+                should_continue, _ = is_passed_filters(device, follower_name, reset=False)
+                if not should_continue:
+                    storage.add_filtered_user(follower_name)
+                    # Continue to next follower
+                    print("Back to profiles list")
+                    device.back()
+                    return True
 
         is_like_limit_reached, like_reached_source_limit, like_reached_session_limit = \
             is_limit_reached(LikeAction(source=username, user=follower_name), session_state)

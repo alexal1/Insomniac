@@ -85,8 +85,8 @@ def open_user_followings(device, username, refresh=False, on_action=None):
     return _open_user(device, username, False, True, refresh, on_action)
 
 
-def iterate_over_followers(device, is_myself, iteration_callback,
-                           iteration_callback_pre_conditions, iterate_without_sleep=False):
+def iterate_over_followers(device, is_myself, iteration_callback, iteration_callback_pre_conditions,
+                           iterate_without_sleep=False, check_item_was_removed=False):
     # Wait until list is rendered
     device.find(resourceId=f'{device.app_id}:id/follow_list_container',
                 className='android.widget.LinearLayout').wait()
@@ -99,83 +99,91 @@ def iterate_over_followers(device, is_myself, iteration_callback,
     prev_screen_iterated_followers = []
     scroll_end_detector = ScrollEndDetector()
     while True:
-        print("Iterate over visible followers")
-        if not iterate_without_sleep:
-            sleeper.random_sleep()
-
-        screen_iterated_followers = []
-        screen_skipped_followers_count = 0
-        scroll_end_detector.notify_new_page()
-
         try:
-            for item in device.find(resourceId=f'{device.app_id}:id/follow_list_container',
-                                    className='android.widget.LinearLayout'):
-                user_info_view = item.child(index=1)
-                user_name_view = user_info_view.child(index=0).child()
-                if not user_name_view.exists(quick=True):
-                    print(COLOR_OKGREEN + "Next item not found: probably reached end of the screen." + COLOR_ENDC)
-                    break
+            print("Iterate over visible followers")
+            if not iterate_without_sleep:
+                sleeper.random_sleep()
 
-                username = user_name_view.get_text()
-                screen_iterated_followers.append(username)
-                scroll_end_detector.notify_username_iterated(username)
+            screen_iterated_followers = []
+            screen_skipped_followers_count = 0
+            scroll_end_detector.notify_new_page()
 
-                if not iteration_callback_pre_conditions(username, user_name_view):
-                    screen_skipped_followers_count += 1
-                    continue
+            try:
+                for item in device.find(resourceId=f'{device.app_id}:id/follow_list_container',
+                                        className='android.widget.LinearLayout'):
+                    user_info_view = item.child(index=1)
+                    user_name_view = user_info_view.child(index=0).child()
+                    if not user_name_view.exists(quick=True):
+                        print(COLOR_OKGREEN + "Next item not found: probably reached end of the screen." + COLOR_ENDC)
+                        break
 
-                to_continue = iteration_callback(username, user_name_view)
-                if not to_continue:
-                    print(COLOR_OKBLUE + "Stopping followers iteration" + COLOR_ENDC)
+                    username = user_name_view.get_text()
+                    screen_iterated_followers.append(username)
+                    scroll_end_detector.notify_username_iterated(username)
+
+                    if not iteration_callback_pre_conditions(username, user_name_view):
+                        screen_skipped_followers_count += 1
+                        continue
+
+                    to_continue = iteration_callback(username, user_name_view)
+                    if not to_continue:
+                        print(COLOR_OKBLUE + "Stopping followers iteration" + COLOR_ENDC)
+                        return
+
+                    if check_item_was_removed and \
+                            (not user_name_view.exists()
+                             or username != user_name_view.get_text()):
+                        raise StopIteration("item was removed")
+
+            except IndexError:
+                print(COLOR_FAIL + "Cannot get next item: probably reached end of the screen." + COLOR_ENDC)
+
+            if is_myself and scrolled_to_top():
+                print(COLOR_OKGREEN + "Scrolled to top, finish." + COLOR_ENDC)
+                return
+            elif len(screen_iterated_followers) > 0:
+                load_more_button = device.find(resourceId=f'{device.app_id}:id/row_load_more_button')
+                load_more_button_exists = load_more_button.exists(quick=True)
+
+                if scroll_end_detector.is_the_end():
                     return
 
-        except IndexError:
-            print(COLOR_FAIL + "Cannot get next item: probably reached end of the screen." + COLOR_ENDC)
-
-        if is_myself and scrolled_to_top():
-            print(COLOR_OKGREEN + "Scrolled to top, finish." + COLOR_ENDC)
-            return
-        elif len(screen_iterated_followers) > 0:
-            load_more_button = device.find(resourceId=f'{device.app_id}:id/row_load_more_button')
-            load_more_button_exists = load_more_button.exists(quick=True)
-
-            if scroll_end_detector.is_the_end():
-                return
-
-            need_swipe = screen_skipped_followers_count == len(screen_iterated_followers)
-            list_view = device.find(resourceId='android:id/list',
-                                    className='android.widget.ListView')
-            if not list_view.exists():
-                print(COLOR_FAIL + "Cannot find the list of followers. Trying to press back again." + COLOR_ENDC)
-                device.back()
+                need_swipe = screen_skipped_followers_count == len(screen_iterated_followers)
                 list_view = device.find(resourceId='android:id/list',
                                         className='android.widget.ListView')
+                if not list_view.exists():
+                    print(COLOR_FAIL + "Cannot find the list of followers. Trying to press back again." + COLOR_ENDC)
+                    device.back()
+                    list_view = device.find(resourceId='android:id/list',
+                                            className='android.widget.ListView')
 
-            if is_myself:
-                print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
-                list_view.scroll(DeviceFacade.Direction.TOP)
-            else:
-                pressed_retry = False
-                if load_more_button_exists:
-                    retry_button = load_more_button.child(className='android.widget.ImageView')
-                    if retry_button.exists():
-                        print("Press \"Load\" button")
-                        retry_button.click()
-                        sleeper.random_sleep()
-                        pressed_retry = True
-
-                if need_swipe and not pressed_retry:
-                    print(COLOR_OKGREEN + "All followers skipped, let's do a swipe" + COLOR_ENDC)
-                    list_view.swipe(DeviceFacade.Direction.BOTTOM)
-                else:
+                if is_myself:
                     print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
-                    list_view.scroll(DeviceFacade.Direction.BOTTOM)
+                    list_view.scroll(DeviceFacade.Direction.TOP)
+                else:
+                    pressed_retry = False
+                    if load_more_button_exists:
+                        retry_button = load_more_button.child(className='android.widget.ImageView')
+                        if retry_button.exists():
+                            print("Press \"Load\" button")
+                            retry_button.click()
+                            sleeper.random_sleep()
+                            pressed_retry = True
 
-            prev_screen_iterated_followers.clear()
-            prev_screen_iterated_followers += screen_iterated_followers
-        else:
-            print(COLOR_OKGREEN + "No followers were iterated, finish." + COLOR_ENDC)
-            return
+                    if need_swipe and not pressed_retry:
+                        print(COLOR_OKGREEN + "All followers skipped, let's do a swipe" + COLOR_ENDC)
+                        list_view.swipe(DeviceFacade.Direction.BOTTOM)
+                    else:
+                        print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
+                        list_view.scroll(DeviceFacade.Direction.BOTTOM)
+
+                prev_screen_iterated_followers.clear()
+                prev_screen_iterated_followers += screen_iterated_followers
+            else:
+                print(COLOR_OKGREEN + "No followers were iterated, finish." + COLOR_ENDC)
+                return
+        except StopIteration as e:
+            print(COLOR_OKGREEN + f"Starting the screen from the beginning because {e}" + COLOR_ENDC)
 
 
 def iterate_over_likers(device, iteration_callback, iteration_callback_pre_conditions):
