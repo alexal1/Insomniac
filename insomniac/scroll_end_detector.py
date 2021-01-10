@@ -17,7 +17,7 @@ class ScrollEndDetector:
         last_page.append(username)
 
     def is_the_end(self):
-        if len(self.pages) < 2:
+        if len(self.pages) < self.repeats_to_end:
             return False
 
         is_the_end = True
@@ -31,7 +31,8 @@ class ScrollEndDetector:
             repeats += 1
 
         if is_the_end:
-            print(COLOR_OKBLUE + f"Same users iterated {repeats} times. End of the list, finish." + COLOR_ENDC)
+            print(COLOR_OKBLUE + f"Same users iterated {repeats} times. It's either an end of the list or a softban. "
+                                 f"Anyway, let's finish." + COLOR_ENDC)
         elif repeats > 1:
             print(COLOR_OKBLUE + f"Same users iterated {repeats} times. Continue." + COLOR_ENDC)
 

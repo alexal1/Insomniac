@@ -26,15 +26,16 @@ class InteractBySourceActionRunner(CoreActionsRunner):
         },
         "interact": {
             "nargs": '+',
-            "help": 'list of hashtags and usernames. Usernames should start with \"@\" symbol. '
-                    'You can specify the way of interaction after a \"-\" sign: @username-followers, '
-                    '@username-following, hashtag-top-likers, hashtag-recent-likers',
+            "help": 'list of hashtags, usernames, or places. Usernames should start with \"@\" symbol. Places should '
+                    'start with \"P-\" symbols. You can specify the way of interaction after a \"-\" sign: '
+                    '@natgeo-followers, @natgeo-following, amazingtrips-top-likers, amazingtrips-recent-likers, '
+                    'P-Paris-top-likers, P-Paris-recent-likers',
             "default": [],
-            "metavar": ('hashtag-top-likers', '@username-followers')
+            "metavar": ('amazingtrips-top-likers', '@natgeo-followers')
         },
         "interaction_users_amount": {
-            "help": 'add this argument to select an amount of users from the interact-list '
-                    '(users are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)',
+            "help": 'add this argument to select an amount of sources from the interact-list '
+                    '(sources are randomized). It can be a number (e.g. 4) or a range (e.g. 3-8)',
             'metavar': '3-8'
         },
         "stories_count": {

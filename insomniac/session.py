@@ -56,30 +56,29 @@ class InsomniacSession(object):
             "default": 'com.instagram.android'
         },
         "dont_indicate_softban": {
-            "help": "by default, Insomniac tried to indicate if there is a softban on your acoount. set this flag in "
-                    "order to ignore those soft-ban indicators",
+            "help": "by default Insomniac tries to indicate if there is a softban on your acoount. Set this flag in "
+                    "order to ignore those softban indicators",
             'action': 'store_true',
             "default": False
         },
         "debug": {
-            'help': 'add this flag to insomniac in debug mode (more verbose logs)',
+            'help': 'add this flag to run insomniac in debug mode (more verbose logs)',
             'action': 'store_true'
         },
         "username": {
             "help": 'if you have configured multiple Instagram accounts in your app, use this parameter in order to '
                     'switch into a specific one. Not trying to switch account by default. '
-                    'If the account does not exist - the session wont started',
+                    'If the account does not exist - the session won\'t start',
             "metavar": 'my_account_name',
             "default": None
         },
         "next_config_file": {
-            "help": 'if you want to run multiple insomniac sessions one-by-one but with different parameters, '
-                    'for example - different action (interact and then unfollow), or same config but with different username, '
-                    'or any other variation of parameters you can think of, you can combine this parameter with the "repeat"-parameter, '
-                    'and after the sleep of the "repeat"-parameter, a new config file (referenced by this parameter) will be loaded. '
-                    'By default using the same config that been loaded in the first Insominac session. You must use "repeat"-parameter '
-                    'in order for that parameter take action!',
-            "metavar": 'next_session_config_file_path',
+            "help": 'configuration that will be loaded after session is finished and the bot \"sleeps\" for time '
+                    'specified by the \"--repeat\" argument. You can use this argument to run multiple Insomniac '
+                    'sessions one by one with different parameters. E.g. different action (interact and then unfollow),'
+                    ' or different \"--username\". By default uses the same config file as been loaded for the first '
+                    'session. Note that you must use \"--repeat\" with this argument!',
+            "metavar": 'CONFIG_FILE',
             "default": None
         },
     }
