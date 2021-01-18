@@ -827,7 +827,6 @@ def _close_confirm_dialog_by_version(device, version):
                                                  className='android.widget.TextView')
     elif version == 2:
         unfollow_button = dialog_root_view.child(resourceId=f'{device.app_id}:id/primary_button',
-                                                 className='android.widget.TextView',
                                                  textMatches=UNFOLLOW_REGEX)
 
     unfollow_button.click()
