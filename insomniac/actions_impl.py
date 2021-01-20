@@ -20,7 +20,7 @@ UNFOLLOW_REGEX = 'Unfollow'
 FOLLOWING_BUTTON_ID_REGEX = '{0}:id/row_profile_header_following_container' \
                             '|{1}:id/row_profile_header_container_following'
 USER_AVATAR_VIEW_ID = '{0}:id/circular_image|^$'
-POST_VIEW_ID_REGEX = '{0}:id/zoomable_view_container|{1}:id/carousel_image'
+POST_VIEW_ID_REGEX = '{0}:id/zoomable_view_container|{1}:id/carousel_image|{2}:id/carousel_video_image'
 
 liked_count = 0
 is_followed = False
