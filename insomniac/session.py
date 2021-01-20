@@ -1,10 +1,9 @@
 import random
-import sys
 
 import colorama
 
-import insomniac.__version__
-from insomniac.__version__ import __debug_mode__
+import insomniac.__version__ as __version__
+import insomniac.softban_indicator as softban_indicator
 from insomniac.action_get_my_profile_info import get_my_profile_info
 from insomniac.action_runners.actions_runners_manager import ActionRunnersManager
 from insomniac.device import DeviceWrapper
@@ -112,8 +111,8 @@ class InsomniacSession(object):
         self.repeat = None
         self.username = None
         self.next_config_file = None
-        insomniac.__version__.__debug_mode__ = False
-        insomniac.softban_indicator.should_indicate_softban = True
+        __version__.__debug_mode__ = False
+        softban_indicator.should_indicate_softban = True
 
     def set_session_args(self, args):
         self.reset_params()
@@ -121,11 +120,11 @@ class InsomniacSession(object):
         if args.repeat is not None:
             self.repeat = get_value(args.repeat, "Sleep time (min) before repeat: {}", 180)
 
-        if args.debug is not None:
-            insomniac.__version__.__debug_mode__ = True
+        if args.debug is not None and bool(args.debug):
+            __version__.__debug_mode__ = True
 
         if args.dont_indicate_softban:
-            insomniac.softban_indicator.should_indicate_softban = False
+            softban_indicator.should_indicate_softban = False
 
         if args.username is not None:
             self.username = args.username
@@ -164,6 +163,8 @@ class InsomniacSession(object):
         close_instagram(device_wrapper.device_id, device_wrapper.app_id)
         sleeper.random_sleep()
 
+        if __version__.__debug_mode__:
+            device_wrapper.get().start_screen_record()
         open_instagram(args.device, args.app_id)
         sleeper.random_sleep()
         self.session_state.my_username, \
@@ -174,6 +175,8 @@ class InsomniacSession(object):
 
     def end_session(self, device_wrapper):
         close_instagram(device_wrapper.device_id, device_wrapper.app_id)
+        if __version__.__debug_mode__:
+            device_wrapper.get().stop_screen_record()
         print_copyright()
         self.session_state.finishTime = datetime.now()
         print_timeless(COLOR_REPORT + "-------- FINISH: " + str(self.session_state.finishTime) + " --------" + COLOR_ENDC)
@@ -247,13 +250,13 @@ class InsomniacSession(object):
                 self.end_session(device_wrapper)
                 return
             except Exception as ex:
-                if __debug_mode__:
+                if __version__.__debug_mode__:
                     raise ex
                 else:
                     print_timeless(COLOR_FAIL + f"\nCaught an exception:\n{ex}" + COLOR_ENDC)
                     print(COLOR_FAIL + traceback.format_exc() + COLOR_ENDC)
                     save_crash(device_wrapper.get(), ex)
-            
+
             self.end_session(device_wrapper)
             if self.repeat is not None:
                 if not self.repeat_session(args):

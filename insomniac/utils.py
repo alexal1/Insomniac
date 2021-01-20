@@ -14,7 +14,7 @@ from time import sleep
 from urllib.error import URLError
 from urllib.parse import urlparse
 
-from insomniac.__version__ import __version__, __debug_mode__
+import insomniac.__version__ as __version__
 
 COLOR_HEADER = '\033[95m'
 COLOR_OKBLUE = '\033[94m'
@@ -30,7 +30,7 @@ def print_version():
     def versiontuple(v):
         return tuple(map(int, (v.split("."))))
 
-    current_version = __version__
+    current_version = __version__.__version__
     print_timeless(COLOR_HEADER + f"Insomniac v{current_version}" + COLOR_ENDC)
     latest_version = _get_latest_version('insomniac')
     if latest_version is not None and versiontuple(latest_version) > versiontuple(current_version):
@@ -181,7 +181,7 @@ def print_copyright():
 
 def _print_with_time_decorator(standard_print, print_time, debug):
     def wrapper(*args, **kwargs):
-        if debug and not __debug_mode__:
+        if debug and not __version__.__debug_mode__:
             return
 
         global print_log

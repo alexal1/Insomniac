@@ -1,4 +1,5 @@
 from enum import Enum, unique
+from os import listdir
 from random import uniform
 from re import search
 
@@ -7,6 +8,8 @@ from insomniac.utils import *
 # How long we're waiting until UI element appears (loading content + animation)
 UI_TIMEOUT_LONG = 5
 UI_TIMEOUT_SHORT = 1
+
+SCREEN_RECORDS_PATH = "screen_records"
 
 
 def create_device(is_old, device_id, app_id):
@@ -85,6 +88,47 @@ class DeviceFacade:
             self.deviceV1.screenshot(path)
         else:
             self.deviceV2.screenshot(path)
+
+    def start_screen_record(self, fps=10):
+        """Available for uiautomator2 only"""
+        if self.deviceV1 is not None:
+            print(COLOR_FAIL + "Screen record doesn't work when you use the --old flag" + COLOR_ENDC)
+        else:
+            if not os.path.exists(SCREEN_RECORDS_PATH):
+                os.makedirs(SCREEN_RECORDS_PATH)
+            mp4_files = [f for f in listdir(SCREEN_RECORDS_PATH) if f.endswith(".mp4")]
+            if mp4_files:
+                last_mp4 = mp4_files[-1]
+                debug_number = "{0:0=4d}".format(int(last_mp4[-8:-4]) + 1)
+            else:
+                debug_number = "0000"
+            output = os.path.join(SCREEN_RECORDS_PATH, f"debug_{debug_number}.mp4")
+            try:
+                self.deviceV2.screenrecord(output, fps)
+            except ModuleNotFoundError:
+                print(COLOR_FAIL + "To use screen recording please install additional packages:" + COLOR_ENDC)
+                print(COLOR_FAIL + COLOR_BOLD +
+                      'pip3 install -U "uiautomator2[image]" -i https://pypi.doubanio.com/simple' + COLOR_ENDC)
+                return
+            print(COLOR_OKGREEN + f'Started screen recording: it will be saved as "{output}".' + COLOR_ENDC)
+
+    def stop_screen_record(self):
+        """Available for uiautomator2 only"""
+        if self.deviceV1 is not None:
+            return
+
+        try:
+            is_recorded = self.deviceV2.screenrecord.stop()
+        except ModuleNotFoundError:
+            is_recorded = False
+        if is_recorded:
+            if not os.path.exists(SCREEN_RECORDS_PATH):
+                return
+            mp4_files = [f for f in listdir(SCREEN_RECORDS_PATH) if f.endswith(".mp4")]
+            if mp4_files:
+                last_mp4 = mp4_files[-1]
+                path = os.path.join(SCREEN_RECORDS_PATH, last_mp4)
+                print(COLOR_OKGREEN + f'Screen recorder has been stopped successfully! Saved as "{path}".' + COLOR_ENDC)
 
     def dump_hierarchy(self, path):
         if self.deviceV1 is not None:

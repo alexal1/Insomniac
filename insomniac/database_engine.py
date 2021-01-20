@@ -21,6 +21,8 @@ SQL_COUNT_LOADED_NOT_INTERACTED_TARGETS_FROM_INTERACTED_USERS_BY_TARGETS_LIST = 
                                                                                 "provider = 'TARGETS_LIST' AND interactions_count = 0"
 SQL_SELECT_FROM_FILTERED_USERS_BY_USERNAME = "SELECT * from filtered_users WHERE username = :username"
 SQL_SELECT_FROM_SCRAPED_USERS_BY_USERNAME = "SELECT * from scraped_users WHERE username = :username"
+SQL_SELECT_ALL_SESSIONS = "SELECT * from sessions INNER JOIN profiles ON sessions.profile_id = profiles.id"
+SQL_SELECT_PROFILE_BY_ID = "SELECT * from profiles WHERE id = :profile_id"
 
 SQL_INSERT_DEFAULT_INTO_METADATA = "INSERT INTO metadata DEFAULT VALUES"
 SQL_INSERT_INTO_METADATA = "INSERT INTO metadata (version) VALUES (?)"
@@ -519,6 +521,32 @@ def add_sessions(address, session_states):
         if connection:
             # Close the opened connection
             connection.close()
+
+
+def get_all_sessions(address):
+    connection = None
+    sessions = None
+    try:
+        connection = sqlite3.connect(address)
+        connection.row_factory = dict_factory
+        cursor = connection.cursor()
+        cursor.execute(SQL_SELECT_ALL_SESSIONS)
+        sessions = cursor.fetchall()
+    except Exception as e:
+        print(COLOR_FAIL + f"[Database] Cannot get all sessions: {e}" + COLOR_ENDC)
+    finally:
+        if connection:
+            # Close the opened connection
+            connection.close()
+
+    return list(sessions) if sessions is not None else ()
+
+
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
 
 
 def _run_migrations(cursor):

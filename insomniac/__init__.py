@@ -1,11 +1,11 @@
-from insomniac.__version__ import __debug_mode__, __logo__
+import insomniac.__version__ as __version__
 from insomniac.activation import activation_controller
 from insomniac.utils import *
 
 
 def run(activation_code=""):
-    if not __debug_mode__:
-        print_timeless(COLOR_OKGREEN + __logo__ + COLOR_ENDC)
+    if not __version__.__debug_mode__:
+        print_timeless(COLOR_OKGREEN + __version__.__logo__ + COLOR_ENDC)
         print_version()
 
     activation_controller.validate(activation_code)

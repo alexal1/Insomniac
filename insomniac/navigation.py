@@ -1,11 +1,11 @@
 from enum import Enum, unique
 
-from insomniac.actions_types import GetProfileAction
-from insomniac.sleeper import sleeper
 from insomniac.utils import *
 from insomniac.views import TabBarView
 
 SEARCH_CONTENT_DESC_REGEX = '[Ss]earch and [Ee]xplore'
+SETTINGS_LIST_ID_REGEX = 'android:id/list|{0}:id/recycler_view'
+SETTINGS_LIST_CLASS_NAME_REGEX = 'android.widget.ListView|androidx.recyclerview.widget.RecyclerView'
 
 
 def navigate(device, tab):
@@ -49,9 +49,9 @@ def switch_to_english(device):
 
     action_bar = device.find(resourceId=f'{device.app_id}:id/action_bar',
                              className='android.widget.LinearLayout')
-    # We wanna pick last ImageView in the action bar
+    # We wanna pick last view in the action bar
     options_view = None
-    for options_view in action_bar.child(className='android.widget.ImageView'):
+    for options_view in action_bar.child(clickable=True):
         pass
     if options_view is None or not options_view.exists():
         print(COLOR_FAIL + "No idea how to open menu..." + COLOR_ENDC)
@@ -63,19 +63,19 @@ def switch_to_english(device):
     settings_button.click()
 
     for account_item_index in range(6, 9):
-        list_view = device.find(resourceId='android:id/list',
-                                className='android.widget.ListView')
-        account_item = list_view.child(index=account_item_index)
+        list_view = device.find(resourceIdMatches=SETTINGS_LIST_ID_REGEX.format(device.app_id),
+                                classNameMatches=SETTINGS_LIST_CLASS_NAME_REGEX)
+        account_item = list_view.child(index=account_item_index, clickable=True)
         account_item.click()
 
-        list_view = device.find(resourceId='android:id/list',
-                                className='android.widget.ListView')
-        if not list_view.exists():
+        list_view = device.find(resourceIdMatches=SETTINGS_LIST_ID_REGEX.format(device.app_id),
+                                classNameMatches=SETTINGS_LIST_CLASS_NAME_REGEX)
+        if not list_view.exists(quick=True):
             print("Opened a wrong tab, going back")
             device.back()
             continue
-        language_item = list_view.child(index=4)
-        if not language_item.exists():
+        language_item = list_view.child(index=4, clickable=True)
+        if not language_item.exists(quick=True):
             print("Opened a wrong tab, going back")
             device.back()
             continue
@@ -83,7 +83,7 @@ def switch_to_english(device):
 
         search_edit_text = device.find(resourceId=f'{device.app_id}:id/search',
                                        className='android.widget.EditText')
-        if not search_edit_text.exists():
+        if not search_edit_text.exists(quick=True):
             print("Opened a wrong tab, going back")
             device.back()
             device.back()
