@@ -19,10 +19,10 @@ Die Grundfunktionen beinhalten alles, was du für die einfache Nutzung brauchst.
 _Bedenke, dass du dir alle Funktionen anzeigen lassen kannst, wenn du `python start.py` ohne Parameter startest._
 
 ### Interaktionen
-"Interaktionen" sind die Hauptaufgabe dieses Bots: Wir interagieren mit unserem potenziellen Publikum, um dessen Aufmerksamkeit zu gewinnen.
+"Interaktionen" sind die Hauptaufgabe dieses Bots: Wir interagieren mit unserer potenziellen Zielgruppe, um dessen Aufmerksamkeit zu gewinnen.
 
 #### --interact amazingtrips-top-likers [@natgeo-followers ...]
-Liste von Hashtags, Usernamen oder Orten. Usernamen müssen mit einem "@"-Zeichen beginnen. Orte müssen mit "P-" beginnen. Du kannst die potenzielles Publikum spezifizieren, indem du das "-"-Zeichen benutzt: @natgeo-followers, @natgeo-following, amazingtrips-top-likers, amazingtrips-recent-likers, P-Paris-top-likers, P-Paris-recent-likers
+Liste von Hashtags, Usernamen oder Orten. Usernamen müssen mit einem "@"-Zeichen beginnen. Orte müssen mit "P-" beginnen. Du kannst die potenzielle Zielgruppe spezifizieren, indem du das "-"-Zeichen benutzt: @natgeo-followers, @natgeo-following, amazingtrips-top-likers, amazingtrips-recent-likers, P-Paris-top-likers, P-Paris-recent-likers
 
 #### --likes-count 2-4
 Anzahl der Likes die pro Instagram-Account verteilt werden, Standardeinstellung ist 2. Es kann eine Zahl angegeben werden (z.B. 2) oder ein Zufallswert zwischen zwei Zahlen (z.B. 2-4).
@@ -36,14 +36,14 @@ Die Prozentzahl, zu der ein Account gefollowed wird. Standardeinstellung ist 0.
 #### --stories-count 3-8
 Anzahl der Stories, die von einem User angeschaut werden. Diese Option ist in der Standardeinstellung deaktiviert. Ein kann eine Zahl angegeben werden (z.B. 2) oder ein Zufallswert zwischen zwei Zahlen (z.B. 2-4).
 
-#### --comments-list WOW! [What a picture! ...]
+#### --comments-list WOW! [Was ein Bild! ...]
 Liste von Kommentaren, die innerhalb der Interaktion mit einem User gepostet werden.
 
 #### --comment-percentage 50
 Die Prozentzahl, zu der Kommentare hinterlassen werden. Standardeinstellung ist 0.
 
 #### --interaction-users-amount 3-8
-Dieser Parameter gibt gibt an, mit wie vielen Usern von der Interaktionsliste interagiert werden soll (die Accounts werden zufällig ausgewählt). Es kann eine Zahl angegeben werden (z.B. 4) oder ein Zufallswert zwischen zwei Zahlen (z.B. 3-8).
+Dieser Parameter gibt an, mit wie vielen Usern von der Interaktionsliste interagiert werden soll (die Accounts werden zufällig ausgewählt). Es kann eine Zahl angegeben werden (z.B. 4) oder ein Zufallswert zwischen zwei Zahlen (z.B. 3-8).
 
 #### --reinteract-after 150
 Anzahl der Stunden, die gewartet werden sollen, bevor mit einem bereits interagierten Account erneut interagiert werden soll. Diese Option ist in der Standardeinstellung deaktiviert (mit bereits interagierten Benutzern wird nicht erneut interagiert). Es kann eine Zahl angegeben werden (z.B. 48) oder ein Zufallswert zwischen zwei Zahlen (z.B. 50-80).
@@ -70,7 +70,7 @@ Setzt die Reihenfolge in der die Accounts unfollowed werden. Mögliche Werte: `d
 Gibt die Anzahl der Stunden an, die gewartet werden soll, bevor überprüft wird, ob ein Account dir auch folgt. Diese Option ist in der Standardeinstellung deaktiviert (die Überprüfung findet immer statt, wenn sie gebraucht wird). Es kann eine Zahl angegeben werden (z.B. 48) oder ein Zufallswert zwischen zwei Zahlen (z.B. 50-80).
 
 ### Limits
-Limits sind unsere Abwehr gegen das Instagram Bot-Erkennungs-System. Benutze diese Limits, damit der Bot wie ein Mensch wirkt. Es gibt keine strikten Regeln nachdenen Limits eingesetzt werden sollten, da Instagram je nach Account variiert. Accountalter, Art des Netzwerks (WiFi oder mobiles Internet) und anderen Faktoren bestimmen deine Limits.
+Limits sind unsere Abwehr gegen das Instagram Bot-Erkennungs-System. Benutze diese Limits, damit der Bot wie ein Mensch wirkt. Es gibt keine strikten Regeln nach denen Limits eingesetzt werden sollten, da Instagram je nach Account variiert. Accountalter, Art des Netzwerks (WiFi oder mobiles Internet) und anderen Faktoren bestimmen deine Limits.
 
 #### --successful-interactions-limit-per-source 40
 Maximale Anzahl der erfolgreichen Interaktionen pro User/Hashtag/Ort. Standardeinstellung ist 70. Es kann eine Zahl angegeben werden (z.B. 70) oder ein Zufallswert zwischen zwei Zahlen (z.B. 60-80).
@@ -120,7 +120,7 @@ _Ziehe in Erwägung Konfigurationsdateien zu benutzen, auch wenn du ohne Session
 Minuten nach denen die gleiche Session wiederholt werden soll. Diese Option ist in der Standardeinstellung deaktiviert. Es kann eine Zahl angegeben werden (z.B. 180) oder ein Zufallswert zwischen zwei Zahlen (z.B. 120-180).
 
 #### --config-file KONFIGURATIONSDATEI
-Füge diesen Parameter hinzu um eine Konfigurationsdatei zu laden. Beispiele für Konfigurationsdateien findest du im Order [config-examples](https://github.com/alexal1/Insomniac/tree/master/config-examples).
+Füge diesen Parameter hinzu um eine Konfigurationsdatei zu laden. Beispiele für Konfigurationsdateien findest du im Ordner [config-examples](https://github.com/alexal1/Insomniac/tree/master/config-examples).
                         
 #### --next-config-file KONFIGURATIONSDATEI
 Gibt die Konfigurationsdatei an, die geladen werden soll, nachdem der Bot die Session beendet hat und für die, mittels `--repeat`-Parameter angegebenen Zeit, gewartet hat. Dieser Parameter kann dafür genutzt werden, verschiedene Sessions mit unterschiedlichen Parametern in einer Laufzeit zu starten. Zum Beispiel kann erst interagiert werden und dann geunfollowed oder unterschiedliche Accounts benutzt werden. Nutze dafür den `--username`-Parameter. In der Standardeinstellung wird die gleiche Konfigurationsdatei erneut geladen. Dieser Parameter funktioniert nur, wenn der `--repeat`-Parameter gesetzt ist.
@@ -132,7 +132,7 @@ Parameter für versierte Benutzer.
 Benutze diesen Parameter, um die alte Version von uiautomater zu benutzen. Benutze diesen Parameter nur, wenn du Probleme mit der aktuellen Version haben solltest.
                         
 #### --device 2443de990e017ece
-Gibt die Geräte-ID an. device identifier. Sollte nur verwendet werden, wenn mehrere Geräte angeschlossen sind.
+Gibt die Geräte-ID an. Sollte nur verwendet werden, wenn mehrere Geräte angeschlossen sind.
 
 #### --no-speed-check
 Überspringt den Test der Internetgeschwindigkeit bei Beginn.
@@ -189,13 +189,13 @@ Gibt eine Zeit in Stunden an, nach der bereits rausgefilterte Accounts erneut ü
 Gebe diesen Parameter mit an, wenn du Filter als Parameter übergeben willst und nicht in der **filters.json**-Datei.
 
 ### Scraping
-"Scraping" ist eine Technik um mit noch mehr Accounts zu interagieren ohne dabei aufzufallen und von Instagram als "auffällig aktiver" User eingestuft zu werden. Die Idee ist es, einen anderen Instagram-Account zu nutzen um Accounts zu filtern. Dein Hauptaccount geht im Anschluss nur noch hin und interagiert mit den gefilterten Accounts. Erfahre mehr über Scraping [in unserem Blogpost](https://www.patreon.com/posts/scrapping-what-43902968).
+"Scraping" ist eine Technik um mit noch mehr Accounts zu interagieren, ohne dabei aufzufallen und von Instagram als "auffällig aktiver" User eingestuft zu werden. Die Idee ist es, einen anderen Instagram-Account zu nutzen um Accounts zu filtern. Dein Hauptaccount geht im Anschluss nur noch hin und interagiert mit den gefilterten Accounts. Erfahre mehr über Scraping [in unserem Blogpost](https://www.patreon.com/posts/scrapping-what-43902968).
 
 #### --scrape hashtag-top-likers [@username-followers ...]
 Liste von Hashtags, Usernamen oder Orten mit denen interagiert werden soll. Usernamen müssen mit einem "@"-Zeichen starten. Orte müssen mit einem "P-" starten. Die potenzielle Zielgruppe kann mittels des "-"-Zeichen verfeinert werden. Zum Beispiel: @natgeo-followers, @natgeo-following, amazingtrips-top-likers, amazingtrips-recent-likers, P-Paris-top-likers, P-Paris-recent-likers
 
 #### --scrape-for-account account1 [account2 ...]
-Ist dieser Paramter gesetzt, werden nur die angegebenen Accounts gescraped. Die gescrapeten Accounts werden in der Datenbank gespeichert.
+Ist dieser Parameter gesetzt, werden nur die angegebenen Accounts gescraped. Die gescrapeten Accounts werden in der Datenbank gespeichert.
 
 #### --scrape-users-amount 3-8
 Dieser Parameter gibt die Anzahl der Accounts von der Scraping-Liste an, mit denen interagiert werden soll (Die Accounts werden zufällig aus der Liste ausgewählt). Es kann eine Zahl angegeben werden (z.B. 4) oder ein Zufallswert zwischen zwei Zahlen (z.B. 3-8).
