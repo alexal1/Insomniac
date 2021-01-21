@@ -13,6 +13,7 @@ from insomniac.views import ActionBarView
 FOLLOWERS_BUTTON_ID_REGEX = '{0}:id/row_profile_header_followers_container' \
                             '|{1}:id/row_profile_header_container_followers'
 TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
+LIKERS_LISTVIEW_OR_RECYCLERVIEW_REGEX = 'android.widget.ListView|androidx.recyclerview.widget.RecyclerView'
 FOLLOW_REGEX = 'Follow|Follow Back'
 ALREADY_FOLLOWING_REGEX = 'Following|Requested'
 SHOP_REGEX = 'Add Shop|View Shop'
@@ -188,7 +189,7 @@ def iterate_over_followers(device, is_myself, iteration_callback, iteration_call
 
 def iterate_over_likers(device, iteration_callback, iteration_callback_pre_conditions):
     likes_list_view = device.find(resourceId='android:id/list',
-                                  className='androidx.recyclerview.widget.RecyclerView')
+                                  classNameMatches=LIKERS_LISTVIEW_OR_RECYCLERVIEW_REGEX)
     prev_screen_iterated_likers = []
     while True:
         print("Iterate over visible likers.")
