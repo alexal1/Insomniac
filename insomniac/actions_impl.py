@@ -188,7 +188,7 @@ def iterate_over_followers(device, is_myself, iteration_callback, iteration_call
 
 def iterate_over_likers(device, iteration_callback, iteration_callback_pre_conditions):
     likes_list_view = device.find(resourceId='android:id/list',
-                                  className='android.widget.ListView')
+                                  className='androidx.recyclerview.widget.RecyclerView')
     prev_screen_iterated_likers = []
     while True:
         print("Iterate over visible likers.")
