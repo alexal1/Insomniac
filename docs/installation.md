@@ -1,4 +1,4 @@
-[< Back to the documentation](/# ':ignore')
+[< Back to the documentation](/#)
 
 ## Installation
 If you prefer video lessons, welcome to the [Udemy Course](https://insomniac-bot.com/udemy_course/). We'll go through all installation steps together!

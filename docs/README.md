@@ -1,9 +1,9 @@
-Switch language: [German](/#/de/ ':ignore')
+Switch language: [German](/docs/#/de/ ':ignore')
 \
 &nbsp;
 
 ## Installation
-See the [Installation](/installation ':ignore') page.
+See the [Installation](/installation) page.
 
 Looking for a more thorough explanation? Then try our [Udemy Course](https://insomniac-bot.com/udemy_course/). 
 
