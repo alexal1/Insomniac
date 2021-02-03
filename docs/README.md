@@ -1,3 +1,7 @@
+Switch language: [German](/#/de)
+\
+&nbsp;
+
 ## Installation
 See the [Installation](/installation) page.
 

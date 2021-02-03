@@ -1,3 +1,7 @@
+Schalter Sprache: [Englisch](/#)
+\
+&nbsp;
+
 ## Installation
 Siehe auch [Installation](/installation.de.md).
 
