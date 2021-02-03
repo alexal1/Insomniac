@@ -1,9 +1,9 @@
-Schalter Sprache: [Englisch](/#)
+Schalter Sprache: [Englisch](/# ':ignore')
 \
 &nbsp;
 
 ## Installation
-Siehe auch [Installation](/installation.de.md).
+Siehe auch [Installation](/installation.md ':ignore').
 
 Suchst du nach einer detaillierten Beschreibung? Dann schau in unserem [Udemy-Kurs](https://insomniac-bot.com/udemy_course/). 
 

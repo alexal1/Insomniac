@@ -1,4 +1,4 @@
-[< Zurück zur Dokumentation](/#/de/)
+[< Zurück zur Dokumentation](/#/de/ ':ignore')
 
 ## Installation
 Wenn du eine Videoanleitung bevorzugst, freuen wir uns, dich in unserem [Udemy Kurs](https://insomniac-bot.com/udemy_course/) begrüßen zu dürfen. Hier gehen wir alle Installationsschritte gemeinsam durch!
