@@ -3,7 +3,7 @@ Schalter Sprache: [Englisch](/#)
 &nbsp;
 
 ## Installation
-Siehe auch [Installation](/installation).
+Siehe auch [Installation](/docs/#/de/installation ':ignore').
 
 Suchst du nach einer detaillierten Beschreibung? Dann schau in unserem [Udemy-Kurs](https://insomniac-bot.com/udemy_course/). 
 
