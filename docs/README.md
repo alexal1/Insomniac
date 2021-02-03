@@ -1,4 +1,4 @@
-Switch language: [German](/#/de)
+Switch language: [German](/#/de/)
 \
 &nbsp;
 
