@@ -10,6 +10,7 @@ HOST = "https://insomniac-bot.com"
 PATH_VALIDATE = "/validate"
 PATH_ACTIVATE = "/activate/"
 PATH_EXTRA_FEATURE = "/extra-feature/"
+PATH_UI_EXTRA_FEATURE = "/extra-feature/ui/"
 
 
 class ActivationController:
@@ -34,11 +35,13 @@ class ActivationController:
                            f"{dot}{COLOR_BOLD}Analytics tool{COLOR_ENDC} - build presentation that shows your growth\n"
                            f"Activate by supporting our small team: {COLOR_BOLD}{HOST}{PATH_ACTIVATE}{COLOR_ENDC}\n")
 
-    def get_extra_feature(self, module):
+    def get_extra_feature(self, module, ui=False):
+        extra_feature_path = PATH_UI_EXTRA_FEATURE if ui else PATH_EXTRA_FEATURE
+
         reason = None
         file = None
         try:
-            with urllib.request.urlopen(f"{HOST}{PATH_EXTRA_FEATURE}{module}"
+            with urllib.request.urlopen(f"{HOST}{extra_feature_path}{module}"
                                         f"?activation_code={self.activation_code}"
                                         f"&version={__version__}",
                                         context=ssl.SSLContext()) as response:
@@ -58,7 +61,7 @@ class ActivationController:
         if reason is None:
             reason = "Unknown response code"
 
-        print(COLOR_FAIL + f"Cannot get module {module} from v{__version__}: {code} ({reason})" + COLOR_ENDC)
+        print(COLOR_FAIL + f"Cannot get {'ui-' if ui else ''}module {module} from v{__version__}: {code} ({reason})" + COLOR_ENDC)
         return None
 
 

@@ -150,7 +150,7 @@ class InsomniacSession(object):
 
         return device_wrapper, app_version
 
-    def start_session(self, args, device_wrapper, app_version):
+    def start_session(self, args, device_wrapper, app_version, save_profile_info=True):
         self.session_state = SessionState()
         self.session_state.args = args.__dict__
         self.session_state.app_version = app_version
@@ -167,9 +167,10 @@ class InsomniacSession(object):
             device_wrapper.get().start_screen_record()
         open_instagram(args.device, args.app_id)
         sleeper.random_sleep()
-        self.session_state.my_username, \
-            self.session_state.my_followers_count, \
-            self.session_state.my_following_count = get_my_profile_info(device_wrapper.get(), self.username)
+        if save_profile_info:
+            self.session_state.my_username, \
+                self.session_state.my_followers_count, \
+                self.session_state.my_following_count = get_my_profile_info(device_wrapper.get(), self.username)
 
         return self.session_state
 
@@ -232,7 +233,7 @@ class InsomniacSession(object):
             self.limits_mgr.set_limits(args)
 
             try:
-                self.start_session(args, device_wrapper, app_version)
+                self.start_session(args, device_wrapper, app_version, save_profile_info=True)
                 migrate_from_json_to_sql(self.session_state.my_username)
                 self.storage = Storage(self.session_state.my_username, args)
 

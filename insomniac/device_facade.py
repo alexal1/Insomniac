@@ -70,6 +70,14 @@ class DeviceFacade:
         else:
             self.deviceV2.press("back")
 
+    def open_notifications(self):
+        os.popen("adb" + ("" if self.device_id is None else " -s " + self.device_id) +
+                 f" shell service call statusbar 1 {self.app_id}").close()
+
+    def hide_notifications(self):
+        os.popen("adb" + ("" if self.device_id is None else " -s " + self.device_id) +
+                 f" shell service call statusbar 2 {self.app_id}").close()
+
     def screen_click(self, place):
         w, h = self._get_screen_size()
         if place == DeviceFacade.Place.RIGHT:
@@ -392,7 +400,10 @@ class DeviceFacade:
                     raise DeviceFacade.JsonRpcError(e)
                 return DeviceFacade.View(is_old=False, view=view, device=self.deviceV2)
 
-        def click(self, mode=None):
+        def click(self, mode=None, ignore_if_missing=False):
+            if ignore_if_missing and not self.exists(quick=True):
+                return
+
             mode = DeviceFacade.Place.WHOLE if mode is None else mode
             if mode == DeviceFacade.Place.WHOLE:
                 x_offset = uniform(0.15, 0.85)
@@ -424,6 +435,20 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     self.viewV2.click(UI_TIMEOUT_LONG, offset=(x_offset, y_offset))
+                except uiautomator2.JSONRPCError as e:
+                    raise DeviceFacade.JsonRpcError(e)
+
+        def long_click(self):
+            if self.viewV1 is not None:
+                import uiautomator
+                try:
+                    self.viewV1.long_click()
+                except uiautomator.JsonRPCError as e:
+                    raise DeviceFacade.JsonRpcError(e)
+            else:
+                import uiautomator2
+                try:
+                    self.viewV2.long_click()
                 except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 

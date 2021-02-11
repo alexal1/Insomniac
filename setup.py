@@ -17,7 +17,12 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/alexal1/Insomniac",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(exclude=[
+        'registration',
+        'registration.*',
+        'insomniac_webui_server',
+        'insomniac_webui_server.*'
+    ]),
     install_requires=install_requires,
     classifiers=[
         "Programming Language :: Python :: 3",

@@ -51,6 +51,9 @@ class Storage:
     account_followers = {}
 
     def __init__(self, my_username, args):
+        if my_username is None:
+            return
+
         self.my_username = my_username
         db_directory = my_username
         scrapping_main_db_directory_name = args.__dict__.get('scrapping_main_db_directory_name', None)

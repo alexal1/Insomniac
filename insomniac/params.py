@@ -1,5 +1,4 @@
 import argparse
-import sys
 
 from insomniac.utils import *
 
@@ -17,6 +16,11 @@ def parse_arguments(all_args_dict):
     parser.add_argument('--config-file',
                         help='add this argument if you want to load your configuration from a config file. '
                              'Example can be found in config-examples folder')
+    parser.add_argument('--activation-code',
+                        help="provide an activation code via this argument. It will override the one passed via "
+                             "start.py. You can get your activation code at https://insomniac-bot.com/activate/",
+                        metavar="92002505-31c2-4551-a136-92799fc0800e",
+                        default=None)
 
     if not len(sys.argv) > 1:
         parser.print_help()

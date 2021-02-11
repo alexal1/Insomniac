@@ -11,7 +11,7 @@ def get_my_profile_info(device, username):
 
         if username is not None:
             if not AccountView(device).change_to_username(username):
-                print(COLOR_FAIL + f"Couldn't switch user to {username}, abort!")
+                print(COLOR_FAIL + f"Couldn't switch user to {username}, abort!" + COLOR_ENDC)
                 device.back()
                 raise UserSwitchFailedException()
 
@@ -35,7 +35,7 @@ def get_my_profile_info(device, username):
 
         if username is not None:
             if not AccountView(device).change_to_username(username):
-                print(COLOR_FAIL + f"Couldn't switch user to {username}, abort!")
+                print(COLOR_FAIL + f"Couldn't switch user to {username}, abort!" + COLOR_ENDC)
                 device.back()
                 raise UserSwitchFailedException()
 

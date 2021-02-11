@@ -13,7 +13,6 @@ from insomniac.views import ActionBarView
 FOLLOWERS_BUTTON_ID_REGEX = '{0}:id/row_profile_header_followers_container' \
                             '|{1}:id/row_profile_header_container_followers'
 TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
-LIKERS_LISTVIEW_OR_RECYCLERVIEW_REGEX = 'android.widget.ListView|androidx.recyclerview.widget.RecyclerView'
 FOLLOW_REGEX = 'Follow|Follow Back'
 ALREADY_FOLLOWING_REGEX = 'Following|Requested'
 SHOP_REGEX = 'Add Shop|View Shop'
@@ -22,6 +21,7 @@ FOLLOWING_BUTTON_ID_REGEX = '{0}:id/row_profile_header_following_container' \
                             '|{1}:id/row_profile_header_container_following'
 USER_AVATAR_VIEW_ID = '{0}:id/circular_image|^$'
 POST_VIEW_ID_REGEX = '{0}:id/zoomable_view_container|{1}:id/carousel_image'
+LISTVIEW_OR_RECYCLERVIEW_REGEX = 'android.widget.ListView|androidx.recyclerview.widget.RecyclerView'
 
 liked_count = 0
 is_followed = False
@@ -189,7 +189,7 @@ def iterate_over_followers(device, is_myself, iteration_callback, iteration_call
 
 def iterate_over_likers(device, iteration_callback, iteration_callback_pre_conditions):
     likes_list_view = device.find(resourceId='android:id/list',
-                                  classNameMatches=LIKERS_LISTVIEW_OR_RECYCLERVIEW_REGEX)
+                                  classNameMatches=LISTVIEW_OR_RECYCLERVIEW_REGEX)
     prev_screen_iterated_likers = []
     while True:
         print("Iterate over visible likers.")
@@ -260,6 +260,16 @@ def interact_with_user(device,
     def do_like_actions():
         global is_scrolled_down
         if interaction_strategy.do_like or interaction_strategy.do_comment:
+            # Close suggestions if they are opened (hack to fix a bug with opening menu while scrolling)
+            suggestions_container = device.find(resourceId=f'{device.app_id}:id/similar_accounts_container',
+                                                className='android.widget.LinearLayout')
+            if suggestions_container.exists(quick=True):
+                print("Close suggestions to avoid bugs while scrolling")
+                arrow_button = device.find(resourceId=f'{device.app_id}:id/row_profile_header_button_chaining',
+                                           className='android.widget.Button')
+                arrow_button.click(ignore_if_missing=True)
+                sleeper.random_sleep()
+
             coordinator_layout = device.find(resourceId=f'{device.app_id}:id/coordinator_root_layout')
             if coordinator_layout.exists():
                 print("Scroll down to see more photos.")

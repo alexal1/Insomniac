@@ -8,6 +8,9 @@ def migrate_from_json_to_sql(my_username):
     """
     Migration from JSON storage (v3.4.2) to SQL storage (v3.5.0).
     """
+    if my_username is None:
+        return
+
     if check_database_exists(my_username):
         return
 

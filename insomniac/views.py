@@ -530,7 +530,89 @@ class AccountView(InstagramView):
 
 
 class SettingsView(InstagramView):
-    def navigateToAccount(self):
+    SETTINGS_LIST_ID_REGEX = 'android:id/list|{0}:id/recycler_view'
+    SETTINGS_LIST_CLASS_NAME_REGEX = 'android.widget.ListView|androidx.recyclerview.widget.RecyclerView'
+    LOG_OUT_TEXT = "Log Out"
+
+    def switch_to_english(self):
+        """
+        We want to keep this method free of language-specific strings because it's used in language switching.
+        """
+        for account_item_index in range(6, 9):
+            list_view = self.device.find(resourceIdMatches=self.SETTINGS_LIST_ID_REGEX.format(self.device.app_id),
+                                         classNameMatches=self.SETTINGS_LIST_CLASS_NAME_REGEX)
+            account_item = list_view.child(index=account_item_index, clickable=True)
+            account_item.click()
+
+            list_view = self.device.find(resourceIdMatches=self.SETTINGS_LIST_ID_REGEX.format(self.device.app_id),
+                                         classNameMatches=self.SETTINGS_LIST_CLASS_NAME_REGEX)
+            if not list_view.exists(quick=True):
+                print("Opened a wrong tab, going back")
+                self.device.back()
+                continue
+            language_item = list_view.child(index=4, clickable=True)
+            if not language_item.exists(quick=True):
+                print("Opened a wrong tab, going back")
+                self.device.back()
+                continue
+            language_item.click()
+
+            search_edit_text = self.device.find(resourceId=f'{self.device.app_id}:id/search',
+                                                className='android.widget.EditText')
+            if not search_edit_text.exists(quick=True):
+                print("Opened a wrong tab, going back")
+                self.device.back()
+                self.device.back()
+                continue
+            search_edit_text.set_text("english")
+
+            list_view = self.device.find(resourceId=f'{self.device.app_id}:id/language_locale_list',
+                                         className='android.widget.ListView')
+            english_item = list_view.child(index=0)
+            english_item.click()
+
+            break
+
+    def log_out(self):
+        settings_list = self.device.find(scrollable=True)
+        settings_list.scroll(DeviceFacade.Direction.BOTTOM)
+
+        # Click the last button (it's usually log out)
+        log_out_button = None
+        for log_out_button in settings_list.child(clickable=True):
+            pass
+        if log_out_button is not None:
+            log_out_button.click(ignore_if_missing=True)
+
+        # Confirm Log Out
+        log_out_button = self.device.find(textMatches=case_insensitive_re(self.LOG_OUT_TEXT))
+        negative_button = self.device.find(resourceId=f"{self.device.app_id}:id/negative_button",
+                                           className="android.widget.Button")
+        first_button = self.device.find(resourceId=f"{self.device.app_id}:id/first_button",
+                                        className="android.widget.TextView")
+        switched_language = False
+        while not log_out_button.exists(quick=True):
+            if negative_button.exists(quick=True):
+                negative_button.click()
+                continue
+            if first_button.exists(quick=True):
+                first_button.click()
+                continue
+            if not switched_language:
+                self.device.back()
+                print(COLOR_FAIL + "Cannot find Log Out button. Maybe not English language is set?" + COLOR_ENDC)
+                print(COLOR_OKGREEN + "Switching to English locale" + COLOR_ENDC)
+                TabBarView(self.device) \
+                    .navigate_to_profile() \
+                    .navigate_to_options() \
+                    .navigate_to_settings() \
+                    .switch_to_english()
+                switched_language = True
+                continue
+            break
+        log_out_button.click(ignore_if_missing=True)
+
+    def navigate_to_account(self):
         print_debug("Navigate to Account")
         button = self.device.find(
             textMatches=case_insensitive_re("Account"),
@@ -542,14 +624,17 @@ class SettingsView(InstagramView):
 
 
 class OptionsView(InstagramView):
-    def navigateToSettings(self):
+
+    def navigate_to_settings(self):
+        """
+        We want to keep this method free of language-specific strings because it's used in language switching.
+
+        :return: SettingsView instance
+        """
         print_debug("Navigate to Settings")
-        button = self.device.find(
-            textMatches=case_insensitive_re("Settings"),
-            resourceId=f"{self.device.app_id}:id/menu_settings_row",
-            className="android.widget.TextView",
-        )
-        button.click()
+        settings_button = self.device.find(resourceId=f'{self.device.app_id}:id/menu_settings_row',
+                                           className='android.widget.TextView')
+        settings_button.click()
         return SettingsView(self.device)
 
 
@@ -747,12 +832,20 @@ class ProfileView(ActionBarView):
             coordinator_layout.scroll(DeviceFacade.Direction.TOP)
 
     def navigate_to_options(self):
-        print_debug("Navigate to Options")
-        button = self.action_bar.child(
-            descriptionMatches=case_insensitive_re("Options")
-        )
-        button.click()
+        """
+        We want to keep this method free of language-specific strings because it's used in language switching.
 
+        :return: OptionsView instance
+        """
+        print_debug("Navigate to Options")
+        # We wanna pick last view in the action bar
+        options_view = None
+        for options_view in self.action_bar.child(clickable=True):
+            pass
+        if options_view is None or not options_view.exists():
+            print(COLOR_FAIL + "No idea how to open menu..." + COLOR_ENDC)
+            return None
+        options_view.click()
         return OptionsView(self.device)
 
     def _get_action_bar_title_btn(self):

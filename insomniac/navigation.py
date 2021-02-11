@@ -44,58 +44,11 @@ def search_for(device, username=None, hashtag=None, place=None, on_action=None):
 
 def switch_to_english(device):
     print(COLOR_OKGREEN + "Switching to English locale" + COLOR_ENDC)
-    navigate(device, Tabs.PROFILE)
-    print("Changing language in settings")
-
-    action_bar = device.find(resourceId=f'{device.app_id}:id/action_bar',
-                             className='android.widget.LinearLayout')
-    # We wanna pick last view in the action bar
-    options_view = None
-    for options_view in action_bar.child(clickable=True):
-        pass
-    if options_view is None or not options_view.exists():
-        print(COLOR_FAIL + "No idea how to open menu..." + COLOR_ENDC)
-        return
-    options_view.click()
-
-    settings_button = device.find(resourceId=f'{device.app_id}:id/menu_settings_row',
-                                  className='android.widget.TextView')
-    settings_button.click()
-
-    for account_item_index in range(6, 9):
-        list_view = device.find(resourceIdMatches=SETTINGS_LIST_ID_REGEX.format(device.app_id),
-                                classNameMatches=SETTINGS_LIST_CLASS_NAME_REGEX)
-        account_item = list_view.child(index=account_item_index, clickable=True)
-        account_item.click()
-
-        list_view = device.find(resourceIdMatches=SETTINGS_LIST_ID_REGEX.format(device.app_id),
-                                classNameMatches=SETTINGS_LIST_CLASS_NAME_REGEX)
-        if not list_view.exists(quick=True):
-            print("Opened a wrong tab, going back")
-            device.back()
-            continue
-        language_item = list_view.child(index=4, clickable=True)
-        if not language_item.exists(quick=True):
-            print("Opened a wrong tab, going back")
-            device.back()
-            continue
-        language_item.click()
-
-        search_edit_text = device.find(resourceId=f'{device.app_id}:id/search',
-                                       className='android.widget.EditText')
-        if not search_edit_text.exists(quick=True):
-            print("Opened a wrong tab, going back")
-            device.back()
-            device.back()
-            continue
-        search_edit_text.set_text("english")
-
-        list_view = device.find(resourceId=f'{device.app_id}:id/language_locale_list',
-                                className='android.widget.ListView')
-        english_item = list_view.child(index=0)
-        english_item.click()
-
-        break
+    TabBarView(device) \
+        .navigate_to_profile() \
+        .navigate_to_options() \
+        .navigate_to_settings() \
+        .switch_to_english()
 
 
 def _navigate_to_search(device):

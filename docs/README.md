@@ -187,6 +187,10 @@ by default, Insomniac tries to indicate if there is a
 softban on your acoount. Set this flag in order to
 ignore those softban indicators
 
+#### --fetch-profiles-from-net
+add this flag to fetch profiles from the internet 
+instead of opening each user's profile on a device
+
 #### --debug
 add this flag to run insomniac in debug mode (more verbose
 logs)

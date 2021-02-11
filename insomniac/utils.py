@@ -52,6 +52,23 @@ def get_instagram_version(device_id, app_id):
     return version
 
 
+def get_connected_devices_adb_ids():
+    stream = os.popen('adb devices')
+    output = stream.read()
+    devices_count = len(re.findall('device\n', output))
+    stream.close()
+
+    if devices_count == 0:
+        return []
+
+    devices = []
+    for line in output.split('\n'):
+        if '\tdevice' in line:
+            devices.append(line.split('\t')[0])
+
+    return devices
+
+
 def check_adb_connection(device_id, wait_for_device):
     is_device_id_provided = device_id is not None
 
@@ -129,6 +146,12 @@ def close_instagram(device_id, app_id):
     print("Close Instagram app")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              f" shell am force-stop {app_id}").close()
+
+
+def clear_instagram_data(device_id, app_id):
+    print("Clear Instagram data")
+    os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
+             f" shell pm clear {app_id}").close()
 
 
 def save_crash(device, ex=None):
