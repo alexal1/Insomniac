@@ -75,6 +75,9 @@ def handle_place(device,
         return True
 
     def interact_with_profile(liker_username, liker_username_view):
+        """
+        :return: whether we should continue interaction with other users after this one
+        """
         is_interact_limit_reached, interact_reached_source_limit, interact_reached_session_limit = \
             is_limit_reached(InteractAction(source=interaction_source, user=liker_username, succeed=True), session_state)
 
@@ -137,6 +140,11 @@ def handle_place(device,
 
         is_private = is_private_account(device)
         if is_private:
+            if is_passed_filters is None:
+                print(COLOR_OKGREEN + "@" + liker_username + " has private account, won't interact." + COLOR_ENDC)
+                print("Back to likers list")
+                device.back()
+                return True
             print("@" + liker_username + ": Private account - images wont be liked.")
 
         do_have_stories = do_have_story(device)

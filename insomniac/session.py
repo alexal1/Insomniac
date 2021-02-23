@@ -1,7 +1,3 @@
-import random
-
-import colorama
-
 import insomniac.__version__ as __version__
 import insomniac.softban_indicator as softban_indicator
 from insomniac.action_get_my_profile_info import get_my_profile_info
@@ -88,9 +84,8 @@ class InsomniacSession(object):
     username = None
     next_config_file = None
 
-    def __init__(self):
-        random.seed()
-        colorama.init()
+    def __init__(self, starter_conf_file_path=None):
+        self.starter_conf_file_path = starter_conf_file_path
 
         self.sessions = sessions
         self.storage = None
@@ -133,7 +128,7 @@ class InsomniacSession(object):
             self.next_config_file = args.next_config_file
 
     def parse_args(self):
-        ok, args = parse_arguments(self.get_session_args())
+        ok, args = parse_arguments(self.get_session_args(), self.starter_conf_file_path)
         if not ok:
             return None
         return args
@@ -248,8 +243,9 @@ class InsomniacSession(object):
             except ActionBlockedError as ex:
                 print_timeless("")
                 print_timeless(COLOR_FAIL + str(ex) + COLOR_ENDC)
-                self.end_session(device_wrapper)
-                return
+                if self.next_config_file is None:
+                    self.end_session(device_wrapper)
+                    return
             except Exception as ex:
                 if __version__.__debug_mode__:
                     raise ex

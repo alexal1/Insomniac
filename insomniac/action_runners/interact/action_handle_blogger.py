@@ -98,6 +98,9 @@ def handle_blogger(device,
         return True
 
     def interact_with_follower(follower_name, follower_name_view):
+        """
+        :return: whether we should continue interaction with other users after this one
+        """
         is_interact_limit_reached, interact_reached_source_limit, interact_reached_session_limit = \
             is_limit_reached(InteractAction(source=username, user=follower_name, succeed=True), session_state)
 
@@ -162,6 +165,11 @@ def handle_blogger(device,
 
         is_private = follower_profile_view.is_private_account()
         if is_private:
+            if is_passed_filters is None:
+                print(COLOR_OKGREEN + "@" + follower_name + " has private account, won't interact." + COLOR_ENDC)
+                print("Back to profiles list")
+                device.back()
+                return True
             print("@" + follower_name + ": Private account - images wont be liked.")
 
         do_have_stories = follower_profile_view.is_story_available()

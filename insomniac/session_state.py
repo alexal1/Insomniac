@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from json import JSONEncoder
 
 from insomniac.actions_types import LikeAction, InteractAction, FollowAction, GetProfileAction, ScrapeAction, \
     UnfollowAction, RemoveMassFollowerAction, StoryWatchAction, CommentAction

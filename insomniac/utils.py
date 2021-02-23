@@ -1,42 +1,41 @@
-import json
 import os
+import string
 import re
 import shutil
-import ssl
 import subprocess
 import sys
 import traceback
-import urllib.request
+import random
+import colorama
 from datetime import datetime
 from random import randint
 from subprocess import PIPE
 from time import sleep
-from urllib.error import URLError
 from urllib.parse import urlparse
+
+from colorama import Fore, Style, AnsiToWin32
 
 import insomniac.__version__ as __version__
 
-COLOR_HEADER = '\033[95m'
-COLOR_OKBLUE = '\033[94m'
-COLOR_OKGREEN = '\033[92m'
-COLOR_REPORT = '\033[93m'
-COLOR_FAIL = '\033[91m'
-COLOR_ENDC = '\033[0m'
-COLOR_BOLD = '\033[1m'
-COLOR_UNDERLINE = '\033[4m'
+random.seed()
+# Init colorama but set "wrap" to False to not replace sys.stdout with a proxy object. It's meaningless as
+# sys.stdout is set to a custom Logger object in utils.py
+colorama.init(wrap=False)
 
 
-def print_version():
-    def versiontuple(v):
-        return tuple(map(int, (v.split("."))))
+COLOR_HEADER = Fore.MAGENTA
+COLOR_OKBLUE = Fore.BLUE
+COLOR_OKGREEN = Fore.GREEN
+COLOR_REPORT = Fore.YELLOW
+COLOR_FAIL = Fore.RED
+COLOR_ENDC = Style.RESET_ALL
+COLOR_BOLD = Style.BRIGHT
 
-    current_version = __version__.__version__
-    print_timeless(COLOR_HEADER + f"Insomniac v{current_version}" + COLOR_ENDC)
-    latest_version = _get_latest_version('insomniac')
-    if latest_version is not None and versiontuple(latest_version) > versiontuple(current_version):
-        print_timeless(COLOR_HEADER + f"Newer version is available (v{latest_version}). Please run" + COLOR_ENDC)
-        print_timeless(COLOR_HEADER + COLOR_BOLD + "python3 -m pip install insomniac --upgrade" + COLOR_ENDC)
-    print_timeless("")
+ENGINE_LOGS_DIR_NAME = 'logs'
+UI_LOGS_DIR_NAME = 'ui-logs'
+
+is_ui_process = False
+execution_id = ''
 
 
 def get_instagram_version(device_id, app_id):
@@ -202,8 +201,11 @@ def print_copyright():
     print_timeless(COLOR_BOLD + "https://github.com/alexal1/Insomniac\n" + COLOR_ENDC)
 
 
-def _print_with_time_decorator(standard_print, print_time, debug):
+def _print_with_time_decorator(standard_print, print_time, debug, ui_log):
     def wrapper(*args, **kwargs):
+        if is_ui_process and not ui_log:
+            return
+
         if debug and not __version__.__debug_mode__:
             return
 
@@ -217,19 +219,6 @@ def _print_with_time_decorator(standard_print, print_time, debug):
             return standard_print(*args, **kwargs)
 
     return wrapper
-
-
-def _get_latest_version(package):
-    latest_version = None
-    try:
-        with urllib.request.urlopen(f"https://pypi.python.org/pypi/{package}/json",
-                                    context=ssl.SSLContext()) as response:
-            if response.code == 200:
-                json_package = json.loads(response.read())
-                latest_version = json_package['info']['version']
-    except URLError:
-        return None
-    return latest_version
 
 
 def get_value(count, name, default, max_count=None):
@@ -302,6 +291,17 @@ def get_count_of_nums_in_str(string):
     return count
 
 
+def get_random_string(length):
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+
+def describe_exception(ex):
+    trace = ''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__))
+    description = f"Error - {str(ex)}\n{trace}"
+
+    return description
+
+
 def validate_url(x):
     try:
         result = urlparse(x)
@@ -311,36 +311,64 @@ def validate_url(x):
         return False
 
 
-def _get_log_file_name():
-    logs_directory_name = "logs"
+def split_list_items_with_separator(original_list, separator):
+    values = []
+    for record in original_list:
+        for value in record.split(separator):
+            stripped_value = value.strip()
+            if stripped_value:
+                values.append(stripped_value)
+    return values
+
+
+def _get_logs_dir_name():
+    if is_ui_process:
+        return UI_LOGS_DIR_NAME
+    return ENGINE_LOGS_DIR_NAME
+
+
+def _get_log_file_name(logs_directory_name):
     os.makedirs(os.path.join(logs_directory_name), exist_ok=True)
     curr_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    log_name = "insomniac_log-" + curr_time + ".log"
+    log_name = f"insomniac_log-{curr_time}{'-'+execution_id if execution_id != '' else ''}.log"
     log_path = os.path.join(logs_directory_name, log_name)
     return log_path
 
 
 class Logger(object):
+    is_log_initiated = False
+
     def __init__(self):
-        self.terminal = sys.stdout
-        self.log = open(_get_log_file_name(), "a", encoding="utf-8")
+        self.wrapped_stdout = AnsiToWin32(sys.stdout)
+        self.terminal = self.wrapped_stdout.stream
+        self.log = None
+
+    def _init_log(self):
+        if not self.is_log_initiated:
+            self.log = AnsiToWin32(open(_get_log_file_name(_get_logs_dir_name()), "a", encoding="utf-8")).stream
+            self.is_log_initiated = True
 
     def write(self, message):
+        self._init_log()
         self.terminal.write(message)
         self.terminal.flush()
         self.log.write(message)
         self.log.flush()
 
     def flush(self):
+        self._init_log()
         self.terminal.flush()
         self.log.flush()
 
     def fileno(self):
-        return self.terminal.fileno()
+        return self.wrapped_stdout.wrapped.fileno()
 
 
 sys.stdout = Logger()
 print_log = ""
-print_timeless = _print_with_time_decorator(print, False, False)
-print_debug = _print_with_time_decorator(print, True, True)
-print = _print_with_time_decorator(print, True, False)
+print_timeless = _print_with_time_decorator(print, False, False, False)
+print_timeless_ui = _print_with_time_decorator(print, False, False, True)
+print_debug = _print_with_time_decorator(print, True, True, False)
+print_ui = _print_with_time_decorator(print, True, False, True)
+print_debug_ui = _print_with_time_decorator(print, True, True, True)
+print = _print_with_time_decorator(print, True, False, False)

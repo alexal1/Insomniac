@@ -373,15 +373,12 @@ def _open_photo_and_like_and_comment(device, row, column, do_like, do_comment, l
     if to_like:
         print("Double click!")
 
-        def find_post_view():
-            return device.find(resourceIdMatches=POST_VIEW_ID_REGEX.format(device.app_id, device.app_id),
-                               className='android.widget.FrameLayout')
-
-        post_view = find_post_view()
+        post_view = device.find(resourceIdMatches=POST_VIEW_ID_REGEX.format(device.app_id, device.app_id),
+                                className='android.widget.FrameLayout')
         if post_view.exists:
             post_view.double_click()
             sleeper.random_sleep()
-            if not find_post_view().exists(quick=True):
+            if not post_view.exists(quick=True):
                 print(COLOR_OKGREEN + "Accidentally went out of the post page, going back..." + COLOR_ENDC)
                 device.back()
         else:
@@ -390,6 +387,13 @@ def _open_photo_and_like_and_comment(device, row, column, do_like, do_comment, l
                                     className='android.widget.FrameLayout')
             post_view.double_click()
             sleeper.random_sleep()
+
+        # If like button is not visible, scroll down
+        like_button = device.find(resourceId=f'{device.app_id}:id/row_feed_button_like',
+                                  className='android.widget.ImageView')
+        if not like_button.exists(quick=True) or not ActionBarView.is_in_interaction_rect(like_button):
+            print("Swiping down a bit to see if is liked")
+            device.swipe(DeviceFacade.Direction.TOP)
 
         # If double click didn't work, set like by icon click
         try:
@@ -418,12 +422,14 @@ def _open_photo_and_like_and_comment(device, row, column, do_like, do_comment, l
 
 
 def _comment(device, my_username, comments_list, on_comment):
-    comment_button = device.find(
-        resourceId=f'{device.app_id}:id/row_feed_button_comment',
-        className="android.widget.ImageView",
-    )
+    comment_button = device.find(resourceId=f'{device.app_id}:id/row_feed_button_comment',
+                                 className="android.widget.ImageView")
+    if not comment_button.exists(quick=True) or not ActionBarView.is_in_interaction_rect(comment_button):
+        print("Cannot find comment button – will try to swipe down a bit")
+        device.swipe(DeviceFacade.Direction.TOP)
     if not comment_button.exists(quick=True):
-        print("Couldn't find comment button - not commenting...")
+        print("Still cannot find comment button – won't comment")
+        return
 
     comment_box_exists = False
     comment_box = None
@@ -465,7 +471,7 @@ def _comment(device, my_username, comments_list, on_comment):
         print("Comment succeed.")
         on_comment(comment)
     else:
-        print("Failed to check if comment succeed.")
+        print(COLOR_FAIL + "Failed to check if comment succeed." + COLOR_ENDC)
 
     sleeper.random_sleep()
     print("Go back to post view.")

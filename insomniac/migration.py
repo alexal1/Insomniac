@@ -4,6 +4,14 @@ from insomniac.storage import *
 from insomniac.utils import *
 
 
+def get_db(user_name):
+    if check_database_exists(user_name):
+        return None
+
+    database = get_database(user_name)
+    return database
+
+
 def migrate_from_json_to_sql(my_username):
     """
     Migration from JSON storage (v3.4.2) to SQL storage (v3.5.0).
@@ -11,14 +19,12 @@ def migrate_from_json_to_sql(my_username):
     if my_username is None:
         return
 
-    if check_database_exists(my_username):
-        return
-
-    database = get_database(my_username)
-
     interacted_users_path = os.path.join(my_username, FILENAME_INTERACTED_USERS)
     if os.path.exists(interacted_users_path):
         try:
+            database = get_db(my_username)
+            if database is None:
+                return
             print(f"[Migration] Loading data from {FILENAME_INTERACTED_USERS}...")
             with open(interacted_users_path, encoding="utf-8") as json_file:
                 interacted_users = json.load(json_file)
@@ -45,6 +51,9 @@ def migrate_from_json_to_sql(my_username):
     scrapped_users_path = os.path.join(my_username, FILENAME_SCRAPPED_USERS)
     if os.path.exists(scrapped_users_path):
         try:
+            database = get_db(my_username)
+            if database is None:
+                return
             print(f"[Migration] Loading data from {FILENAME_SCRAPPED_USERS}...")
             with open(scrapped_users_path, encoding="utf-8") as json_file:
                 scrapped_users = json.load(json_file)
@@ -65,6 +74,9 @@ def migrate_from_json_to_sql(my_username):
     filtered_users_path = os.path.join(my_username, FILENAME_FILTERED_USERS)
     if os.path.exists(filtered_users_path):
         try:
+            database = get_db(my_username)
+            if database is None:
+                return
             print(f"[Migration] Loading data from {FILENAME_FILTERED_USERS}...")
             with open(filtered_users_path, encoding="utf-8") as json_file:
                 filtered_users = json.load(json_file)
@@ -83,6 +95,9 @@ def migrate_from_json_to_sql(my_username):
     sessions_path = os.path.join(my_username, FILENAME_SESSIONS)
     if os.path.exists(sessions_path):
         try:
+            database = get_db(my_username)
+            if database is None:
+                return
             print(f"[Migration] Loading data from {FILENAME_SESSIONS}...")
             sessions_persistent_list = Sessions()
             with open(sessions_path, encoding="utf-8") as json_file:

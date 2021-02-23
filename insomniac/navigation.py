@@ -1,7 +1,7 @@
 from enum import Enum, unique
 
 from insomniac.utils import *
-from insomniac.views import TabBarView
+from insomniac.views import TabBarView, ProfileView
 
 SEARCH_CONTENT_DESC_REGEX = '[Ss]earch and [Ee]xplore'
 SETTINGS_LIST_ID_REGEX = 'android:id/list|{0}:id/recycler_view'
@@ -44,8 +44,8 @@ def search_for(device, username=None, hashtag=None, place=None, on_action=None):
 
 def switch_to_english(device):
     print(COLOR_OKGREEN + "Switching to English locale" + COLOR_ENDC)
-    TabBarView(device) \
-        .navigate_to_profile() \
+    navigate(device, Tabs.PROFILE)
+    ProfileView(device) \
         .navigate_to_options() \
         .navigate_to_settings() \
         .switch_to_english()

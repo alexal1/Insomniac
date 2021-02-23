@@ -14,7 +14,7 @@ class InteractBySourceActionRunner(CoreActionsRunner):
             'metavar': '2-4',
             "default": '2'
         },
-        "like_percentage": {
+        "likes_percentage": {
             "help": "likes given percentage of interacted users, 100 by default",
             "metavar": '50',
             "default": '100'
@@ -96,8 +96,8 @@ class InteractBySourceActionRunner(CoreActionsRunner):
         if args.follow_percentage is not None:
             self.follow_percentage = int(args.follow_percentage)
 
-        if args.like_percentage is not None:
-            self.like_percentage = int(args.like_percentage)
+        if args.likes_percentage is not None:
+            self.like_percentage = int(args.likes_percentage)
 
         if args.comment_percentage is not None:
             self.comment_percentage = int(args.comment_percentage)
@@ -214,6 +214,13 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
             "help": "use this argument in order to interact with profiles from targets.txt",
             'metavar': 'True / False'
         },
+        "targets_list": {
+            "nargs": '+',
+            "help": 'list of target-profiles you wish to interact with (in case you want to use parameter '
+                    'and not targets.txt file)',
+            "default": [],
+            "metavar": ('profile-A', 'profile-B')
+        },
         "likes_count": {
             "help": "number of likes for each interacted user, 2 by default. "
                     "It can be a number (e.g. 2) or a range (e.g. 2-4)",
@@ -225,7 +232,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
             "metavar": '50',
             "default": '0'
         },
-        "like_percentage": {
+        "likes_percentage": {
             "help": "likes given percentage of interacted users, 100 by default",
             "metavar": '50',
             "default": '100'
@@ -278,8 +285,8 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
         if args.follow_percentage is not None:
             self.follow_percentage = int(args.follow_percentage)
 
-        if args.like_percentage is not None:
-            self.like_percentage = int(args.like_percentage)
+        if args.likes_percentage is not None:
+            self.like_percentage = int(args.likes_percentage)
 
         if args.comment_percentage is not None:
             self.comment_percentage = int(args.comment_percentage)

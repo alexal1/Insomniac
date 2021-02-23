@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 from enum import Enum, unique
 
@@ -23,19 +24,28 @@ FILENAME_FOLLOWERS = "followers.txt"
 
 STORAGE_ARGS = {
     "reinteract_after": {
-        "help": "set a time (in hours) to wait before re-interact with an already interacted profile, disabled by default (won't interact again). "
+        "help": "set a time (in hours) to wait before re-interact with an already interacted profile, "
+                "disabled by default (won't interact again). "
                 "It can be a number (e.g. 48) or a range (e.g. 50-80)",
         "metavar": "150"
     },
     "refilter_after": {
-        "help": "set a time (in hours) to wait before re-filter an already filtered profile, disabled by default (will drop the profile and won't filter again). "
+        "help": "set a time (in hours) to wait before re-filter an already filtered profile, "
+                "disabled by default (will drop the profile and won't filter again). "
                 "It can be a number (e.g. 48) or a range (e.g. 50-80)",
         "metavar": "150"
     },
     "recheck_follow_status_after": {
-        "help": "set a time (in hours) to wait before re-check follow status of a profile, disabled by default (will check every time when needed)."
+        "help": "set a time (in hours) to wait before re-check follow status of a profile, "
+                "disabled by default (will check every time when needed)."
                 "It can be a number (e.g. 48) or a range (e.g. 50-80)",
         "metavar": "150"
+    },
+    "db_directory_path": {
+        "help": "when using this parameter the bot will use a database file located under "
+                "the provided directory. By default account directory is used to store the bot history",
+        'metavar': 'main-db-directory-name',
+        "default": None
     }
 }
 
@@ -55,14 +65,29 @@ class Storage:
             return
 
         self.my_username = my_username
-        db_directory = my_username
-        scrapping_main_db_directory_name = args.__dict__.get('scrapping_main_db_directory_name', None)
-        if scrapping_main_db_directory_name is not None:
-            print(f"Using {scrapping_main_db_directory_name} as main directory for scrapping process & history")
-            if not os.path.exists(scrapping_main_db_directory_name):
-                print(f"Couldn't find any directory named {scrapping_main_db_directory_name}, "
-                      f"the directory will be created with a db-file in it...")
-            db_directory = scrapping_main_db_directory_name
+
+        scrape_for_account = args.__dict__.get('scrape_for_account', None)
+        db_directory_base_path = args.__dict__.get('db_directory_path', None)
+
+        if db_directory_base_path is not None:
+            print(f"Using {db_directory_base_path} as base-path for databases-folders")
+        else:
+            db_directory_base_path = ''
+
+        db_directory = os.path.join(db_directory_base_path, my_username)
+
+        # Scrape
+        if scrape_for_account is not None:
+            scrapping_main_db_directory_name = args.__dict__.get('scrapping_main_db_directory_name', None)
+            if scrapping_main_db_directory_name is not None:
+                print(f"Using {scrapping_main_db_directory_name} as main directory for scrapping process & history")
+
+                scrape_db_path = os.path.join(db_directory_base_path, scrapping_main_db_directory_name)
+                if not os.path.exists(scrape_db_path):
+                    print(f"Couldn't find any directory named {scrapping_main_db_directory_name}, "
+                          f"the directory will be created with a db-file in it...")
+
+                db_directory = scrape_db_path
 
         self.database = get_database(db_directory)
 
@@ -75,16 +100,13 @@ class Storage:
         if args.recheck_follow_status_after is not None:
             self.recheck_follow_status_after = get_value(args.recheck_follow_status_after, "Re-check follow status after {} hours", 168)
 
-        scrape_for_account = args.__dict__.get('scrape_for_account', None)
         interact_targets = args.__dict__.get('interact_targets', None)
+        targets_list_from_parameters = args.__dict__.get('targets_list', None)
 
         if my_username is None:
             print(COLOR_FAIL + "No username, thus the script won't get access to interacted users and sessions data" +
                   COLOR_ENDC)
             return
-
-        if not os.path.exists(my_username):
-            os.makedirs(my_username)
 
         # Whitelist and Blacklist
         whitelist_path = os.path.join(my_username, FILENAME_WHITELIST)
@@ -113,30 +135,44 @@ class Storage:
                 # Clear targets.txt
                 file_targets.truncate(0)
 
+        if targets_list_from_parameters is not None:
+            if isinstance(targets_list_from_parameters, list) and len(targets_list_from_parameters) > 0:
+                print("Loading targets from targets-list-parameter into the database...")
+                add_targets(self.database, targets_list_from_parameters, Provider.TARGETS_LIST)
+                print("Targets loaded successfully.")
+
         if interact_targets is not None:
-            print("Counting available targets...")
-            total_loaded_targets, not_interacted_targets = count_targets(self.database)
-            if total_loaded_targets is None:
-                print("Couldn't count targets...")
-            else:
-                print(f"Total targets loaded: {total_loaded_targets['scraped'] + total_loaded_targets['targets']} "
-                      f"({total_loaded_targets['targets']} from targets file, {total_loaded_targets['scraped']} from scrapping)")
-                print(f"Total non-interacted targets loaded: {not_interacted_targets['scraped'] + not_interacted_targets['targets']} "
-                      f"({not_interacted_targets['targets']} from targets file, {not_interacted_targets['scraped']} from scrapping)")
+            self._print_database_targets(my_username, self.database)
 
         # Scraping
         if scrape_for_account is not None:
             if isinstance(scrape_for_account, list):
                 for acc in scrape_for_account:
-                    self.scrapping_databases.append(get_database(acc))
+                    database = get_database(acc)
+                    self.scrapping_databases.append(database)
+                    self._print_database_targets(acc, database)
             else:
-                self.scrapping_databases = [get_database(scrape_for_account)]
+                database = get_database(scrape_for_account)
+                self.scrapping_databases = [database]
+                self._print_database_targets(scrape_for_account, database)
 
             # TODO: implement 'dump-followers' feature or remove these lines
             # self.followers_path = os.path.join(scrape_for_account, FILENAME_FOLLOWERS)
             # if os.path.exists(self.followers_path):
             #     with open(self.followers_path, encoding="utf-8") as json_file:
             #         self.account_followers = json.load(json_file)
+
+    @staticmethod
+    def _print_database_targets(username, database):
+        print(f"Counting available targets for @{username}...")
+        total_loaded_targets, not_interacted_targets = count_targets(database)
+        if total_loaded_targets is None:
+            print("Couldn't count targets...")
+        else:
+            print(f"Total targets loaded for {username}: {total_loaded_targets['scraped'] + total_loaded_targets['targets']} "
+                  f"({total_loaded_targets['targets']} from targets file, {total_loaded_targets['scraped']} from scrapping)")
+            print(f"Total non-interacted targets loaded for {username}: {not_interacted_targets['scraped'] + not_interacted_targets['targets']} "
+                  f"({not_interacted_targets['targets']} from targets file, {not_interacted_targets['scraped']} from scrapping)")
 
     def check_user_was_interacted(self, username):
         user = get_interacted_user(self.database, username)

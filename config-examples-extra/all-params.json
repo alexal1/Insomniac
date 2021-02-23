@@ -42,6 +42,12 @@
     "description" : "skip internet speed check at start"
   },
   {
+    "parameter-name": "db_directory_path",
+    "enabled": false,
+    "value": "main-db-directory-name",
+    "description" : "when using this parameter the bot will use a database file located under the provided directory. By default account directory is used to store the bot history"
+  },
+  {
     "parameter-name": "next_config_file",
     "enabled": false,
     "value": "2.json",
@@ -70,6 +76,12 @@
     "enabled": false,
     "value": "8-21",
     "description" : "set working hours to the script, disabled by default. It can be a number presenting specific hour (e.g. 13) or a range (e.g. 9-21)"
+  },
+  {
+    "parameter-name": "working_hours_without_sleep",
+    "enabled": false,
+    "value": "8-21",
+    "description" : "if you use flow, you maybe dont want to wait for working-hours on a specific session, because the following session in the flow might be in the working hours and you dont want to stop the flow. If that's the case, use this parameter"
   },
   {
     "parameter-name": "recheck_follow_status_after",
@@ -137,6 +149,15 @@
     "enabled": false,
     "value": "True",
     "description" : "use this argument in order to interact with profiles from targets.txt / scrapped profiles"
+  },
+  {
+    "parameter-name": "targets_list",
+    "enabled": false,
+    "value": [
+      "profile-A",
+      "profile-B"
+    ],
+    "description" : "list of target-profiles you wish to interact with (in case you want to use parameter and not targets.txt file)"
   },
   {
     "parameter-name": "reinteract_after",

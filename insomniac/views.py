@@ -172,7 +172,7 @@ class ActionBarView(InstagramView):
     def is_in_interaction_rect(view):
         if ActionBarView.action_bar_bottom is None or ActionBarView.tab_bar_top is None:
             print(COLOR_FAIL + "Interaction rect is not specified." + COLOR_ENDC)
-            return False
+            return True
 
         view_top = view.get_bounds()['top']
         view_bottom = view.get_bounds()['bottom']
@@ -321,6 +321,7 @@ class SearchView(InstagramView):
         print_debug(f"Navigate to profile @{username}")
         search_edit_text = self._get_search_edit_text()
         search_edit_text.click()
+        self._handle_permission_request()
         sleeper.random_sleep()
 
         accounts_tab = self._get_tab_text_view(SearchTabs.ACCOUNTS)
@@ -358,6 +359,7 @@ class SearchView(InstagramView):
         print_debug(f"Navigate to hashtag #{hashtag}")
         search_edit_text = self._get_search_edit_text()
         search_edit_text.click()
+        self._handle_permission_request()
         sleeper.random_sleep()
 
         hashtag_tab = self._get_tab_text_view(SearchTabs.TAGS)
@@ -393,6 +395,7 @@ class SearchView(InstagramView):
         print(f"Navigate to place {place}")
         search_edit_text = self._get_search_edit_text()
         search_edit_text.click()
+        self._handle_permission_request()
 
         sleeper.random_sleep()
         places_tab = self._get_tab_text_view(SearchTabs.PLACES)
@@ -422,6 +425,18 @@ class SearchView(InstagramView):
         sleeper.random_sleep()
 
         return PlacesView(self.device)
+
+    def _handle_permission_request(self):
+        dialog_container = self.device.find(resourceId="com.android.packageinstaller:id/dialog_container",
+                                            className="android.widget.LinearLayout")
+        deny_button = dialog_container.child(resourceId="com.android.packageinstaller:id/permission_deny_button",
+                                             className="android.widget.Button")
+        checkbox = dialog_container.child(resourceId="com.android.packageinstaller:id/do_not_ask_checkbox",
+                                          className="android.widget.CheckBox")
+        if dialog_container.exists():
+            print("Deny Instagram permission request")
+            checkbox.click(ignore_if_missing=True)
+            deny_button.click(ignore_if_missing=True)
 
 
 class PostsViewList(InstagramView):

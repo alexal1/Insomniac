@@ -1,9 +1,10 @@
 import argparse
+import json
 
 from insomniac.utils import *
 
 
-def parse_arguments(all_args_dict):
+def parse_arguments(all_args_dict, starter_conf_file_path):
     parser = argparse.ArgumentParser(
         description='Instagram bot for automated Instagram interaction using Android device via ADB',
         add_help=False
@@ -22,7 +23,7 @@ def parse_arguments(all_args_dict):
                         metavar="92002505-31c2-4551-a136-92799fc0800e",
                         default=None)
 
-    if not len(sys.argv) > 1:
+    if not len(sys.argv) > 1 and starter_conf_file_path is None:
         parser.print_help()
         return False, None
 
@@ -32,6 +33,9 @@ def parse_arguments(all_args_dict):
         print(COLOR_FAIL + "Unknown arguments: " + ", ".join(str(arg) for arg in unknown_args) + COLOR_ENDC)
         parser.print_help()
         return False, None
+
+    if starter_conf_file_path is not None:
+        args.config_file = starter_conf_file_path
 
     if args.config_file is not None:
         if not os.path.exists(args.config_file):

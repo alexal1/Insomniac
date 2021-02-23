@@ -1,0 +1,3 @@
+import insomniac
+
+insomniac.run()

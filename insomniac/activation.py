@@ -1,9 +1,9 @@
 import base64
-import urllib.request
 import zlib
-from urllib.error import HTTPError
 
+from insomniac import network
 from insomniac.__version__ import __version__
+from insomniac.network import HTTP_OK
 from insomniac.utils import *
 
 HOST = "https://insomniac-bot.com"
@@ -17,9 +17,9 @@ class ActivationController:
     activation_code = ""
     is_activated = False
 
-    def validate(self, activation_code):
+    def validate(self, activation_code, ui=False):
         self.activation_code = activation_code
-        if not activation_code == "" and _validate(activation_code):
+        if not activation_code == "" and _validate(activation_code, ui):
             self.is_activated = True
 
         if not self.is_activated:
@@ -36,32 +36,16 @@ class ActivationController:
                            f"Activate by supporting our small team: {COLOR_BOLD}{HOST}{PATH_ACTIVATE}{COLOR_ENDC}\n")
 
     def get_extra_feature(self, module, ui=False):
+        print_debug_ui(f"Getting extra-feature, module: {module}, is ui: {ui} ")
         extra_feature_path = PATH_UI_EXTRA_FEATURE if ui else PATH_EXTRA_FEATURE
+        code, body, fail_reason = network.get(f"{HOST}{extra_feature_path}{module}"
+                                              f"?activation_code={self.activation_code}"
+                                              f"&version={__version__}")
+        if code == HTTP_OK and body is not None:
+            return base64.b64decode(zlib.decompress(body))
 
-        reason = None
-        file = None
-        try:
-            with urllib.request.urlopen(f"{HOST}{extra_feature_path}{module}"
-                                        f"?activation_code={self.activation_code}"
-                                        f"&version={__version__}",
-                                        context=ssl.SSLContext()) as response:
-                code = response.code
-                if code == 200:
-                    file = response.read()
-        except HTTPError as e:
-            code = e.code
-            reason = e.reason
-        except URLError as e:
-            code = -1
-            reason = e.reason
-
-        if file is not None:
-            return base64.b64decode(zlib.decompress(file))
-
-        if reason is None:
-            reason = "Unknown response code"
-
-        print(COLOR_FAIL + f"Cannot get {'ui-' if ui else ''}module {module} from v{__version__}: {code} ({reason})" + COLOR_ENDC)
+        print(COLOR_FAIL + f"Cannot get {'ui-' if ui else ''}module {module} from v{__version__}: "
+                           f"{code} ({fail_reason})" + COLOR_ENDC)
         return None
 
 
@@ -70,27 +54,13 @@ def print_activation_required_to(action):
                    COLOR_ENDC)
 
 
-def _validate(activation_code):
-    reason = None
-    try:
-        with urllib.request.urlopen(f"{HOST}{PATH_VALIDATE}?activation_code={activation_code}",
-                                    context=ssl.SSLContext()) as response:
-            code = response.code
-    except HTTPError as e:
-        code = e.code
-        reason = e.reason
-    except URLError as e:
-        code = -1
-        reason = e.reason
-
-    if code == 200:
+def _validate(activation_code, ui):
+    code, _, fail_reason = network.get(f"{HOST}{PATH_VALIDATE}?activation_code={activation_code}{'&ui=true' if ui else ''}")
+    if code == HTTP_OK:
         print(COLOR_OKGREEN + "Your activation code is confirmed, welcome!" + COLOR_ENDC)
         return True
 
-    if reason is None:
-        reason = "Unknown response code"
-
-    print(COLOR_FAIL + f"Activation code is not confirmed: {code} ({reason})" + COLOR_ENDC)
+    print(COLOR_FAIL + f"Activation code is not confirmed: {code} ({fail_reason})" + COLOR_ENDC)
     return False
 
 

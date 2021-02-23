@@ -1,7 +1,5 @@
 from random import uniform
 
-import speedtest
-
 from insomniac.utils import *
 
 MEGABIT = 1000000
@@ -57,6 +55,8 @@ class Sleeper:
 
 
 def _get_internet_speed():
+    import speedtest
+
     try:
         s = speedtest.Speedtest()
         s.get_best_server()

@@ -42,6 +42,12 @@
     "description" : "skip internet speed check at start"
   },
   {
+    "parameter-name": "db_directory_path",
+    "enabled": false,
+    "value": "main-db-directory-name",
+    "description" : "when using this parameter the bot will use a database file located under the provided directory. By default account directory is used to store the bot history"
+  },
+  {
     "parameter-name": "next_config_file",
     "enabled": false,
     "value": "2.json",
@@ -119,6 +125,15 @@
     "enabled": false,
     "value": "True",
     "description" : "use this argument in order to interact with profiles from targets.txt / scrapped profiles"
+  },
+  {
+    "parameter-name": "targets_list",
+    "enabled": false,
+    "value": [
+      "profile-A",
+      "profile-B"
+    ],
+    "description" : "list of target-profiles you wish to interact with (in case you want to use parameter and not targets.txt file)"
   },
   {
     "parameter-name": "reinteract_after",
