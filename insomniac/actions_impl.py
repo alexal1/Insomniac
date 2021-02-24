@@ -32,7 +32,7 @@ is_commented = False
 class InteractionStrategy(object):
     def __init__(self, do_like=False, do_follow=False, do_story_watch=False, do_comment=False,
                  likes_count=2, like_percentage=100, follow_percentage=0, stories_count=2, comment_percentage=0,
-                 comments_list=None):
+                 comments_list=None, interact_with_following_user = True):
         self.do_like = do_like
         self.do_follow = do_follow
         self.do_story_watch = do_story_watch
@@ -43,6 +43,7 @@ class InteractionStrategy(object):
         self.stories_count = stories_count
         self.comment_percentage = comment_percentage
         self.comments_list = comments_list
+        self.interact_with_following_user = interact_with_following_user
 
 
 def scroll_to_bottom(device):
@@ -256,6 +257,12 @@ def interact_with_user(device,
 
     if interaction_strategy.do_story_watch:
         is_watched = _watch_stories(device, username, interaction_strategy.stories_count, on_action)
+
+    if interaction_strategy.interact_with_following_user:
+        if is_already_followed(device):
+            print("Already following user, skip interact")
+            return liked_count == interaction_strategy.likes_count, is_followed, is_watched, is_commented
+
 
     def do_like_actions():
         global is_scrolled_down

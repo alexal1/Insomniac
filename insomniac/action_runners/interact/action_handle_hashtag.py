@@ -53,7 +53,8 @@ def handle_hashtag(device,
                    on_action,
                    is_limit_reached,
                    is_passed_filters,
-                   action_status):
+                   action_status,
+                   skip_following_user):
     interaction_source = "#{0}".format(hashtag)
     interaction = partial(interact_with_user,
                           device=device,

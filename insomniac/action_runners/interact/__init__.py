@@ -6,6 +6,8 @@ from insomniac.utils import *
 
 
 class InteractBySourceActionRunner(CoreActionsRunner):
+    DEFAULT_SKIP_FOLLOWING_USER = False
+
     ACTION_ID = "interact"
     ACTION_ARGS = {
         "likes_count": {
@@ -54,6 +56,10 @@ class InteractBySourceActionRunner(CoreActionsRunner):
             "default": [],
             "metavar": ('WOW!', 'What a picture!')
         },
+        "skip_following_user": {
+            "help": "Skip already following users, even doesn't followed by the bot",
+            "metavar": "True / false"
+        }
     }
 
     likes_count = '2'
@@ -63,6 +69,7 @@ class InteractBySourceActionRunner(CoreActionsRunner):
     stories_count = '0'
     comment_percentage = 0
     comments_list = []
+    skip_following_user = DEFAULT_SKIP_FOLLOWING_USER
 
     def is_action_selected(self, args):
         return args.interact is not None and len(args.interact) > 0
@@ -75,6 +82,7 @@ class InteractBySourceActionRunner(CoreActionsRunner):
         self.stories_count = '0'
         self.comment_percentage = 0
         self.comments_list = []
+        self.skip_following_user = self.DEFAULT_SKIP_FOLLOWING_USER
 
     def set_params(self, args):
         self.reset_params()
@@ -174,7 +182,8 @@ class InteractBySourceActionRunner(CoreActionsRunner):
                                    on_action,
                                    is_limit_reached,
                                    is_passed_filters,
-                                   self.action_status)
+                                   self.action_status,
+                                   skip_following_user=self.skip_following_user)
                 elif source.startswith("P-"):
                     source_name, instructions = extract_place_instructions(source[2:])
                     handle_place(device_wrapper.get(),
