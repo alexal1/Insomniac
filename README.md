@@ -130,7 +130,7 @@ We've recorded a video course to _show_ and _explain_ everything you need to kno
 
 All videos are recorded for 4 platforms: Windows, macOS, Linux and Raspberry Pi. Via this link you can get the course with a great discount: [Udemy Сourse Сoupon](https://insomniac-bot.com/udemy_course/).
 
-Purchase the course and get one month of extra features for free!
+Purchase the course and get two months of extra features for free!
 
 ### Source code
 You can see contents of the `insomniac` PyPi package in the [insomniac](https://github.com/alexal1/Insomniac/tree/master/insomniac) folder. So, you can work with the source code directly.
