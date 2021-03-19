@@ -55,7 +55,7 @@ class Sleeper:
 
 
 def _get_internet_speed():
-    import speedtest
+    from insomniac.tools import speedtest
 
     try:
         s = speedtest.Speedtest()

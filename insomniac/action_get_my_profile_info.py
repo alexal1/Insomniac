@@ -45,7 +45,7 @@ def get_my_profile_info(device, username):
 
         ActionBarView.update_interaction_rect(device)
 
-        username, followers, following = profile_view.get_profile_info()
+        username, followers, following = profile_view.get_profile_info(swipe_up_if_needed=True)
 
     report_string = ""
     if username:

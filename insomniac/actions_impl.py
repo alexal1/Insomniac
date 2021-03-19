@@ -7,6 +7,7 @@ from insomniac.navigation import switch_to_english, search_for, LanguageChangedE
 from insomniac.scroll_end_detector import ScrollEndDetector
 from insomniac.sleeper import sleeper
 from insomniac.softban_indicator import softban_indicator
+from insomniac.tools.spintax import spin
 from insomniac.utils import *
 from insomniac.views import ActionBarView
 
@@ -375,7 +376,7 @@ def _open_photo_and_like_and_comment(device, row, column, do_like, do_comment, l
 
         post_view = device.find(resourceIdMatches=POST_VIEW_ID_REGEX.format(device.app_id, device.app_id),
                                 className='android.widget.FrameLayout')
-        if post_view.exists:
+        if post_view.exists():
             post_view.double_click()
             sleeper.random_sleep()
             if not post_view.exists(quick=True):
@@ -448,7 +449,7 @@ def _comment(device, my_username, comments_list, on_comment):
         print("Couldn't open comments properly - not commenting...")
         return
 
-    comment = choice(comments_list)
+    comment = spin(choice(comments_list))
     print(f"Commenting: {comment}")
 
     comment_box.set_text(comment)

@@ -39,6 +39,10 @@ class InsomniacSession(object):
             'help': 'skip internet speed check at start',
             'action': 'store_true'
         },
+        "no_typing": {
+            'help': 'disable "typing" feature (typing symbols one-by-one as a human)',
+            'action': 'store_true'
+        },
         "old": {
             'help': 'add this flag to use an old version of uiautomator. Use it only if you experience '
                     'problems with the default version',
@@ -134,7 +138,7 @@ class InsomniacSession(object):
         return args
 
     def get_device_wrapper(self, args):
-        device_wrapper = DeviceWrapper(args.device, args.old, args.wait_for_device, args.app_id)
+        device_wrapper = DeviceWrapper(args.device, args.old, args.wait_for_device, args.app_id, args.no_typing)
         device = device_wrapper.get()
         if device is None:
             return None, None
@@ -196,9 +200,10 @@ class InsomniacSession(object):
         self.limits_mgr.update_state(action)
 
     def print_session_params(self, args):
-        print_debug("All parameters:")
-        for k, v in vars(args).items():
-            print_debug(f"{k}: {v} (value-type: {type(v)})")
+        if args.debug:
+            print("All parameters:")
+            for k, v in vars(args).items():
+                print(f"{k}: {v} (value-type: {type(v)})")
 
     def run(self):
         args = self.parse_args()

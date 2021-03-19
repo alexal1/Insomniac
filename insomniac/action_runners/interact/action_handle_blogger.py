@@ -167,6 +167,11 @@ def handle_blogger(device,
         if is_private:
             if is_passed_filters is None:
                 print(COLOR_OKGREEN + "@" + follower_name + " has private account, won't interact." + COLOR_ENDC)
+                storage.add_interacted_user(follower_name,
+                                            source=f"@{username}",
+                                            interaction_type=instructions.value,
+                                            provider=Provider.INTERACTION)
+                on_action(InteractAction(source=username, user=follower_name, succeed=False))
                 print("Back to profiles list")
                 device.back()
                 return True

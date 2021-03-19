@@ -258,12 +258,13 @@ class SearchView(InstagramView):
             text=f"#{hashtag}",
         )
 
-    def _get_place_row(self):
+    def _get_place_row(self, place):
         return self.device.find(
             resourceIdMatches=case_insensitive_re(
                 f"{self.device.app_id}:id/row_place_title"
             ),
             className="android.widget.TextView",
+            textMatches=case_insensitive_re(place)
         )
 
     def _get_tab_text_view(self, tab: SearchTabs):
@@ -392,29 +393,32 @@ class SearchView(InstagramView):
         return HashTagView(self.device)
 
     def navigate_to_place(self, place):
-        print(f"Navigate to place {place}")
+        print_debug(f"Navigate to place {place}")
         search_edit_text = self._get_search_edit_text()
         search_edit_text.click()
         self._handle_permission_request()
-
         sleeper.random_sleep()
+
         places_tab = self._get_tab_text_view(SearchTabs.PLACES)
         if not places_tab.exists():
-            print_debug(
-                "Cannot find tab: Places. Going to attempt to search for placeholder in all tabs"
-            )
+            print_debug("Cannot find tab: Places. Going to attempt to search for placeholder in all tabs")
             places_tab = self._search_tab_with_text_placeholder(SearchTabs.PLACES)
             if places_tab is None:
                 print(COLOR_FAIL + "Cannot find tab: Places." + COLOR_ENDC)
                 save_crash(self.device)
                 return None
-
         places_tab.click()
-        sleeper.random_sleep()
-        sleeper.random_sleep()
 
+        # Check if place already exists in the recent search list -> act as human
+        place_view_recent = self._get_place_row(place)
+        if place_view_recent.exists():
+            place_view_recent.click()
+            sleeper.random_sleep()
+            return PlacesView(self.device)
+
+        print(f"{place} is not in recent searching history...")
         search_edit_text.set_text(place)
-        place_view = self._get_place_row()
+        place_view = self._get_place_row(place)
 
         if not place_view.exists():
             print(COLOR_FAIL + f"Cannot find place {place}, abort." + COLOR_ENDC)
@@ -422,8 +426,6 @@ class SearchView(InstagramView):
             return None
 
         place_view.click()
-        sleeper.random_sleep()
-
         return PlacesView(self.device)
 
     def _handle_permission_request(self):
@@ -654,7 +656,7 @@ class OptionsView(InstagramView):
 
 
 class OpenedPostView(InstagramView):
-    def _getPostLikeButton(self, scroll_to_find=True):
+    def _get_post_like_button(self, scroll_to_find=True):
         """Find the like button right bellow a post.
         Note: sometimes the like button from the post above or bellow are
         dumped as well, so we need handle that situation.
@@ -665,98 +667,108 @@ class OpenedPostView(InstagramView):
         BTN_LIKE_RES_ID = f"{self.device.app_id}:id/row_feed_button_like"
         MEDIA_GROUP_RE = case_insensitive_re(
             [
-                f"{self.device.app_id}:id/media_group",
+                f"{self.device.app_id}:id/zoomable_view_container",
                 f"{self.device.app_id}:id/carousel_media_group",
             ]
         )
+
         post_view_area = self.device.find(
             resourceIdMatches=case_insensitive_re("android:id/list")
         )
-        if not post_view_area.exists():
-            print_debug("Cannot find post recycler view area")
+
+        if not post_view_area.exists(quick=True):
+            print("Cannot find post recycler view area")
+            save_crash(self.device)
             return None
 
         post_media_view = self.device.find(
-            resourceIdMatches=MEDIA_GROUP_RE,
-            className="android.widget.FrameLayout",
+            resourceIdMatches=MEDIA_GROUP_RE
         )
 
-        if not post_media_view.exists():
-            print_debug("Cannot find post media view area")
+        if not post_media_view.exists(quick=True):
+            print("Cannot find post media view area")
+            save_crash(self.device)
             return None
 
         like_btn_view = post_media_view.down(
-            resourceIdMatches=case_insensitive_re(OpenedPostView.BTN_LIKE_RES_ID)
+            resourceIdMatches=case_insensitive_re(BTN_LIKE_RES_ID)
         )
 
-        if like_btn_view.exists():
+        should_scroll = False
+
+        if like_btn_view.exists(quick=True):
             # threshold of 30% of the display height
             threshold = int((0.3) * self.device.get_info()["displayHeight"])
+
             like_btn_top_bound = like_btn_view.get_bounds()["top"]
             is_like_btn_in_the_bottom = like_btn_top_bound > threshold
 
             if not is_like_btn_in_the_bottom:
-                print_debug(
-                    f"Like button is to high ({like_btn_top_bound} px). Threshold is {threshold} px"
-                )
+                print_debug(f"Like button is to high ({like_btn_top_bound} px). Threshold is {threshold} px")
 
             post_view_area_bottom_bound = post_view_area.get_bounds()["bottom"]
             is_like_btn_visible = like_btn_top_bound <= post_view_area_bottom_bound
+
             if not is_like_btn_visible:
-                print_debug(
-                    f"Like btn out of current clickable area. Like btn top ({like_btn_top_bound}) recycler_view bottom ({post_view_area_bottom_bound})"
-                )
+                print_debug(f"Like btn out of current clickable area. Like btn top ({like_btn_top_bound}) "
+                            f"recycler_view bottom ({post_view_area_bottom_bound})")
+
+            should_scroll = not is_like_btn_in_the_bottom or not is_like_btn_visible
+
         else:
             print_debug("Like button not found bellow the post.")
+            should_scroll = True
 
-        if (
-            not like_btn_view.exists()
-            or not is_like_btn_in_the_bottom
-            or not is_like_btn_visible
-        ):
+        if should_scroll:
             if scroll_to_find:
                 print_debug("Try to scroll tiny bit down...")
                 # Remember: to scroll down we need to swipe up :)
-                self.device.swipe(DeviceFacade.Direction.TOP, scale=0.1)
-                like_btn_view = post_media_view.down(
-                    resourceIdMatches=case_insensitive_re(
-                        OpenedPostView.BTN_LIKE_RES_ID
+                for _ in range(3):
+                    self.device.swipe(DeviceFacade.Direction.TOP, scale=0.25)
+                    like_btn_view = self.device.find(
+                        resourceIdMatches=case_insensitive_re(BTN_LIKE_RES_ID)
                     )
-                )
 
-            if not scroll_to_find or not like_btn_view.exists():
+                    if like_btn_view.exists(quick=True):
+                        break
+
+            if not scroll_to_find or not like_btn_view.exists(quick=True):
                 print(COLOR_FAIL + "Could not find like button bellow the post" + COLOR_ENDC)
                 return None
 
         return like_btn_view
 
-    def _isPostLiked(self):
+    def _is_post_liked(self):
 
-        like_btn_view = self._getPostLikeButton()
-        if not like_btn_view:
+        like_btn_view = self._get_post_like_button()
+        if like_btn_view is None:
             return False
 
         return like_btn_view.get_selected()
 
-    def likePost(self, click_btn_like=False):
+    def like_post(self, click_btn_like=False):
+        if self._is_post_liked():
+            print(COLOR_FAIL + "Post already been liked" + COLOR_ENDC)
+            return False
+
         MEDIA_GROUP_RE = case_insensitive_re(
             [
-                f"{self.device.app_id}:id/media_group",
+                f"{self.device.app_id}:id/zoomable_view_container",
                 f"{self.device.app_id}:id/carousel_media_group",
             ]
         )
+
         post_media_view = self.device.find(
-            resourceIdMatches=MEDIA_GROUP_RE, className="android.widget.FrameLayout"
+            resourceIdMatches=MEDIA_GROUP_RE
         )
 
         if click_btn_like:
-            like_btn_view = self._getPostLikeButton()
-            if not like_btn_view:
+            like_btn_view = self._get_post_like_button()
+            if like_btn_view is None:
                 return False
             like_btn_view.click()
         else:
-
-            if post_media_view.exists():
+            if post_media_view.exists(quick=True):
                 post_media_view.double_click()
             else:
                 print(COLOR_FAIL + "Could not find post area to double click" + COLOR_ENDC)
@@ -764,42 +776,13 @@ class OpenedPostView(InstagramView):
 
         sleeper.random_sleep()
 
-        return self._isPostLiked()
+        return self._is_post_liked()
 
-    def open_likers(self):
-        while True:
-            likes_view = self.device.find(
-                resourceId=f"{self.device.app_id}:id/row_feed_textview_likes",
-                className="android.widget.TextView",
-            )
-            if likes_view.exists(True):
-                if likes_view.get_text()[-6:].upper() == "OTHERS":
-                    print("Opening post likers")
-                    sleeper.random_sleep()
-                    likes_view.click(likes_view.Location.RIGHT)
-                    return True
-                else:
-                    print("This post has only 1 liker, skip")
-                    return False
-            else:
-                return False
-
-    def _getListViewLikers(self):
-        return self.device.find(
-            resourceId="android:id/list", className="android.widget.ListView"
-        )
-
-    def _getUserCountainer(self):
-        return self.device.find(
-            resourceId=f"{self.device.app_id}:id/row_user_container_base",
-            className="android.widget.LinearLayout",
-        )
-
-    def _getUserName(self, countainer):
-        return countainer.child(
-            resourceId=f"{self.device.app_id}:id/row_user_primary_name",
-            className="android.widget.TextView",
-        )
+    def get_user_name(self):
+        user_name_view = self.device.find(resourceId=f"{self.device.app_id}:id/row_feed_photo_profile_name")
+        if user_name_view.exists(quick=True):
+            return user_name_view.get_text()
+        return None
 
 
 class PostsGridView(InstagramView):

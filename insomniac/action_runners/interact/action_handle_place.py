@@ -142,6 +142,11 @@ def handle_place(device,
         if is_private:
             if is_passed_filters is None:
                 print(COLOR_OKGREEN + "@" + liker_username + " has private account, won't interact." + COLOR_ENDC)
+                storage.add_interacted_user(liker_username,
+                                            source=f"P-{place}",
+                                            interaction_type=instructions.value,
+                                            provider=Provider.INTERACTION)
+                on_action(InteractAction(source=interaction_source, user=liker_username, succeed=False))
                 print("Back to likers list")
                 device.back()
                 return True
@@ -277,9 +282,13 @@ def extract_place_profiles_and_interact(device,
 
     post_view.click()
     sleeper.random_sleep()
-
     posts_list_view = device.find(resourceId='android:id/list',
                                   className='androidx.recyclerview.widget.RecyclerView')
+    if not posts_list_view.exists():
+        print("Couldn't open a post, will try again.")
+        post_view.click()
+        sleeper.random_sleep()
+
     posts_end_detector = ScrollEndDetector(repeats_to_end=2)
 
     def pre_conditions(liker_username, liker_username_view):

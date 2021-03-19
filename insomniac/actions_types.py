@@ -28,3 +28,9 @@ class HashtagInteractionType(Enum):
 class PlaceInteractionType(Enum):
     TOP_LIKERS = 'top-likers'
     RECENT_LIKERS = 'recent-likers'
+
+
+@unique
+class TargetType(Enum):
+    URL = 'url'
+    USERNAME = 'username'

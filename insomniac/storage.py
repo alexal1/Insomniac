@@ -2,6 +2,7 @@ import json
 from datetime import timedelta
 from enum import Enum, unique
 
+from insomniac.actions_types import TargetType
 from insomniac.database_engine import *
 from insomniac.utils import *
 
@@ -59,8 +60,22 @@ class Storage:
     whitelist = []
     blacklist = []
     account_followers = {}
+    posts_urls_list = []
+
+    def _reset_state(self):
+        self.database = None
+        self.scrapping_databases = []
+        self.reinteract_after = None
+        self.refilter_after = None
+        self.recheck_follow_status_after = None
+        self.whitelist = []
+        self.blacklist = []
+        self.account_followers = {}
+        self.posts_urls_list = []
 
     def __init__(self, my_username, args):
+        self._reset_state()
+
         if my_username is None:
             return
 
@@ -74,7 +89,7 @@ class Storage:
         else:
             db_directory_base_path = ''
 
-        db_directory = os.path.join(db_directory_base_path, my_username)
+        self.db_directory = os.path.join(db_directory_base_path, my_username)
 
         # Scrape
         if scrape_for_account is not None:
@@ -87,9 +102,9 @@ class Storage:
                     print(f"Couldn't find any directory named {scrapping_main_db_directory_name}, "
                           f"the directory will be created with a db-file in it...")
 
-                db_directory = scrape_db_path
+                self.db_directory = scrape_db_path
 
-        self.database = get_database(db_directory)
+        self.database = get_database(self.db_directory)
 
         if args.reinteract_after is not None:
             self.reinteract_after = get_value(args.reinteract_after, "Re-interact after {} hours", 168)
@@ -101,7 +116,8 @@ class Storage:
             self.recheck_follow_status_after = get_value(args.recheck_follow_status_after, "Re-check follow status after {} hours", 168)
 
         interact_targets = args.__dict__.get('interact_targets', None)
-        targets_list_from_parameters = args.__dict__.get('targets_list', None)
+        profiles_targets_list_from_parameters = args.__dict__.get('targets_list', None)
+        url_targets_list_from_parameters = args.__dict__.get('posts_urls_list', None)
 
         if my_username is None:
             print(COLOR_FAIL + "No username, thus the script won't get access to interacted users and sessions data" +
@@ -109,17 +125,17 @@ class Storage:
             return
 
         # Whitelist and Blacklist
-        whitelist_path = os.path.join(my_username, FILENAME_WHITELIST)
+        whitelist_path = os.path.join(self.db_directory, FILENAME_WHITELIST)
         if os.path.exists(whitelist_path):
             with open(whitelist_path, encoding="utf-8") as file:
                 self.whitelist = [line.rstrip() for line in file]
-        blacklist_path = os.path.join(my_username, FILENAME_BLACKLIST)
+        blacklist_path = os.path.join(self.db_directory, FILENAME_BLACKLIST)
         if os.path.exists(blacklist_path):
             with open(blacklist_path, encoding="utf-8") as file:
                 self.blacklist = [line.rstrip() for line in file]
 
         # Read targets from targets.txt
-        targets_path = os.path.join(my_username, FILENAME_TARGETS)
+        targets_path = os.path.join(self.db_directory, FILENAME_TARGETS)
         if os.path.exists(targets_path):
             with open(targets_path, 'r+', encoding="utf-8") as file_targets:
                 targets = [line.rstrip() for line in file_targets]
@@ -127,7 +143,7 @@ class Storage:
                 print("Loading targets from targets.txt into the database...")
                 add_targets(self.database, targets, Provider.TARGETS_LIST)
                 print("Targets loaded successfully.")
-                targets_loaded_path = os.path.join(my_username, FILENAME_LOADED_TARGETS)
+                targets_loaded_path = os.path.join(self.db_directory, FILENAME_LOADED_TARGETS)
                 # Add targets to targets_loaded.txt
                 with open(targets_loaded_path, 'a+', encoding="utf-8") as file_loaded_targets:
                     for target in targets:
@@ -135,14 +151,20 @@ class Storage:
                 # Clear targets.txt
                 file_targets.truncate(0)
 
-        if targets_list_from_parameters is not None:
-            if isinstance(targets_list_from_parameters, list) and len(targets_list_from_parameters) > 0:
+        if profiles_targets_list_from_parameters is not None:
+            if isinstance(profiles_targets_list_from_parameters, list) and len(profiles_targets_list_from_parameters) > 0:
                 print("Loading targets from targets-list-parameter into the database...")
-                add_targets(self.database, targets_list_from_parameters, Provider.TARGETS_LIST)
+                add_targets(self.database, profiles_targets_list_from_parameters, Provider.TARGETS_LIST)
                 print("Targets loaded successfully.")
 
+        if url_targets_list_from_parameters is not None:
+            if isinstance(url_targets_list_from_parameters, list) and len(url_targets_list_from_parameters) > 0:
+                print("Loading post-urls-targets from posts-urls-list-parameter...")
+                self.posts_urls_list = url_targets_list_from_parameters
+                print("URLs loaded successfully.")
+
         if interact_targets is not None:
-            self._print_database_targets(my_username, self.database)
+            self._print_database_targets(self.db_directory, self.database)
 
         # Scraping
         if scrape_for_account is not None:
@@ -208,6 +230,9 @@ class Storage:
         last_filtration = datetime.strptime(user[USER_FILTERED_AT], '%Y-%m-%d %H:%M:%S.%f')
         return datetime.now() - last_filtration <= timedelta(hours=hours)
 
+    def check_user_is_myself(self, username):
+        return username == self.my_username
+
     def get_following_status(self, username):
         user = get_interacted_user(self.database, username)
         return FollowingStatus.NONE if user is None else FollowingStatus[user[USER_FOLLOWING_STATUS].upper()]
@@ -231,12 +256,14 @@ class Storage:
 
     def add_interacted_user(self,
                             username,
-                            last_interaction=datetime.now(),
+                            last_interaction=None,
                             followed=False,
                             unfollowed=False,
                             source=None,
                             interaction_type=None,
                             provider=Provider.UNKNOWN):
+        if last_interaction is None:
+            last_interaction = datetime.now()
         following_status = FollowingStatus.NONE
         if followed:
             following_status = FollowingStatus.FOLLOWED
@@ -251,16 +278,20 @@ class Storage:
                                 (provider,))
         if provider == Provider.SCRAPING or provider == Provider.TARGETS_LIST:
             target_provider = "scrapped" if provider == Provider.SCRAPING else "targets.txt"
-            targets_interacted_path = os.path.join(self.my_username, FILENAME_INTERACTED_TARGETS)
+            targets_interacted_path = os.path.join(self.db_directory, FILENAME_INTERACTED_TARGETS)
             # Add interacted target to targets_interacted.txt
             with open(targets_interacted_path, 'a+', encoding="utf-8") as file_interacted_targets:
                 file_interacted_targets.write(f"{username} (source: {target_provider}) - {str(last_interaction)}\n")
 
-    def add_scrapped_user(self, username, last_interaction=datetime.now(), success=False):
+    def add_scrapped_user(self, username, last_interaction=None, success=False):
+        if last_interaction is None:
+            last_interaction = datetime.now()
         scraping_status = ScrappingStatus.SCRAPED if success else ScrappingStatus.NOT_SCRAPED
         update_scraped_users(self.database, (username,), (last_interaction,), (scraping_status,))
 
-    def add_filtered_user(self, username, filtered_at=datetime.now()):
+    def add_filtered_user(self, username, filtered_at=None):
+        if filtered_at is None:
+            filtered_at = datetime.now()
         update_filtered_users(self.database, (username,), (filtered_at,))
 
     def add_target(self, username, source, interaction_type):
@@ -276,9 +307,16 @@ class Storage:
 
         :return: a target or None if table is empty.
         """
-        return get_target(self.database, [self.is_user_in_blacklist,
-                                          self.check_user_was_filtered,
-                                          self.check_user_was_interacted])
+        if len(self.posts_urls_list) > 0:
+            target_type, target, provider = TargetType.URL, self.posts_urls_list.pop(0), Provider.TARGETS_LIST
+        else:
+            target_type = TargetType.USERNAME
+            target, provider = get_target(self.database, [self.is_user_in_blacklist,
+                                                          self.check_user_was_filtered,
+                                                          self.check_user_was_interacted,
+                                                          self.check_user_is_myself])
+
+        return target_type, target, provider
 
     def save_followers_for_today(self, followers_list, override=False):
         # TODO: implement 'dump-followers' feature or remove this function

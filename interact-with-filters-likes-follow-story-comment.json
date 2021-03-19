@@ -2,7 +2,7 @@
   {
     "parameter-name": "device",
     "enabled": false,
-    "value": "2443de990e017ece",
+    "value": "192.168.10.3",
     "description" : "device identifier. Should be used only when multiple devices are connected at once"
   },
   {
@@ -37,15 +37,9 @@
   },
   {
     "parameter-name": "no_speed_check",
-    "enabled": false,
+    "enabled": true,
     "value": "True",
     "description" : "skip internet speed check at start"
-  },
-  {
-    "parameter-name": "no_typing",
-    "enabled": false,
-    "value": "True",
-    "description" : "disable \"typing\" feature (typing symbols one-by-one as a human)"
   },
   {
     "parameter-name": "username",
@@ -55,7 +49,7 @@
   },
   {
     "parameter-name": "repeat",
-    "enabled": false,
+    "enabled": true,
     "value": "160-220",
     "description" : "repeat the same session again after N minutes after completion, disabled by default. It can be a number of minutes (e.g. 180) or a range (e.g. 120-180)"
   },
@@ -63,12 +57,11 @@
     "parameter-name": "interact",
     "enabled": true,
     "value": [
-      "@natgeo-followers",
-      "@natgeo-following",
       "amazingtrips-top-likers",
       "amazingtrips-recent-likers",
-      "P-antartica-top-likers",
-      "P-antartica-recent-likers"
+      "плёнка-top-likers",
+      "filmisnotdead-top-likers",
+      "zanzibar-recent-likers"
     ],
     "description" : "list of hashtags and usernames. Usernames should start with \"@\" symbol. The script will interact with hashtags\\' posts likers and with users\\' followers"
   },
@@ -87,37 +80,39 @@
   {
     "parameter-name": "likes_count",
     "enabled": true,
-    "value": "1-2",
+    "value": "2",
     "description" : "number of likes for each interacted user, 2 by default. It can be a number (e.g. 2) or a range (e.g. 2-4)"
   },
   {
     "parameter-name": "likes_percentage",
-    "enabled": true,
+    "enabled": false,
     "value": "75",
     "description" : "likes given percentage of interacted users, 100 by default"
   },
   {
     "parameter-name": "stories_count",
-    "enabled": true,
+    "enabled": false,
     "value": "1-2",
     "description" : "number of stories to watch for each user, disabled by default. It can be a number (e.g. 2) or a range (e.g. 2-4)"
   },
   {
     "parameter-name": "follow_percentage",
-    "enabled": true,
+    "enabled": false,
     "value": "70",
     "description" : "follow given percentage of interacted users, 0 by default"
   },
   {
     "parameter-name": "comment_percentage",
     "enabled": true,
-    "value": "15",
+    "value": "100",
     "description" : "comment given percentage of interacted users, 0 by default"
   },
   {
     "parameter-name": "comments_list",
     "enabled": true,
-    "value": ["Wow.", "Love that one ;)", "Amazing!", "In love with that view...", "🔥🔥🔥"],
+    "value": [
+      "{You’re|} awesome"
+    ],
     "description" : "list of comments you wish to comment on posts during interaction"
   },
   {
@@ -191,5 +186,22 @@
     "enabled": true,
     "value": "50-60",
     "description" : "limit the session length by time (minutes), disabled by default. It can be a number (e.g. 60) or a range (e.g. 40-70)"
+  },
+  {
+    "parameter-name": "refilter_after",
+    "enabled": false,
+    "value": "72-96",
+    "description" : "set a time (in hours) to wait before re-filter an already filtered profile, disabled by default (will drop the profile and won't filter again). It can be a number (e.g. 48) or a range (e.g. 50-80)"
+  },
+  {
+    "parameter-name": "filters",
+    "enabled": false,
+    "value": {
+      "privacy_relation": "only_public",
+      "max_followers": 5000,
+      "min_followers": 10,
+      "max_followings": 500
+    },
+    "description" : "add this argument if you want to pass filters as an argument and not from filters.json file"
   }
 ]

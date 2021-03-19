@@ -1,0 +1,3 @@
+# full name, password, username
+Mr Robot, jhfuralh47had, mrrobot12345
+John Doe, dbhheb3ybjaeb, hiiamjohn

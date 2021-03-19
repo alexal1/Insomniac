@@ -42,6 +42,12 @@
     "description" : "skip internet speed check at start"
   },
   {
+    "parameter-name": "no_typing",
+    "enabled": false,
+    "value": "True",
+    "description" : "disable \"typing\" feature (typing symbols one-by-one as a human)"
+  },
+  {
     "parameter-name": "username",
     "enabled": true,
     "value": "<put real-username here>",

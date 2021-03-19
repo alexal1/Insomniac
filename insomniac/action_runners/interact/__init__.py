@@ -1,7 +1,6 @@
-import random
-
 from insomniac.action_runners import *
 from insomniac.safely_runner import run_safely
+from insomniac.actions_types import TargetType
 from insomniac.utils import *
 
 
@@ -216,10 +215,17 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
         },
         "targets_list": {
             "nargs": '+',
-            "help": 'list of target-profiles you wish to interact with (in case you want to use parameter '
+            "help": 'list of target-profiles you wish to interact with (in case you want to use a parameter '
                     'and not targets.txt file)',
             "default": [],
             "metavar": ('profile-A', 'profile-B')
+        },
+        "posts_urls_list": {
+            "nargs": '+',
+            "help": 'list of target-posts you wish to interact with (in case you want to use a parameter '
+                    'and not targets.json file)',
+            "default": [],
+            "metavar": ('https://www.instagram.com/p/ID-a', 'https://www.instagram.com/p/ID-b')
         },
         "likes_count": {
             "help": "number of likes for each interacted user, 2 by default. "
@@ -297,12 +303,12 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
         from insomniac.action_runners.interact.action_handle_target import handle_target
 
-        target, provider = storage.get_target()
+        target_type, target, provider = storage.get_target()
         while target is not None:
             self.action_status = ActionStatus(ActionState.PRE_RUN)
 
             print_timeless("")
-            print(COLOR_BOLD + "Handle @" + target + COLOR_ENDC)
+            print(COLOR_BOLD + f"Handle {'@' if target_type == TargetType.USERNAME else ''}" + target + COLOR_ENDC)
 
             @run_safely(device_wrapper=device_wrapper)
             def job():
@@ -310,6 +316,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
                 handle_target(device_wrapper.get(),
                               target,
                               provider,
+                              target_type,
                               session_state,
                               self.likes_count,
                               self.stories_count,
@@ -337,7 +344,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
             if self.action_status.get_limit() == ActionState.SESSION_LIMIT_REACHED:
                 break
 
-            target, provider = storage.get_target()
+            target_type, target, provider = storage.get_target()
 
         if target is None:
             print("There are no more new targets to interact with in the database (all been already interacted / filtered).")

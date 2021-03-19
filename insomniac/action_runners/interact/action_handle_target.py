@@ -3,19 +3,21 @@ from functools import partial
 from insomniac.action_runners.actions_runners_manager import ActionState
 from insomniac.actions_impl import interact_with_user, InteractionStrategy, is_private_account, open_user, do_have_story
 from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, StoryWatchAction, \
-    CommentAction
+    CommentAction, TargetType
 from insomniac.limits import process_limits
 from insomniac.report import print_short_report, print_interaction_types
+from insomniac.sleeper import sleeper
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
-
+from insomniac.views import OpenedPostView
 
 is_all_filters_satisfied = False
 
 
 def handle_target(device,
-                  username,
+                  target,
                   provider,
+                  target_type,
                   session_state,
                   likes_count,
                   stories_count,
@@ -28,10 +30,9 @@ def handle_target(device,
                   is_limit_reached,
                   is_passed_filters,
                   action_status):
-    is_myself = username == session_state.my_username
     interaction = partial(interact_with_user,
                           device=device,
-                          user_source=username,
+                          user_source=target,
                           my_username=session_state.my_username,
                           on_action=on_action)
 
@@ -49,7 +50,7 @@ def handle_target(device,
 
         return True
 
-    def interact_with_target(target_name, target_name_view):
+    def interact_with_username_target(target_name, target_name_view):
         is_interact_limit_reached, interact_reached_source_limit, interact_reached_session_limit = \
             is_limit_reached(InteractAction(source=target_name, user=target_name, succeed=True), session_state)
 
@@ -90,6 +91,8 @@ def handle_target(device,
         if is_private:
             if is_passed_filters is None:
                 print(COLOR_OKGREEN + "@" + target_name + " has private account, won't interact." + COLOR_ENDC)
+                storage.add_interacted_user(target_name, provider=provider)
+                on_action(InteractAction(source=target_name, user=target_name, succeed=False))
                 print("Moving to next target")
                 return
             print("@" + target_name + ": Private account - images wont be liked.")
@@ -155,12 +158,74 @@ def handle_target(device,
         print("Moving to next target")
         return
 
-    if is_myself:
+    def interact_with_post_id_target(target_post, target_username, target_name_view):
+        is_interact_limit_reached, interact_reached_source_limit, interact_reached_session_limit = \
+            is_limit_reached(InteractAction(source=target_post, user=target_username, succeed=True), session_state)
+
+        if not process_limits(is_interact_limit_reached, interact_reached_session_limit,
+                              interact_reached_source_limit, action_status, "Interaction"):
+            return
+
+        print(f"@{target_username} - {target_post}: interact")
+
+        is_like_limit_reached, like_reached_source_limit, like_reached_session_limit = \
+            is_limit_reached(LikeAction(source=target_post, user=target_username), session_state)
+
+        can_like = not is_like_limit_reached
+        can_interact = can_like
+
+        if not can_interact:
+            print(f"@{target_username} - {target_post}: Cant be interacted (due to limits / already interacted). Skip.")
+            on_action(InteractAction(source=target_post, user=target_username, succeed=False))
+        else:
+            print_interaction_types(f"{target_username} - {target_post}", can_like, False, False, False)
+
+            is_liked = opened_post_view.like_post()
+
+            if is_liked:
+                print(COLOR_OKGREEN + "@{target_username} - {target_post} - photo been liked." + COLOR_ENDC)
+                on_action(LikeAction(source=target_post, user=target_username))
+                on_action(InteractAction(source=target_post, user=target_username, succeed=True))
+                print_short_report(target_post, session_state)
+            else:
+                on_action(InteractAction(source=target_post, user=target_username, succeed=False))
+
+        if is_like_limit_reached:
+            # If one of the limits reached for source-limit, move to next source
+            if like_reached_source_limit is not None and like_reached_session_limit is None:
+                action_status.set_limit(ActionState.SOURCE_LIMIT_REACHED)
+
+            # If all of the limits reached for session-limit, finish the session
+            if like_reached_session_limit is not None:
+                action_status.set_limit(ActionState.SESSION_LIMIT_REACHED)
+
+        print("Moving to next target")
         return
 
-    if pre_conditions(username, None):
-        if open_user(device=device, username=username, refresh=False, on_action=on_action):
-            interact_with_target(username, None)
+    if target_type == TargetType.USERNAME:
+        is_myself = target == session_state.my_username
+
+        if is_myself:
+            print(COLOR_FAIL + "Target handling was started for yourself. Abort." + COLOR_ENDC)
+            return
+
+        if pre_conditions(target, None):
+            if open_user(device=device, username=target, refresh=False, on_action=on_action):
+                interact_with_username_target(target, None)
+            else:
+                print("@" + target + " profile couldn't be opened. Skip.")
+                storage.add_interacted_user(target, followed=False, provider=provider)
+    else:
+        url = target.strip()
+        if validate_url(url) and "instagram.com/p/" in url:
+            if open_instagram_with_url(device_id=device.device_id, url=url) is True:
+                sleeper.random_sleep()
+                opened_post_view = OpenedPostView(device)
+                username = opened_post_view.get_user_name()
+                if username is None:
+                    print(url + " target user-name couldn't be processed. Skip.")
+                    return
+
+                interact_with_post_id_target(url, username, None)
         else:
-            print("@" + username + " profile couldn't be opened. Skip.")
-            storage.add_interacted_user(username, followed=False, provider=provider)
+            print(url + " target couldn't be opened. Skip.")

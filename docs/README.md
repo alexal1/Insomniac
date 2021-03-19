@@ -165,6 +165,9 @@ devices are connected at once
 #### --no-speed-check
 skip internet speed check at start
 
+#### --no-typing
+disable "typing" feature (typing symbols one-by-one as a human)
+
 #### --wait-for-device
 keep waiting for ADB-device to be ready for connection
 (if no device-id is provided using --device flag, will

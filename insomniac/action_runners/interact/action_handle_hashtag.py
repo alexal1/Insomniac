@@ -142,6 +142,11 @@ def handle_hashtag(device,
         if is_private:
             if is_passed_filters is None:
                 print(COLOR_OKGREEN + "@" + liker_username + " has private account, won't interact." + COLOR_ENDC)
+                storage.add_interacted_user(liker_username,
+                                            source=f"#{hashtag}",
+                                            interaction_type=instructions.value,
+                                            provider=Provider.INTERACTION)
+                on_action(InteractAction(source=interaction_source, user=liker_username, succeed=False))
                 print("Back to likers list")
                 device.back()
                 return True
@@ -258,29 +263,43 @@ def extract_hashtag_profiles_and_interact(device,
         sleeper.random_sleep()
 
     # Open post
-    # Index 1 is reserved for hot Reels by this tag
-    first_post_index = 2 if instructions == HashtagInteractionType.TOP_LIKERS else 1
-    post_num = randint(first_post_index, 20)
-    print(f"Opening post #{post_num}")
-    post_view = device.find(resourceId=f'{device.app_id}:id/image_button',
-                            className='android.widget.ImageView',
-                            index=post_num)
+    # Scroll down several times to pick random post
+    scroll_times = randint(0, 5)
+    posts_grid = device.find(resourceId=f'{device.app_id}:id/recycler_view',
+                             className='androidx.recyclerview.widget.RecyclerView')
+    print(f"Scroll down {scroll_times} times.")
+    for _ in range(0, scroll_times):
+        posts_grid.scroll(DeviceFacade.Direction.BOTTOM)
+        sleeper.random_sleep()
 
-    for _ in range(0, 10):
-        if post_view.exists(quick=True):
-            break
+    # Scan for available posts' coordinates
+    available_posts_coords = []
+    print("Choosing a random post from those on the screen")
+    for post_view in posts_grid.child(resourceId=f'{device.app_id}:id/image_button',
+                                      className='android.widget.ImageView'):
+        bounds = post_view.get_bounds()
+        left = bounds["left"]
+        top = bounds["top"]
+        right = bounds["right"]
+        bottom = bounds["bottom"]
+        coords = (left + (right - left) / 2, top + (bottom - top) / 2)
+        available_posts_coords.append(coords)
+    if len(available_posts_coords) == 0:
+        print(COLOR_FAIL + f"No posts for #{hashtag}. Abort." + COLOR_ENDC)
+        return
 
-        print(f"Cannot find post #{post_num}. Swiping down a bit.")
-        device.swipe(DeviceFacade.Direction.TOP)
-
-    if not post_view.exists(quick=True):
-        print(f"Cannot find post #{post_num} after 10 swipes. Aborting.")
-
-    post_view.click()
+    # Pick random post from available ones
+    coords = random.choice(available_posts_coords)
+    print(f"Open the post at {coords}")
+    device.screen_click_by_coordinates(coords[0], coords[1])
     sleeper.random_sleep()
-
     posts_list_view = device.find(resourceId='android:id/list',
                                   className='androidx.recyclerview.widget.RecyclerView')
+    if not posts_list_view.exists():
+        print("Couldn't open a post, will try again.")
+        device.screen_click_by_coordinates(coords[0], coords[1])
+        sleeper.random_sleep()
+
     posts_end_detector = ScrollEndDetector(repeats_to_end=2)
 
     def pre_conditions(liker_username, liker_username_view):

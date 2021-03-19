@@ -3,6 +3,7 @@
 interaction_data.db
 targets.txt
 targets_loaded.txt
+targets_interacted.txt
 *.pyc
 .DS_Store
 crashes
@@ -13,3 +14,4 @@ blacklist.txt
 /dist
 /*.egg-info
 *.log
+screen_records

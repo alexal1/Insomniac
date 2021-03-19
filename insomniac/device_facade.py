@@ -12,10 +12,10 @@ UI_TIMEOUT_SHORT = 1
 SCREEN_RECORDS_PATH = "screen_records"
 
 
-def create_device(is_old, device_id, app_id):
+def create_device(is_old, device_id, app_id, typewriter):
     print("Using uiautomator v" + ("1" if is_old else "2"))
     try:
-        return DeviceFacade(is_old, device_id, app_id)
+        return DeviceFacade(is_old, device_id, app_id, typewriter)
     except ImportError as e:
         print(COLOR_FAIL + str(e) + COLOR_ENDC)
         return None
@@ -28,10 +28,12 @@ class DeviceFacade:
     height = None
     device_id = None
     app_id = None
+    typewriter = None
 
-    def __init__(self, is_old, device_id, app_id):
+    def __init__(self, is_old, device_id, app_id, typewriter):
         self.device_id = device_id
         self.app_id = app_id
+        self.typewriter = typewriter
         if is_old:
             try:
                 import uiautomator
@@ -55,16 +57,50 @@ class DeviceFacade:
                 view = self.deviceV1(*args, **kwargs)
             except uiautomator.JsonRPCError as e:
                 raise DeviceFacade.JsonRpcError(e)
-            return DeviceFacade.View(is_old=True, view=view, device=self.deviceV1)
+            return DeviceFacade.View(is_old=True, view=view, device=self)
         else:
             import uiautomator2
             try:
                 view = self.deviceV2(*args, **kwargs)
             except uiautomator2.JSONRPCError as e:
                 raise DeviceFacade.JsonRpcError(e)
-            return DeviceFacade.View(is_old=False, view=view, device=self.deviceV2)
+            return DeviceFacade.View(is_old=False, view=view, device=self)
 
     def back(self):
+        """
+        Press back and check that UI hierarchy was changed. If it didn't change, it means that back press didn't work.
+        So, we try to press back several times until it is finally changed.
+        """
+        max_attempts = 5
+
+        def dump_hierarchy():
+            if self.deviceV1 is not None:
+                return self.deviceV1.dump()
+            else:
+                return self.deviceV2.dump_hierarchy()
+
+        def normalize(hierarchy):
+            """
+            Remove all texts from hierarchy. It may contain some changing data, e.g. current time.
+            """
+            return re.sub(r'text=".*"', 'text=""', hierarchy)
+
+        succeed = False
+        attempts = 0
+        while not succeed:
+            if attempts >= max_attempts:
+                print(COLOR_FAIL + f"Tried to press back {attempts} times with no success. Will proceed next..." +
+                      COLOR_ENDC)
+                break
+            hierarchy_before = normalize(dump_hierarchy())
+            self._press_back()
+            hierarchy_after = normalize(dump_hierarchy())
+            succeed = hierarchy_before != hierarchy_after
+            if not succeed:
+                print(COLOR_OKGREEN + "Pressed back but nothing changed on the screen. Will try again." + COLOR_ENDC)
+            attempts += 1
+
+    def _press_back(self):
         if self.deviceV1 is not None:
             self.deviceV1.press.back()
         else:
@@ -86,6 +122,9 @@ class DeviceFacade:
         else:
             return
 
+        self.screen_click_by_coordinates(left, top)
+
+    def screen_click_by_coordinates(self, left, top):
         if self.deviceV1 is not None:
             self.deviceV1.click(left, top)
         else:
@@ -289,18 +328,16 @@ class DeviceFacade:
         return self.width, self.height
 
     class View:
-        deviceV1 = None  # uiautomator
+        device = None
         viewV1 = None  # uiautomator
-        deviceV2 = None  # uiautomator2
         viewV2 = None  # uiautomator2
 
         def __init__(self, is_old, view, device):
+            self.device = device
             if is_old:
                 self.viewV1 = view
-                self.deviceV1 = device
             else:
                 self.viewV2 = view
-                self.deviceV2 = device
 
         def __iter__(self):
             children = []
@@ -308,14 +345,14 @@ class DeviceFacade:
                 import uiautomator
                 try:
                     for item in self.viewV1:
-                        children.append(DeviceFacade.View(is_old=True, view=item, device=self.deviceV1))
+                        children.append(DeviceFacade.View(is_old=True, view=item, device=self.device))
                 except uiautomator.JsonRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
             else:
                 import uiautomator2
                 try:
                     for item in self.viewV2:
-                        children.append(DeviceFacade.View(is_old=False, view=item, device=self.deviceV2))
+                        children.append(DeviceFacade.View(is_old=False, view=item, device=self.device))
                 except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
             return iter(children)
@@ -327,14 +364,14 @@ class DeviceFacade:
                     view = self.viewV1.child(*args, **kwargs)
                 except uiautomator.JsonRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
-                return DeviceFacade.View(is_old=True, view=view, device=self.deviceV1)
+                return DeviceFacade.View(is_old=True, view=view, device=self.device)
             else:
                 import uiautomator2
                 try:
                     view = self.viewV2.child(*args, **kwargs)
                 except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
-                return DeviceFacade.View(is_old=False, view=view, device=self.deviceV2)
+                return DeviceFacade.View(is_old=False, view=view, device=self.device)
 
         def right(self, *args, **kwargs):
             if self.viewV1 is not None:
@@ -343,14 +380,14 @@ class DeviceFacade:
                     view = self.viewV1.right(*args, **kwargs)
                 except uiautomator.JsonRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
-                return DeviceFacade.View(is_old=True, view=view, device=self.deviceV1)
+                return DeviceFacade.View(is_old=True, view=view, device=self.device)
             else:
                 import uiautomator2
                 try:
                     view = self.viewV2.right(*args, **kwargs)
                 except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
-                return DeviceFacade.View(is_old=False, view=view, device=self.deviceV2)
+                return DeviceFacade.View(is_old=False, view=view, device=self.device)
 
         def left(self, *args, **kwargs):
             if self.viewV1 is not None:
@@ -359,14 +396,14 @@ class DeviceFacade:
                     view = self.viewV1.left(*args, **kwargs)
                 except uiautomator.JsonRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
-                return DeviceFacade.View(is_old=True, view=view, device=self.deviceV1)
+                return DeviceFacade.View(is_old=True, view=view, device=self.device)
             else:
                 import uiautomator2
                 try:
                     view = self.viewV2.left(*args, **kwargs)
                 except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
-                return DeviceFacade.View(is_old=False, view=view, device=self.deviceV2)
+                return DeviceFacade.View(is_old=False, view=view, device=self.device)
 
         def up(self, *args, **kwargs):
             if self.viewV1 is not None:
@@ -375,14 +412,14 @@ class DeviceFacade:
                     view = self.viewV1.up(*args, **kwargs)
                 except uiautomator.JsonRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
-                return DeviceFacade.View(is_old=True, view=view, device=self.deviceV1)
+                return DeviceFacade.View(is_old=True, view=view, device=self.device)
             else:
                 import uiautomator2
                 try:
                     view = self.viewV2.up(*args, **kwargs)
                 except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
-                return DeviceFacade.View(is_old=False, view=view, device=self.deviceV2)
+                return DeviceFacade.View(is_old=False, view=view, device=self.device)
 
         def down(self, *args, **kwargs):
             if self.viewV1 is not None:
@@ -391,14 +428,14 @@ class DeviceFacade:
                     view = self.viewV1.down(*args, **kwargs)
                 except uiautomator.JsonRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
-                return DeviceFacade.View(is_old=True, view=view, device=self.deviceV1)
+                return DeviceFacade.View(is_old=True, view=view, device=self.device)
             else:
                 import uiautomator2
                 try:
                     view = self.viewV2.down(*args, **kwargs)
                 except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
-                return DeviceFacade.View(is_old=False, view=view, device=self.deviceV2)
+                return DeviceFacade.View(is_old=False, view=view, device=self.device)
 
         def click(self, mode=None, ignore_if_missing=False):
             if ignore_if_missing and not self.exists(quick=True):
@@ -601,6 +638,8 @@ class DeviceFacade:
                     raise DeviceFacade.JsonRpcError(e)
 
         def set_text(self, text):
+            if self.device.typewriter.write(self, text):
+                return
             if self.viewV1 is not None:
                 import uiautomator
                 try:
@@ -616,16 +655,16 @@ class DeviceFacade:
 
         def _double_click_v1(self):
             import uiautomator
-            config = self.deviceV1.server.jsonrpc.getConfigurator()
+            config = self.device.deviceV1.server.jsonrpc.getConfigurator()
             config['actionAcknowledgmentTimeout'] = 40
-            self.deviceV1.server.jsonrpc.setConfigurator(config)
+            self.device.deviceV1.server.jsonrpc.setConfigurator(config)
             try:
                 self.viewV1.click()
                 self.viewV1.click()
             except uiautomator.JsonRPCError as e:
                 raise DeviceFacade.JsonRpcError(e)
             config['actionAcknowledgmentTimeout'] = 3000
-            self.deviceV1.server.jsonrpc.setConfigurator(config)
+            self.device.deviceV1.server.jsonrpc.setConfigurator(config)
 
         def _double_click_v2(self, padding):
             import uiautomator2
@@ -648,7 +687,7 @@ class DeviceFacade:
             )
             time_between_clicks = uniform(0.050, 0.200)
             try:
-                self.deviceV2.double_click(random_x, random_y, duration=time_between_clicks)
+                self.device.deviceV2.double_click(random_x, random_y, duration=time_between_clicks)
             except uiautomator2.JSONRPCError as e:
                 raise DeviceFacade.JsonRpcError(e)
 
