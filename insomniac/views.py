@@ -1,5 +1,6 @@
 import datetime
 from enum import Enum
+from typing import Optional
 
 from insomniac.actions_types import GetProfileAction
 from insomniac.device_facade import DeviceFacade
@@ -42,10 +43,37 @@ class ProfileTabs(Enum):
 
 
 class InstagramView:
+    ACTION_BAR_TITLE_ID = "{0}:id/action_bar_title"
+
     def __init__(self, device: DeviceFacade):
         self.device = device
 
-    def is_block_dialog_present(self):
+    def is_visible(self) -> bool:
+        raise NotImplemented(f"is_visible() is not implemented for {self.__class__.__name__}")
+
+    def get_title(self) -> Optional[str]:
+        action_bar_title = self.device.find(resourceId=f'{self.device.app_id}:id/action_bar_title',
+                                            className='android.widget.TextView')
+        if action_bar_title.exists():
+            return action_bar_title.get_text()
+        else:
+            return None
+
+    def press_back_arrow(self) -> 'InstagramView':
+        button_back = self.device.find(resourceId=f'{self.device.app_id}:id/action_bar_button_back',
+                                       className='android.widget.ImageView')
+        if button_back.exists():
+            button_back.click()
+        else:
+            print(COLOR_FAIL + f"Cannot find back arrow in {self.__class__.__name__}, press hardware back" + COLOR_ENDC)
+            self.device.back()
+        return self.on_back_pressed()
+
+    def on_back_pressed(self) -> 'InstagramView':
+        # Override this method to return a view after press_back_arrow()
+        pass
+
+    def is_block_dialog_present(self) -> bool:
         block_dialog_v1 = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_root_view',
                                            className='android.widget.FrameLayout')
         block_dialog_v2 = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_container',
@@ -442,6 +470,26 @@ class SearchView(InstagramView):
 
 
 class PostsViewList(InstagramView):
+
+    def is_visible(self):
+        # We suppose that at least one post must be visible
+        return OpenedPostView(self.device).is_visible()
+
+    def open_likers(self):
+        likes_view = self.device.find(resourceId=f'{self.device.app_id}:id/row_feed_textview_likes',
+                                      className='android.widget.TextView')
+        if likes_view.exists(quick=True) and ActionBarView.is_in_interaction_rect(likes_view):
+            print("Opening post likers")
+            likes_view.click()
+            return True
+        else:
+            return False
+
+    def scroll_down(self):
+        recycler_view = self.device.find(resourceId='android:id/list',
+                                         className='androidx.recyclerview.widget.RecyclerView')
+        recycler_view.scroll(DeviceFacade.Direction.BOTTOM)
+
     def swipe_to_fit_posts(self, first_post):
         """calculate the right swipe amount necessary to swipe to next post in hashtag post view"""
         POST_CONTAINER = f"{self.device.app_id}:id/zoomable_view_container|{self.device.app_id}:id/carousel_media_group"
@@ -493,6 +541,15 @@ class PostsViewList(InstagramView):
                 return False, new_description
 
 
+class LikersListView(InstagramView):
+
+    def is_visible(self):
+        return self.get_title() == 'Likes'
+
+    def on_back_pressed(self) -> 'InstagramView':
+        return PostsViewList(self.device)
+
+
 class LanguageView(InstagramView):
     def setLanguage(self, language: str):
         print_debug(f"Set language to {language}")
@@ -521,29 +578,6 @@ class AccountView(InstagramView):
         button.click()
 
         return LanguageView(self.device)
-
-    def change_to_username(self, username):
-        action_bar = self.device.find(resourceId=f"{self.device.app_id}:id/action_bar_large_title")
-        current_profile_name = action_bar.get_text().upper()
-        if current_profile_name == username.upper():
-            print(COLOR_OKBLUE + f"You are already logged as {username}!" + COLOR_ENDC)
-            return True
-        if action_bar.exists():
-            action_bar.click()
-            sleeper.random_sleep()
-            found_obj = self.device.find(
-                resourceId=f"{self.device.app_id}:id/row_user_textview",
-                textMatches=case_insensitive_re(username),
-            )
-            if found_obj.exists():
-                print(f"Switching to {username}...")
-                found_obj.click()
-                sleeper.random_sleep()
-                action_bar = self.device.find(resourceId=f"{self.device.app_id}:id/action_bar_large_title")
-                current_profile_name = action_bar.get_text().upper()
-                if current_profile_name == username.upper():
-                    return True
-        return False
 
 
 class SettingsView(InstagramView):
@@ -586,6 +620,10 @@ class SettingsView(InstagramView):
             list_view = self.device.find(resourceId=f'{self.device.app_id}:id/language_locale_list',
                                          className='android.widget.ListView')
             english_item = list_view.child(index=0)
+            if english_item.child(resourceId=f'{self.device.app_id}:id/language_checkmark',
+                                  className='android.widget.ImageView').exists():
+                # Raising exception to not get into a loop
+                raise Exception("Tried to switch language to English, but English is already set!")
             english_item.click()
 
             break
@@ -656,6 +694,16 @@ class OptionsView(InstagramView):
 
 
 class OpenedPostView(InstagramView):
+    POST_VIEW_ID_REGEX = '{0}:id/zoomable_view_container|{1}:id/carousel_image|{2}:id/layout_container_main'
+
+    def is_visible(self) -> bool:
+        return self.device.find(
+            resourceIdMatches=self.POST_VIEW_ID_REGEX.format(self.device.app_id,
+                                                             self.device.app_id,
+                                                             self.device.app_id),
+            className='android.widget.FrameLayout'
+        ).exists(quick=True)
+
     def _get_post_like_button(self, scroll_to_find=True):
         """Find the like button right bellow a post.
         Note: sometimes the like button from the post above or bellow are
@@ -786,38 +834,62 @@ class OpenedPostView(InstagramView):
 
 
 class PostsGridView(InstagramView):
-    def scrollDown(self):
-        coordinator_layout = self.device.find(
-            resourceIdMatches=case_insensitive_re(
-                f"{self.device.app_id}:id/coordinator_root_layout"
-            )
-        )
-        if coordinator_layout.exists():
-            coordinator_layout.scroll(DeviceFacade.Direction.BOTTOM)
-            return True
 
-        return False
+    def open_random_post(self) -> Optional['PostsViewList']:
+        # Scroll down several times to pick random post
+        scroll_times = randint(0, 5)
+        posts_grid = self.device.find(resourceId=f'{self.device.app_id}:id/recycler_view',
+                                      className='androidx.recyclerview.widget.RecyclerView')
+        print(f"Scroll down {scroll_times} times.")
+        for _ in range(0, scroll_times):
+            posts_grid.scroll(DeviceFacade.Direction.BOTTOM)
+            sleeper.random_sleep()
 
-    def navigateToPost(self, row, col):
-        post_list_view = self.device.find(
-            resourceIdMatches=case_insensitive_re("android:id/list")
-        )
-        OFFSET = 1  # row with post starts from index 1
-        row_view = post_list_view.child(index=row + OFFSET)
-        if not row_view.exists():
+        # Scan for available posts' coordinates
+        available_posts_coords = []
+        print("Choosing a random post from those on the screen")
+        for post_view in posts_grid.child(resourceId=f'{self.device.app_id}:id/image_button',
+                                          className='android.widget.ImageView'):
+            bounds = post_view.get_bounds()
+            left = bounds["left"]
+            top = bounds["top"]
+            right = bounds["right"]
+            bottom = bounds["bottom"]
+            coords = (left + (right - left) / 2, top + (bottom - top) / 2)
+            available_posts_coords.append(coords)
+        if len(available_posts_coords) == 0:
+            print(COLOR_FAIL + f"No posts for this hashtag. Abort." + COLOR_ENDC)
             return None
-        post_view = row_view.child(index=col)
-        if not post_view.exists():
-            return None
-        post_view.click()
 
-        return OpenedPostView(self.device)
+        # Pick random post from available ones
+        coords = random.choice(available_posts_coords)
+        print(f"Open the post at {coords}")
+        self.device.screen_click_by_coordinates(coords[0], coords[1])
+        sleeper.random_sleep()
+        posts_view_list = PostsViewList(self.device)
+
+        if posts_view_list.is_visible():
+            return posts_view_list
+        else:
+            print("Couldn't open a post, will try again.")
+            self.device.screen_click_by_coordinates(coords[0], coords[1])
+            sleeper.random_sleep()
+
+        if posts_view_list.is_visible():
+            return posts_view_list
+        else:
+            print(COLOR_FAIL + "Couldn' open a post twice. Abort." + COLOR_ENDC)
+            return None
 
 
 class ProfileView(ActionBarView):
     def __init__(self, device: DeviceFacade, is_own_profile=False):
         super().__init__(device)
         self.is_own_profile = is_own_profile
+
+    def is_visible(self):
+        return self.device.find(resourceId=f"{self.device.app_id}:id/row_profile_header",
+                                className="android.view.ViewGroup").exists(quick=True)
 
     def refresh(self):
         re_case_insensitive = case_insensitive_re(
@@ -846,6 +918,28 @@ class ProfileView(ActionBarView):
         options_view.click()
         return OptionsView(self.device)
 
+    def change_to_username(self, username):
+        action_bar = self._get_action_bar_title_btn()
+        current_profile_name = action_bar.get_text().upper()
+        if current_profile_name == username.upper():
+            print(COLOR_OKBLUE + f"You are already logged as {username}!" + COLOR_ENDC)
+            return True
+
+        action_bar.click()
+        sleeper.random_sleep()
+        found_obj = self.device.find(
+            resourceId=f"{self.device.app_id}:id/row_user_textview",
+            textMatches=case_insensitive_re(username),
+        )
+        if found_obj.exists():
+            print(f"Switching to {username}...")
+            found_obj.click()
+            sleeper.random_sleep()
+            current_profile_name = action_bar.get_text().upper()
+            if current_profile_name == username.upper():
+                return True
+        return False
+
     def _get_action_bar_title_btn(self):
         re_case_insensitive = case_insensitive_re(
             [
@@ -853,6 +947,7 @@ class ProfileView(ActionBarView):
                 f"{self.device.app_id}:id/action_bar_title",
                 f"{self.device.app_id}:id/action_bar_large_title",
                 f"{self.device.app_id}:id/action_bar_textview_title",
+                f"{self.device.app_id}:id/action_bar_large_title_auto_size"
             ]
         )
         return self.action_bar.child(

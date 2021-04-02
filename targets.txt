@@ -1,0 +1,7 @@
+# Targets to interact with. Provide either usernames or posts urls.
+#
+# Example:
+# natgeo
+# https://www.instagram.com/p/CM8GxQQrOqm/
+# raskalov
+# https://www.instagram.com/p/CIiTyLCHRfa/

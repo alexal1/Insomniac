@@ -3,10 +3,8 @@ from functools import partial
 from insomniac.action_runners.actions_runners_manager import ActionState
 from insomniac.actions_impl import interact_with_user, ScrollEndDetector, open_likers, iterate_over_likers, \
     is_private_account, InteractionStrategy, do_have_story
-from insomniac.actions_providers import Provider
 from insomniac.actions_types import InteractAction, LikeAction, FollowAction, GetProfileAction, StoryWatchAction, \
-    PlaceInteractionType, CommentAction
-from insomniac.device_facade import DeviceFacade
+    PlaceInteractionType, CommentAction, FilterAction, SourceType
 from insomniac.limits import process_limits
 from insomniac.navigation import search_for
 from insomniac.report import print_short_report, print_interaction_types
@@ -14,6 +12,7 @@ from insomniac.sleeper import sleeper
 from insomniac.softban_indicator import softban_indicator
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
+from insomniac.views import PostsGridView
 
 
 def extract_place_instructions(source):
@@ -54,10 +53,11 @@ def handle_place(device,
                  is_limit_reached,
                  is_passed_filters,
                  action_status):
-    interaction_source = "P-{0}".format(place)
+    source_type = f'{SourceType.PLACE.value}-{instructions.value}'
     interaction = partial(interact_with_user,
                           device=device,
-                          user_source=interaction_source,
+                          user_source=place,
+                          source_type=source_type,
                           my_username=session_state.my_username,
                           on_action=on_action)
 
@@ -79,7 +79,7 @@ def handle_place(device,
         :return: whether we should continue interaction with other users after this one
         """
         is_interact_limit_reached, interact_reached_source_limit, interact_reached_session_limit = \
-            is_limit_reached(InteractAction(source=interaction_source, user=liker_username, succeed=True), session_state)
+            is_limit_reached(InteractAction(source_name=place, source_type=source_type, user=liker_username, succeed=True), session_state)
 
         if not process_limits(is_interact_limit_reached, interact_reached_session_limit,
                               interact_reached_source_limit, action_status, "Interaction"):
@@ -98,7 +98,7 @@ def handle_place(device,
             should_continue, is_all_filters_satisfied = is_passed_filters(device, liker_username, reset=True,
                                                                           filters_tags=['BEFORE_PROFILE_CLICK'])
             if not should_continue:
-                storage.add_filtered_user(liker_username)
+                on_action(FilterAction(liker_username))
                 return True
 
             if not is_all_filters_satisfied:
@@ -120,33 +120,30 @@ def handle_place(device,
             if not is_all_filters_satisfied:
                 should_continue, _ = is_passed_filters(device, liker_username, reset=False)
                 if not should_continue:
-                    storage.add_filtered_user(liker_username)
+                    on_action(FilterAction(liker_username))
                     # Continue to next follower
                     print("Back to likers list")
                     device.back()
                     return True
 
         is_like_limit_reached, like_reached_source_limit, like_reached_session_limit = \
-            is_limit_reached(LikeAction(source=interaction_source, user=liker_username), session_state)
+            is_limit_reached(LikeAction(source_name=place, source_type=source_type, user=liker_username), session_state)
 
         is_follow_limit_reached, follow_reached_source_limit, follow_reached_session_limit = \
-            is_limit_reached(FollowAction(source=interaction_source, user=liker_username), session_state)
+            is_limit_reached(FollowAction(source_name=place, source_type=source_type, user=liker_username), session_state)
 
         is_watch_limit_reached, watch_reached_source_limit, watch_reached_session_limit = \
-            is_limit_reached(StoryWatchAction(user=liker_username), session_state)
+            is_limit_reached(StoryWatchAction(source_name=place, source_type=source_type, user=liker_username), session_state)
 
         is_comment_limit_reached, comment_reached_source_limit, comment_reached_session_limit = \
-            is_limit_reached(CommentAction(source=interaction_source, user=liker_username, comment=""), session_state)
+            is_limit_reached(CommentAction(source_name=place, source_type=source_type, user=liker_username, comment=""), session_state)
 
         is_private = is_private_account(device)
         if is_private:
             if is_passed_filters is None:
                 print(COLOR_OKGREEN + "@" + liker_username + " has private account, won't interact." + COLOR_ENDC)
-                storage.add_interacted_user(liker_username,
-                                            source=f"P-{place}",
-                                            interaction_type=instructions.value,
-                                            provider=Provider.INTERACTION)
-                on_action(InteractAction(source=interaction_source, user=liker_username, succeed=False))
+                on_action(FilterAction(liker_username))
+                on_action(InteractAction(source_name=place, source_type=source_type, user=liker_username, succeed=False))
                 print("Back to likers list")
                 device.back()
                 return True
@@ -172,12 +169,7 @@ def handle_place(device,
 
         if not can_interact:
             print("@" + liker_username + ": Cant be interacted (due to limits / already followed). Skip.")
-            storage.add_interacted_user(liker_username,
-                                        followed=False,
-                                        source=f"P-{place}",
-                                        interaction_type=instructions.value,
-                                        provider=Provider.INTERACTION)
-            on_action(InteractAction(source=interaction_source, user=liker_username, succeed=False))
+            on_action(InteractAction(source_name=place, source_type=source_type, user=liker_username, succeed=False))
         else:
             print_interaction_types(liker_username, can_like, can_follow, can_watch, can_comment)
             interaction_strategy = InteractionStrategy(do_like=can_like,
@@ -193,20 +185,10 @@ def handle_place(device,
 
             is_liked, is_followed, is_watch, is_commented = interaction(username=liker_username, interaction_strategy=interaction_strategy)
             if is_liked or is_followed or is_watch or is_commented:
-                storage.add_interacted_user(liker_username,
-                                            followed=is_followed,
-                                            source=f"P-{place}",
-                                            interaction_type=instructions.value,
-                                            provider=Provider.INTERACTION)
-                on_action(InteractAction(source=interaction_source, user=liker_username, succeed=True))
-                print_short_report(interaction_source, session_state)
+                on_action(InteractAction(source_name=place, source_type=source_type, user=liker_username, succeed=True))
+                print_short_report(f"P-{place}", session_state)
             else:
-                storage.add_interacted_user(liker_username,
-                                            followed=False,
-                                            source=f"P-{place}",
-                                            interaction_type=instructions.value,
-                                            provider=Provider.INTERACTION)
-                on_action(InteractAction(source=interaction_source, user=liker_username, succeed=False))
+                on_action(InteractAction(source_name=place, source_type=source_type, user=liker_username, succeed=False))
 
         can_continue = True
 
@@ -263,31 +245,9 @@ def extract_place_profiles_and_interact(device,
         sleeper.random_sleep()
 
     # Open post
-    first_post_index = 2
-    post_num = randint(first_post_index, 20)
-    print(f"Opening post #{post_num}")
-    post_view = device.find(resourceId=f'{device.app_id}:id/image_button',
-                            className='android.widget.ImageView',
-                            index=post_num)
-
-    for _ in range(0, 10):
-        if post_view.exists(quick=True):
-            break
-
-        print(f"Cannot find post #{post_num}. Swiping down a bit.")
-        device.swipe(DeviceFacade.Direction.TOP)
-
-    if not post_view.exists(quick=True):
-        print(f"Cannot find post #{post_num} after 10 swipes. Aborting.")
-
-    post_view.click()
-    sleeper.random_sleep()
-    posts_list_view = device.find(resourceId='android:id/list',
-                                  className='androidx.recyclerview.widget.RecyclerView')
-    if not posts_list_view.exists():
-        print("Couldn't open a post, will try again.")
-        post_view.click()
-        sleeper.random_sleep()
+    posts_view_list = PostsGridView(device).open_random_post()
+    if posts_view_list is None:
+        return
 
     posts_end_detector = ScrollEndDetector(repeats_to_end=2)
 
@@ -298,7 +258,7 @@ def extract_place_profiles_and_interact(device,
     while True:
         if not open_likers(device):
             print(COLOR_OKGREEN + "No likes, let's scroll down." + COLOR_ENDC)
-            posts_list_view.scroll(DeviceFacade.Direction.BOTTOM)
+            posts_view_list.scroll_down()
             continue
 
         print("List of likers is opened.")
@@ -313,4 +273,4 @@ def extract_place_profiles_and_interact(device,
         if posts_end_detector.is_the_end():
             break
         else:
-            posts_list_view.scroll(DeviceFacade.Direction.BOTTOM)
+            posts_view_list.scroll_down()

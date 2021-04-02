@@ -1,7 +1,19 @@
+import json
+
+from insomniac.db_models import DATABASE_NAME
 from insomniac.session_state import SessionState
 from insomniac.sessions import FILENAME_SESSIONS, Sessions
 from insomniac.storage import *
 from insomniac.utils import *
+
+FILENAME_INTERACTED_USERS = "interacted_users.json"  # deprecated
+FILENAME_SCRAPPED_USERS = "scrapped_users.json"  # deprecated
+FILENAME_FILTERED_USERS = "filtered_users.json"  # deprecated
+USER_LAST_INTERACTION = "last_interaction"  # deprecated
+USER_INTERACTIONS_COUNT = "interactions_count"  # deprecated
+USER_FILTERED_AT = "filtered_at"  # deprecated
+USER_FOLLOWING_STATUS = "following_status"  # deprecated
+USER_SCRAPPING_STATUS = "scrapping_status"  # deprecated
 
 
 def get_db(user_name):
@@ -131,3 +143,45 @@ def migrate_from_json_to_sql(my_username):
                 print(COLOR_BOLD + f"[Migration] Done! You can now delete {FILENAME_SESSIONS}" + COLOR_ENDC)
         except ValueError as e:
             print(COLOR_FAIL + f"[Migration] Cannot load {FILENAME_SESSIONS}: {e}" + COLOR_ENDC)
+
+
+def migrate_from_sql_to_peewee(my_username):
+    """
+    Migration from SQL storage (v3.7.0) to peewee ORM (v3.7.1).
+    """
+    if my_username is None:
+        return
+
+    if not check_database_exists(my_username, False):
+        return
+
+    if not db_models.init():
+        return
+
+    database = get_database(my_username)
+    my_profile = get_ig_profile_by_profile_name(my_username)
+
+    print(f"[Migration] Migrating sessions to the {DATABASE_NAME}...")
+    for session in get_all_sessions(database):
+        my_profile.add_session(None,
+                               session["app_version"],
+                               session["args"],
+                               ProfileStatus.VALID,
+                               session["followers"],
+                               session["following"],
+                               datetime.strptime(session["start_time"], '%Y-%m-%d %H:%M:%S.%f'),
+                               datetime.strptime(session["finish_time"], '%Y-%m-%d %H:%M:%S.%f'))
+
+    session_id = my_profile.start_session(None, "Unknown app version: migration", "Unknown args: migration", ProfileStatus.VALID, -1, -1)
+    print(f"[Migration] Migrating interacted users to the {DATABASE_NAME}...")
+    for interacted_user in get_all_interacted_users(database):
+        my_profile.log_like_action(session_id, interacted_user["username"], None, None)
+    print(f"[Migration] Migrating filtered users to the {DATABASE_NAME}...")
+    for filtered_user in get_all_filtered_users(database):
+        my_profile.log_filter_action(session_id, filtered_user["username"])
+    print(f"[Migration] Migrating scraped users to the {DATABASE_NAME}...")
+    for scraped_user in get_all_scraped_users(database):
+        my_profile.publish_scrapped_account(scraped_user["username"], [my_username])
+    my_profile.end_session(session_id)
+
+    print(COLOR_BOLD + f"[Migration] Done! Now you can now delete {database}" + COLOR_ENDC)

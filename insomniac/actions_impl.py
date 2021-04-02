@@ -1,5 +1,5 @@
 from enum import unique, Enum
-from random import shuffle, choice
+from random import shuffle, choice, uniform
 
 from insomniac.actions_types import LikeAction, FollowAction, GetProfileAction, StoryWatchAction, CommentAction
 from insomniac.device_facade import DeviceFacade
@@ -9,7 +9,7 @@ from insomniac.sleeper import sleeper
 from insomniac.softban_indicator import softban_indicator
 from insomniac.tools.spintax import spin
 from insomniac.utils import *
-from insomniac.views import ActionBarView
+from insomniac.views import ActionBarView, ProfileView, PostsViewList, OpenedPostView, LikersListView
 
 FOLLOWERS_BUTTON_ID_REGEX = '{0}:id/row_profile_header_followers_container' \
                             '|{1}:id/row_profile_header_container_followers'
@@ -21,7 +21,6 @@ UNFOLLOW_REGEX = 'Unfollow'
 FOLLOWING_BUTTON_ID_REGEX = '{0}:id/row_profile_header_following_container' \
                             '|{1}:id/row_profile_header_container_following'
 USER_AVATAR_VIEW_ID = '{0}:id/circular_image|^$'
-POST_VIEW_ID_REGEX = '{0}:id/zoomable_view_container|{1}:id/carousel_image'
 LISTVIEW_OR_RECYCLERVIEW_REGEX = 'android.widget.ListView|androidx.recyclerview.widget.RecyclerView'
 
 liked_count = 0
@@ -237,12 +236,14 @@ def iterate_over_likers(device, iteration_callback, iteration_callback_pre_condi
 
 def interact_with_user(device,
                        user_source,
+                       source_type,
                        username,
                        my_username,
                        interaction_strategy: InteractionStrategy,
                        on_action) -> (bool, bool):
     """
-    :return: (whether some photos was liked, whether @username was followed during the interaction)
+    :return: (whether some photos was liked, whether @username was followed during the interaction,
+    whether stories were watched, whether was commented)
     """
     global liked_count, is_followed, is_scrolled_down, is_commented
     liked_count = 0
@@ -256,7 +257,8 @@ def interact_with_user(device,
         return liked_count == interaction_strategy.likes_count, is_followed, is_watched, is_commented
 
     if interaction_strategy.do_story_watch:
-        is_watched = _watch_stories(device, username, interaction_strategy.stories_count, on_action)
+        is_watched = _watch_stories(device, user_source, source_type, username,
+                                    interaction_strategy.stories_count, on_action)
 
     def do_like_actions():
         global is_scrolled_down
@@ -287,13 +289,13 @@ def interact_with_user(device,
                 global liked_count
                 liked_count += 1
                 print(COLOR_OKGREEN + "@{} - photo been liked.".format(username) + COLOR_ENDC)
-                on_action(LikeAction(source=user_source, user=username))
+                on_action(LikeAction(source_name=user_source, source_type=source_type, user=username))
 
             def on_comment(comment):
                 global is_commented
                 is_commented = True
                 print(COLOR_OKGREEN + "@{} - photo been commented.".format(username) + COLOR_ENDC)
-                on_action(CommentAction(source=user_source, user=username, comment=comment))
+                on_action(CommentAction(source_name=user_source, source_type=source_type, user=username, comment=comment))
 
             for i in range(0, interaction_strategy.likes_count):
                 photo_index = photos_indices[i]
@@ -316,7 +318,7 @@ def interact_with_user(device,
         if interaction_strategy.do_follow:
             is_followed = _follow(device, username, interaction_strategy.follow_percentage, is_scrolled_down)
             if is_followed:
-                on_action(FollowAction(source=user_source, user=username))
+                on_action(FollowAction(source_name=user_source, source_type=source_type, user=username))
 
     if interaction_strategy.do_follow and (interaction_strategy.do_like or interaction_strategy.do_comment):
         like_first_chance = randint(1, 100)
@@ -348,6 +350,12 @@ def _open_photo_and_like_and_comment(device, row, column, do_like, do_comment, l
         if not item_view.exists():
             return False
         item_view.click()
+        if not OpenedPostView(device).is_visible():
+            print(COLOR_OKGREEN + "Didn't open the post by click, trying again..." + COLOR_ENDC)
+            item_view.click()
+            if not OpenedPostView(device).is_visible():
+                print(COLOR_FAIL + "Couldn't open this post twice, abort." + COLOR_ENDC)
+                return False
         return True
 
     if not open_photo():
@@ -373,21 +381,15 @@ def _open_photo_and_like_and_comment(device, row, column, do_like, do_comment, l
 
     if to_like:
         print("Double click!")
-
-        post_view = device.find(resourceIdMatches=POST_VIEW_ID_REGEX.format(device.app_id, device.app_id),
-                                className='android.widget.FrameLayout')
-        if post_view.exists():
-            post_view.double_click()
-            sleeper.random_sleep()
-            if not post_view.exists(quick=True):
-                print(COLOR_OKGREEN + "Accidentally went out of the post page, going back..." + COLOR_ENDC)
-                device.back()
-        else:
-            print(COLOR_FAIL + "Cannot find zoomable_view_container, fallback to the old liking algorithm" + COLOR_ENDC)
-            post_view = device.find(resourceId=f'{device.app_id}:id/layout_container_main',
-                                    className='android.widget.FrameLayout')
-            post_view.double_click()
-            sleeper.random_sleep()
+        post_view = device.find(
+            resourceIdMatches=OpenedPostView.POST_VIEW_ID_REGEX.format(device.app_id, device.app_id, device.app_id),
+            className='android.widget.FrameLayout'
+        )
+        post_view.double_click()
+        sleeper.random_sleep()
+        if not post_view.exists(quick=True):
+            print(COLOR_OKGREEN + "Accidentally went out of the post page, going back..." + COLOR_ENDC)
+            device.back()
 
         # If like button is not visible, scroll down
         like_button = device.find(resourceId=f'{device.app_id}:id/row_feed_button_like',
@@ -442,6 +444,10 @@ def _comment(device, my_username, comments_list, on_comment):
 
         comment_box = device.find(resourceId=f'{device.app_id}:id/layout_comment_thread_edittext')
         if comment_box.exists(quick=True):
+            if not comment_box.is_enabled():
+                print("Comments are restricted – not commenting...")
+                device.back()
+                return
             comment_box_exists = True
             break
 
@@ -551,9 +557,14 @@ def is_already_followed(device):
     return unfollow_button.exists(quick=True)
 
 
-def _watch_stories(device, username, stories_value, on_action):
+def _watch_stories(device, source_name, source_type, username, stories_value, on_action):
     if stories_value == 0:
         return False
+
+    def story_sleep():
+        delay = uniform(0, 3)
+        print(f"Sleep for {delay:.2f} seconds")
+        sleep(delay)
 
     if do_have_story(device):
         profile_picture = device.find(
@@ -565,13 +576,13 @@ def _watch_stories(device, username, stories_value, on_action):
             print(COLOR_OKGREEN + f"Watching @" + username + f" stories, at most {stories_value}" + COLOR_ENDC)
 
             profile_picture.click()  # Open the first story
-            on_action(StoryWatchAction(user=username))
-            sleeper.random_sleep()
+            on_action(StoryWatchAction(source_name=source_name, source_type=source_type, user=username))
+            story_sleep()
 
             for i in range(1, stories_value):
                 if _skip_story(device):
                     print("Watching next story...")
-                    sleeper.random_sleep()
+                    story_sleep()
                 else:
                     print(COLOR_OKGREEN + "Watched all stories" + COLOR_ENDC)
                     break
@@ -579,6 +590,13 @@ def _watch_stories(device, username, stories_value, on_action):
             if not _get_action_bar(device).exists():
                 print("Back to profile")
                 device.back()
+
+            if not ProfileView(device).is_visible():
+                print(COLOR_OKGREEN + "Oops, seems we got out of the profile. Going back..." + COLOR_ENDC)
+                username_view = device.find(className="android.widget.TextView",
+                                            text=username)
+                username_view.click()
+                sleeper.random_sleep()
             return True
     return False
 
@@ -778,15 +796,16 @@ def do_unfollow(device, my_username, username, storage, check_if_is_follower, us
 
 
 def open_likers(device):
-    likes_view = device.find(resourceId=f'{device.app_id}:id/row_feed_textview_likes',
-                             className='android.widget.TextView')
-    if likes_view.exists(quick=True) and ActionBarView.is_in_interaction_rect(likes_view):
-        print("Opening post likers")
-        sleeper.random_sleep()
-        likes_view.click()
-        return True
-    else:
-        return False
+    posts_view_list = PostsViewList(device)
+    if not posts_view_list.is_visible():
+        likers_list_view = LikersListView(device)
+        if likers_list_view.is_visible():
+            print(COLOR_FAIL + "Oops, likers list is opened instead of posts list. Going back." + COLOR_FAIL)
+            posts_view_list = likers_list_view.press_back_arrow()
+        else:
+            raise Exception("We are supposed to be on posts list, but something gone wrong.")
+
+    return posts_view_list.open_likers()
 
 
 def _check_is_follower(device, username, my_username):

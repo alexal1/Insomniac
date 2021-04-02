@@ -4,7 +4,7 @@ from insomniac.action_get_my_profile_info import get_my_profile_info
 from insomniac.action_runners.actions_runners_manager import ActionRunnersManager
 from insomniac.device import DeviceWrapper
 from insomniac.limits import LimitsManager
-from insomniac.migration import migrate_from_json_to_sql
+from insomniac.migration import migrate_from_json_to_sql, migrate_from_sql_to_peewee
 from insomniac.params import parse_arguments, refresh_args_by_conf_file
 from insomniac.report import print_full_report
 from insomniac.session_state import SessionState
@@ -152,6 +152,7 @@ class InsomniacSession(object):
     def start_session(self, args, device_wrapper, app_version, save_profile_info=True):
         self.session_state = SessionState()
         self.session_state.args = args.__dict__
+        self.session_state.app_id = args.app_id
         self.session_state.app_version = app_version
         self.sessions.append(self.session_state)
 
@@ -178,12 +179,11 @@ class InsomniacSession(object):
         if __version__.__debug_mode__:
             device_wrapper.get().stop_screen_record()
         print_copyright()
-        self.session_state.finishTime = datetime.now()
+        self.session_state.end_session()
         print_timeless(COLOR_REPORT + "-------- FINISH: " + str(self.session_state.finishTime) + " --------" + COLOR_ENDC)
 
         print_full_report(self.sessions)
         print_timeless("")
-        self.sessions.persist(self.session_state.my_username)
 
     def repeat_session(self, args):
         print("Sleep for {} minutes".format(self.repeat))
@@ -192,7 +192,6 @@ class InsomniacSession(object):
             return refresh_args_by_conf_file(args, self.next_config_file)
         except KeyboardInterrupt:
             print_full_report(self.sessions)
-            self.sessions.persist(self.session_state.my_username)
             sys.exit(0)
 
     def on_action_callback(self, action):
@@ -235,7 +234,9 @@ class InsomniacSession(object):
             try:
                 self.start_session(args, device_wrapper, app_version, save_profile_info=True)
                 migrate_from_json_to_sql(self.session_state.my_username)
+                migrate_from_sql_to_peewee(self.session_state.my_username)
                 self.storage = Storage(self.session_state.my_username, args)
+                self.session_state.set_storage_layer(self.storage)
 
                 action_runner.run(device_wrapper,
                                   self.storage,

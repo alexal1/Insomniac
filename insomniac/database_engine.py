@@ -1,4 +1,7 @@
+# This file is deprecated. We use peewee models (see db_models.py) since v3.7.1
+
 import sqlite3
+from enum import Enum, unique
 
 from insomniac.actions_providers import Provider
 from insomniac.utils import *
@@ -22,6 +25,9 @@ SQL_COUNT_LOADED_NOT_INTERACTED_TARGETS_FROM_INTERACTED_USERS_BY_TARGETS_LIST = 
 SQL_SELECT_FROM_FILTERED_USERS_BY_USERNAME = "SELECT * from filtered_users WHERE username = :username"
 SQL_SELECT_FROM_SCRAPED_USERS_BY_USERNAME = "SELECT * from scraped_users WHERE username = :username"
 SQL_SELECT_ALL_SESSIONS = "SELECT * from sessions INNER JOIN profiles ON sessions.profile_id = profiles.id"
+SQL_SELECT_ALL_INTERACTED_USERS = "SELECT * from interacted_users"
+SQL_SELECT_ALL_FILTERED_USERS = "SELECT * from filtered_users"
+SQL_SELECT_ALL_SCRAPED_USERS = "SELECT * from scraped_users"
 SQL_SELECT_PROFILE_BY_ID = "SELECT * from profiles WHERE id = :profile_id"
 
 SQL_INSERT_DEFAULT_INTO_METADATA = "INSERT INTO metadata DEFAULT VALUES"
@@ -127,9 +133,9 @@ def get_database(username):
     return address
 
 
-def check_database_exists(username):
+def check_database_exists(username, create_db_dir=True):
     address = os.path.join(username, DB_NAME)
-    verify_database_directories(address)
+    verify_database_directories(address, create_db_dir)
     return os.path.isfile(address)
 
 
@@ -205,9 +211,9 @@ def create_tables(cursor, tables):
         cursor.execute(SQL_CREATE_USERS_FOLLOW_STATUS_TABLE)
 
 
-def verify_database_directories(address):
+def verify_database_directories(address, create_db_dir=True):
     db_dir = os.path.dirname(address)
-    if not os.path.exists(db_dir):
+    if not os.path.exists(db_dir) and create_db_dir:
         os.makedirs(db_dir)
 
 
@@ -227,6 +233,25 @@ def get_interacted_user(address, username):
             connection.close()
 
     return dict(interacted_user) if interacted_user is not None else None
+
+
+def get_all_interacted_users(address):
+    connection = None
+    interacted_users = None
+    try:
+        connection = sqlite3.connect(address)
+        connection.row_factory = dict_factory
+        cursor = connection.cursor()
+        cursor.execute(SQL_SELECT_ALL_INTERACTED_USERS)
+        interacted_users = cursor.fetchall()
+    except Exception as e:
+        print(COLOR_FAIL + f"[Database] Cannot get all interacted users: {e}" + COLOR_ENDC)
+    finally:
+        if connection:
+            # Close the opened connection
+            connection.close()
+
+    return list(interacted_users) if interacted_users is not None else ()
 
 
 def update_interacted_users(address,
@@ -339,6 +364,25 @@ def get_filtered_user(address, username):
     return dict(filtered_user) if filtered_user is not None else None
 
 
+def get_all_filtered_users(address):
+    connection = None
+    filtered_users = None
+    try:
+        connection = sqlite3.connect(address)
+        connection.row_factory = dict_factory
+        cursor = connection.cursor()
+        cursor.execute(SQL_SELECT_ALL_FILTERED_USERS)
+        filtered_users = cursor.fetchall()
+    except Exception as e:
+        print(COLOR_FAIL + f"[Database] Cannot get all filtered users: {e}" + COLOR_ENDC)
+    finally:
+        if connection:
+            # Close the opened connection
+            connection.close()
+
+    return list(filtered_users) if filtered_users is not None else ()
+
+
 def update_filtered_users(address, usernames, filtered_at_list):
     connection = None
     try:
@@ -377,6 +421,25 @@ def get_scraped_user(address, username):
             connection.close()
 
     return dict(scraped_user) if scraped_user is not None else None
+
+
+def get_all_scraped_users(address):
+    connection = None
+    scraped_users = None
+    try:
+        connection = sqlite3.connect(address)
+        connection.row_factory = dict_factory
+        cursor = connection.cursor()
+        cursor.execute(SQL_SELECT_ALL_FILTERED_USERS)
+        scraped_users = cursor.fetchall()
+    except Exception as e:
+        print(COLOR_FAIL + f"[Database] Cannot get all filtered users: {e}" + COLOR_ENDC)
+    finally:
+        if connection:
+            # Close the opened connection
+            connection.close()
+
+    return list(scraped_users) if scraped_users is not None else ()
 
 
 def update_scraped_users(address, usernames, last_interactions, scraping_statuses):
@@ -663,3 +726,9 @@ database_migrations = {
 
 class DatabaseMigrationFailedException(Exception):
     pass
+
+
+@unique
+class ScrappingStatus(Enum):
+    SCRAPED = 0
+    NOT_SCRAPED = 1

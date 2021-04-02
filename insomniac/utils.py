@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 from colorama import Fore, Style, AnsiToWin32
 
 import insomniac.__version__ as __version__
+import insomniac.globals as globals
 
 random.seed()
 # Init colorama but set "wrap" to False to not replace sys.stdout with a proxy object. It's meaningless as
@@ -33,9 +34,6 @@ COLOR_BOLD = Style.BRIGHT
 
 ENGINE_LOGS_DIR_NAME = 'logs'
 UI_LOGS_DIR_NAME = 'ui-logs'
-
-is_ui_process = False
-execution_id = ''
 
 
 def get_instagram_version(device_id, app_id):
@@ -203,7 +201,7 @@ def print_copyright():
 
 def _print_with_time_decorator(standard_print, print_time, debug, ui_log):
     def wrapper(*args, **kwargs):
-        if is_ui_process and not ui_log:
+        if globals.is_ui_process and not ui_log:
             return
 
         if debug and not __version__.__debug_mode__:
@@ -322,7 +320,7 @@ def split_list_items_with_separator(original_list, separator):
 
 
 def _get_logs_dir_name():
-    if is_ui_process:
+    if globals.is_ui_process:
         return UI_LOGS_DIR_NAME
     return ENGINE_LOGS_DIR_NAME
 
@@ -330,7 +328,7 @@ def _get_logs_dir_name():
 def _get_log_file_name(logs_directory_name):
     os.makedirs(os.path.join(logs_directory_name), exist_ok=True)
     curr_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    log_name = f"insomniac_log-{curr_time}{'-'+execution_id if execution_id != '' else ''}.log"
+    log_name = f"insomniac_log-{curr_time}{'-'+globals.execution_id if globals.execution_id != '' else ''}.log"
     log_path = os.path.join(logs_directory_name, log_name)
     return log_path
 

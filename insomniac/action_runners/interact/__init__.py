@@ -1,6 +1,6 @@
 from insomniac.action_runners import *
-from insomniac.safely_runner import run_safely
 from insomniac.actions_types import TargetType
+from insomniac.safely_runner import run_safely
 from insomniac.utils import *
 
 
@@ -53,6 +53,10 @@ class InteractBySourceActionRunner(CoreActionsRunner):
             "default": [],
             "metavar": ('WOW!', 'What a picture!')
         },
+        "blacklist_profiles": {
+            "nargs": '+',
+            "help": 'list of profiles you wish to not interact with / scrape',
+        }
     }
 
     likes_count = '2'
@@ -259,6 +263,10 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
             "default": [],
             "metavar": ('WOW!', 'What a picture!')
         },
+        "blacklist_profiles": {
+            "nargs": '+',
+            "help": 'list of profiles you wish to not interact with / scrape',
+        }
     }
 
     likes_count = '2'
@@ -303,7 +311,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
         from insomniac.action_runners.interact.action_handle_target import handle_target
 
-        target_type, target, provider = storage.get_target()
+        target, target_type = storage.get_target()
         while target is not None:
             self.action_status = ActionStatus(ActionState.PRE_RUN)
 
@@ -315,7 +323,6 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
                 self.action_status.set(ActionState.RUNNING)
                 handle_target(device_wrapper.get(),
                               target,
-                              provider,
                               target_type,
                               session_state,
                               self.likes_count,
@@ -344,7 +351,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
             if self.action_status.get_limit() == ActionState.SESSION_LIMIT_REACHED:
                 break
 
-            target_type, target, provider = storage.get_target()
+            target, target_type = storage.get_target()
 
         if target is None:
             print("There are no more new targets to interact with in the database (all been already interacted / filtered).")

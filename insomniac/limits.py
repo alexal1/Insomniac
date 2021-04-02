@@ -314,7 +314,7 @@ class SourceInteractionsLimit(CoreLimit):
         if not type(action) == InteractAction:
             return False
 
-        successful_interactions_count = session_state.successfulInteractions.get(action.source)
+        successful_interactions_count = session_state.successfulInteractions.get(action.source_name)
 
         return successful_interactions_count and successful_interactions_count >= self.interactions_count
 
@@ -348,7 +348,7 @@ class SuccessfulInteractionsLimitPerSource(CoreLimit):
         if not type(action) == InteractAction:
             return False
 
-        successful_interactions_count = session_state.successfulInteractions.get(action.source)
+        successful_interactions_count = session_state.successfulInteractions.get(action.source_name)
 
         return successful_interactions_count and successful_interactions_count >= self.successful_interactions_limit_per_source
 
@@ -382,7 +382,7 @@ class InteractionsLimitPerSource(CoreLimit):
         if not type(action) == InteractAction:
             return False
 
-        interactions_count = session_state.totalInteractions.get(action.source)
+        interactions_count = session_state.totalInteractions.get(action.source_name)
 
         return interactions_count and interactions_count >= self.interactions_limit_per_source
 
@@ -419,7 +419,7 @@ class SourceFollowLimit(CoreLimit):
         if not type(action) == FollowAction:
             return False
 
-        followed_count = session_state.totalFollowed.get(action.source)
+        followed_count = session_state.totalFollowed.get(action.source_name)
         return followed_count is not None and followed_count >= self.follow_limit
 
     def reset(self):
@@ -453,7 +453,7 @@ class FollowLimitPerSource(CoreLimit):
         if not type(action) == FollowAction:
             return False
 
-        followed_count = session_state.totalFollowed.get(action.source)
+        followed_count = session_state.totalFollowed.get(action.source_name)
         return followed_count is not None and followed_count >= self.follow_limit_per_source
 
     def reset(self):

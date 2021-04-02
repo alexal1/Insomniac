@@ -2,7 +2,9 @@ from enum import Enum, unique
 from os import listdir
 from random import uniform
 from re import search
+from typing import Optional
 
+from insomniac.sleeper import sleeper
 from insomniac.utils import *
 
 # How long we're waiting until UI element appears (loading content + animation)
@@ -98,6 +100,7 @@ class DeviceFacade:
             succeed = hierarchy_before != hierarchy_after
             if not succeed:
                 print(COLOR_OKGREEN + "Pressed back but nothing changed on the screen. Will try again." + COLOR_ENDC)
+                sleeper.random_sleep()
             attempts += 1
 
     def _press_back(self):
@@ -373,7 +376,7 @@ class DeviceFacade:
                     raise DeviceFacade.JsonRpcError(e)
                 return DeviceFacade.View(is_old=False, view=view, device=self.device)
 
-        def right(self, *args, **kwargs):
+        def right(self, *args, **kwargs) -> Optional['DeviceFacade.View']:
             if self.viewV1 is not None:
                 import uiautomator
                 try:
@@ -634,6 +637,20 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     return self.viewV2.info["selected"]
+                except uiautomator2.JSONRPCError as e:
+                    raise DeviceFacade.JsonRpcError(e)
+
+        def is_enabled(self) -> bool:
+            if self.viewV1 is not None:
+                import uiautomator
+                try:
+                    self.viewV1.info["enabled"]
+                except uiautomator.JsonRPCError as e:
+                    raise DeviceFacade.JsonRpcError(e)
+            else:
+                import uiautomator2
+                try:
+                    return self.viewV2.info["enabled"]
                 except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 

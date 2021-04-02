@@ -1,26 +1,12 @@
-import json
-from datetime import timedelta
-from enum import Enum, unique
-
+from insomniac import db_models
 from insomniac.actions_types import TargetType
 from insomniac.database_engine import *
+from insomniac.db_models import get_ig_profile_by_profile_name, ProfileStatus
 from insomniac.utils import *
-
-FILENAME_INTERACTED_USERS = "interacted_users.json"  # deprecated
-FILENAME_SCRAPPED_USERS = "scrapped_users.json"  # deprecated
-FILENAME_FILTERED_USERS = "filtered_users.json"  # deprecated
-USER_LAST_INTERACTION = "last_interaction"
-USER_INTERACTIONS_COUNT = "interactions_count"
-USER_FILTERED_AT = "filtered_at"
-USER_FOLLOWING_STATUS = "following_status"
-USER_SCRAPPING_STATUS = "scrapping_status"
 
 FILENAME_WHITELIST = "whitelist.txt"
 FILENAME_BLACKLIST = "blacklist.txt"
 FILENAME_TARGETS = "targets.txt"
-FILENAME_LOADED_TARGETS = "targets_loaded.txt"
-FILENAME_INTERACTED_TARGETS = "targets_interacted.txt"
-FILENAME_FOLLOWERS = "followers.txt"
 
 
 STORAGE_ARGS = {
@@ -41,295 +27,246 @@ STORAGE_ARGS = {
                 "disabled by default (will check every time when needed)."
                 "It can be a number (e.g. 48) or a range (e.g. 50-80)",
         "metavar": "150"
-    },
-    "db_directory_path": {
-        "help": "when using this parameter the bot will use a database file located under "
-                "the provided directory. By default account directory is used to store the bot history",
-        'metavar': 'main-db-directory-name',
-        "default": None
     }
 }
 
 
+IS_USING_DATABASE = False
+
+
+def database_api(func):
+    def wrap(*args, **kwargs):
+        if IS_USING_DATABASE:
+            return func(*args, **kwargs)
+
+        return None
+    return wrap
+
+
 class Storage:
-    database = None
-    scrapping_databases = []
-    reinteract_after = None
-    refilter_after = None
+    profile = None
+    scrape_for_account_list = []
     recheck_follow_status_after = None
     whitelist = []
     blacklist = []
-    account_followers = {}
-    posts_urls_list = []
+    reinteract_after = None
+    refilter_after = None
+    profiles_targets_list_from_parameters = []
+    url_targets_list_from_parameters = []
 
     def _reset_state(self):
-        self.database = None
-        self.scrapping_databases = []
-        self.reinteract_after = None
-        self.refilter_after = None
+        global IS_USING_DATABASE
+        IS_USING_DATABASE = False
+        self.profile = None
+        self.scrape_for_account_list = []
         self.recheck_follow_status_after = None
         self.whitelist = []
         self.blacklist = []
-        self.account_followers = {}
-        self.posts_urls_list = []
+        self.reinteract_after = None
+        self.refilter_after = None
+        self.profiles_targets_list_from_parameters = []
+        self.url_targets_list_from_parameters = []
 
     def __init__(self, my_username, args):
+        db_models.init()
+
         self._reset_state()
 
         if my_username is None:
+            print(COLOR_FAIL + "No username, so the script won't read/write from the database" + COLOR_ENDC)
             return
 
-        self.my_username = my_username
+        global IS_USING_DATABASE
+        IS_USING_DATABASE = True
 
-        scrape_for_account = args.__dict__.get('scrape_for_account', None)
-        db_directory_base_path = args.__dict__.get('db_directory_path', None)
-
-        if db_directory_base_path is not None:
-            print(f"Using {db_directory_base_path} as base-path for databases-folders")
-        else:
-            db_directory_base_path = ''
-
-        self.db_directory = os.path.join(db_directory_base_path, my_username)
-
-        # Scrape
-        if scrape_for_account is not None:
-            scrapping_main_db_directory_name = args.__dict__.get('scrapping_main_db_directory_name', None)
-            if scrapping_main_db_directory_name is not None:
-                print(f"Using {scrapping_main_db_directory_name} as main directory for scrapping process & history")
-
-                scrape_db_path = os.path.join(db_directory_base_path, scrapping_main_db_directory_name)
-                if not os.path.exists(scrape_db_path):
-                    print(f"Couldn't find any directory named {scrapping_main_db_directory_name}, "
-                          f"the directory will be created with a db-file in it...")
-
-                self.db_directory = scrape_db_path
-
-        self.database = get_database(self.db_directory)
-
+        self.profile = get_ig_profile_by_profile_name(my_username)
+        scrape_for_account = args.__dict__.get('scrape_for_account', [])
+        self.scrape_for_account_list = scrape_for_account if isinstance(scrape_for_account, list) else [scrape_for_account]
         if args.reinteract_after is not None:
             self.reinteract_after = get_value(args.reinteract_after, "Re-interact after {} hours", 168)
-
         if args.refilter_after is not None:
             self.refilter_after = get_value(args.refilter_after, "Re-filter after {} hours", 168)
-
         if args.recheck_follow_status_after is not None:
             self.recheck_follow_status_after = get_value(args.recheck_follow_status_after, "Re-check follow status after {} hours", 168)
-
-        interact_targets = args.__dict__.get('interact_targets', None)
-        profiles_targets_list_from_parameters = args.__dict__.get('targets_list', None)
-        url_targets_list_from_parameters = args.__dict__.get('posts_urls_list', None)
-
-        if my_username is None:
-            print(COLOR_FAIL + "No username, thus the script won't get access to interacted users and sessions data" +
-                  COLOR_ENDC)
-            return
+        self.profiles_targets_list_from_parameters = args.__dict__.get('targets_list', [])
+        self.url_targets_list_from_parameters = args.__dict__.get('posts_urls_list', [])
+        whitelist_from_parameters = args.__dict__.get('whitelist_profiles', None)
+        blacklist_from_parameters = args.__dict__.get('blacklist_profiles', None)
 
         # Whitelist and Blacklist
-        whitelist_path = os.path.join(self.db_directory, FILENAME_WHITELIST)
-        if os.path.exists(whitelist_path):
-            with open(whitelist_path, encoding="utf-8") as file:
+        try:
+            with open(FILENAME_WHITELIST, encoding="utf-8") as file:
                 self.whitelist = [line.rstrip() for line in file]
-        blacklist_path = os.path.join(self.db_directory, FILENAME_BLACKLIST)
-        if os.path.exists(blacklist_path):
-            with open(blacklist_path, encoding="utf-8") as file:
+        except FileNotFoundError:
+            print_debug("No whitelist provided")
+
+        try:
+            with open(FILENAME_BLACKLIST, encoding="utf-8") as file:
                 self.blacklist = [line.rstrip() for line in file]
+        except FileNotFoundError:
+            print_debug("No blacklist provided")
 
-        # Read targets from targets.txt
-        targets_path = os.path.join(self.db_directory, FILENAME_TARGETS)
-        if os.path.exists(targets_path):
-            with open(targets_path, 'r+', encoding="utf-8") as file_targets:
-                targets = [line.rstrip() for line in file_targets]
-                # Add targets to the database
-                print("Loading targets from targets.txt into the database...")
-                add_targets(self.database, targets, Provider.TARGETS_LIST)
-                print("Targets loaded successfully.")
-                targets_loaded_path = os.path.join(self.db_directory, FILENAME_LOADED_TARGETS)
-                # Add targets to targets_loaded.txt
-                with open(targets_loaded_path, 'a+', encoding="utf-8") as file_loaded_targets:
-                    for target in targets:
-                        file_loaded_targets.write(f"{target}\n")
-                # Clear targets.txt
-                file_targets.truncate(0)
+        if whitelist_from_parameters is not None:
+            if isinstance(whitelist_from_parameters, list) and len(whitelist_from_parameters) > 0:
+                print("Loading whitelist from profiles_whitelist parameter...")
+                self.whitelist.extend(whitelist_from_parameters)
 
-        if profiles_targets_list_from_parameters is not None:
-            if isinstance(profiles_targets_list_from_parameters, list) and len(profiles_targets_list_from_parameters) > 0:
-                print("Loading targets from targets-list-parameter into the database...")
-                add_targets(self.database, profiles_targets_list_from_parameters, Provider.TARGETS_LIST)
-                print("Targets loaded successfully.")
+        if blacklist_from_parameters is not None:
+            if isinstance(blacklist_from_parameters, list) and len(blacklist_from_parameters) > 0:
+                print("Loading blacklist from profiles_blacklist parameter...")
+                self.blacklist.extend(blacklist_from_parameters)
 
-        if url_targets_list_from_parameters is not None:
-            if isinstance(url_targets_list_from_parameters, list) and len(url_targets_list_from_parameters) > 0:
-                print("Loading post-urls-targets from posts-urls-list-parameter...")
-                self.posts_urls_list = url_targets_list_from_parameters
-                print("URLs loaded successfully.")
+        # Print meta data
+        if len(self.profiles_targets_list_from_parameters) > 0 or len(self.url_targets_list_from_parameters) > 0:
+            count = len(self.profiles_targets_list_from_parameters) + len(self.url_targets_list_from_parameters)
+            print(f"Profiles and posts to interact from args: {count}")
+        count_from_file = self._count_targets_from_file()
+        if count_from_file > 0:
+            print(f"Profiles and posts to interact from targets file: {count_from_file}")
+        count_from_scrapping = self.profile.count_scrapped_profiles_for_interaction()
+        if count_from_scrapping > 0:
+            print(f"Profiles to interact from scrapping: {count_from_scrapping}")
 
-        if interact_targets is not None:
-            self._print_database_targets(self.db_directory, self.database)
+    @database_api
+    def start_session(self, app_id, app_version, args, followers_count, following_count):
+        session_id = self.profile.start_session(app_id, app_version, args, ProfileStatus.VALID,
+                                                followers_count, following_count)
+        return session_id
 
-        # Scraping
-        if scrape_for_account is not None:
-            if isinstance(scrape_for_account, list):
-                for acc in scrape_for_account:
-                    database = get_database(acc)
-                    self.scrapping_databases.append(database)
-                    self._print_database_targets(acc, database)
-            else:
-                database = get_database(scrape_for_account)
-                self.scrapping_databases = [database]
-                self._print_database_targets(scrape_for_account, database)
+    @database_api
+    def end_session(self, session_id):
+        self.profile.end_session(session_id)
 
-            # TODO: implement 'dump-followers' feature or remove these lines
-            # self.followers_path = os.path.join(scrape_for_account, FILENAME_FOLLOWERS)
-            # if os.path.exists(self.followers_path):
-            #     with open(self.followers_path, encoding="utf-8") as json_file:
-            #         self.account_followers = json.load(json_file)
-
-    @staticmethod
-    def _print_database_targets(username, database):
-        print(f"Counting available targets for @{username}...")
-        total_loaded_targets, not_interacted_targets = count_targets(database)
-        if total_loaded_targets is None:
-            print("Couldn't count targets...")
-        else:
-            print(f"Total targets loaded for {username}: {total_loaded_targets['scraped'] + total_loaded_targets['targets']} "
-                  f"({total_loaded_targets['targets']} from targets file, {total_loaded_targets['scraped']} from scrapping)")
-            print(f"Total non-interacted targets loaded for {username}: {not_interacted_targets['scraped'] + not_interacted_targets['targets']} "
-                  f"({not_interacted_targets['targets']} from targets file, {not_interacted_targets['scraped']} from scrapping)")
-
+    @database_api
     def check_user_was_interacted(self, username):
-        user = get_interacted_user(self.database, username)
-        if self.reinteract_after is None:
-            return user is not None and user[USER_INTERACTIONS_COUNT] > 0
+        return self.profile.is_interacted(username, hours=self.reinteract_after)
 
-        return self.check_user_was_interacted_recently(username, hours=self.reinteract_after)
+    @database_api
+    def check_user_was_interacted(self, username):
+        return self.profile.is_interacted(username, hours=72)
 
-    def check_user_was_interacted_recently(self, username, hours=72):
-        user = get_interacted_user(self.database, username)
-        if user is None or user[USER_INTERACTIONS_COUNT] == 0:
-            return False
-
-        last_interaction = datetime.strptime(user[USER_LAST_INTERACTION], '%Y-%m-%d %H:%M:%S.%f')
-        return datetime.now() - last_interaction <= timedelta(hours=hours)
-
+    @database_api
     def check_user_was_scrapped(self, username):
-        user = get_scraped_user(self.database, username)
-        return user is not None
+        return self.profile.is_scrapped(username, self.scrape_for_account_list)
 
+    @database_api
     def check_user_was_filtered(self, username):
-        user = get_filtered_user(self.database, username)
-        if self.refilter_after is None:
-            return user is not None
+        return self.profile.is_filtered(username, hours=self.refilter_after)
 
-        return self.check_user_was_filtered_recently(username, hours=self.refilter_after)
-
-    def check_user_was_filtered_recently(self, username, hours=72):
-        user = get_filtered_user(self.database, username)
-        if user is None:
-            return False
-
-        last_filtration = datetime.strptime(user[USER_FILTERED_AT], '%Y-%m-%d %H:%M:%S.%f')
-        return datetime.now() - last_filtration <= timedelta(hours=hours)
-
-    def check_user_is_myself(self, username):
-        return username == self.my_username
-
+    @database_api
     def get_following_status(self, username):
-        user = get_interacted_user(self.database, username)
-        return FollowingStatus.NONE if user is None else FollowingStatus[user[USER_FOLLOWING_STATUS].upper()]
+        if not self.profile.used_to_follow(username):
+            return FollowingStatus.NONE
+        return FollowingStatus.FOLLOWED if self.profile.do_i_follow(username) else FollowingStatus.UNFOLLOWED
 
+    @database_api
     def is_profile_follows_me_by_cache(self, username):
+        """
+        Return True if and only if "username" follows me and the last check was within
+        "recheck_follow_status_after" hours.
+        """
         if self.recheck_follow_status_after is None:
             return False
+        return self.profile.is_follow_me(username, hours=self.recheck_follow_status_after) is True
 
-        user_follow_status = get_user_follow_status(self.database, username)
-        if user_follow_status is None:
-            return False
-
-        if not user_follow_status['is_follow_me'] == "TRUE":
-            return False
-
-        last_check_time = datetime.strptime(user_follow_status['updated_at'], '%Y-%m-%d %H:%M:%S.%f')
-        return datetime.now() - last_check_time <= timedelta(hours=self.recheck_follow_status_after)
-
+    @database_api
     def update_follow_status(self, username, is_follow_me, do_i_follow_him):
-        update_user_follow_status(self.database, username, is_follow_me, do_i_follow_him, datetime.now())
+        self.profile.update_follow_status(username, is_follow_me, do_i_follow_him)
 
-    def add_interacted_user(self,
-                            username,
-                            last_interaction=None,
-                            followed=False,
-                            unfollowed=False,
-                            source=None,
-                            interaction_type=None,
-                            provider=Provider.UNKNOWN):
-        if last_interaction is None:
-            last_interaction = datetime.now()
-        following_status = FollowingStatus.NONE
-        if followed:
-            following_status = FollowingStatus.FOLLOWED
-        if unfollowed:
-            following_status = FollowingStatus.UNFOLLOWED
-        update_interacted_users(self.database,
-                                (username,),
-                                (last_interaction,),
-                                (following_status,),
-                                (source,),
-                                (interaction_type,),
-                                (provider,))
-        if provider == Provider.SCRAPING or provider == Provider.TARGETS_LIST:
-            target_provider = "scrapped" if provider == Provider.SCRAPING else "targets.txt"
-            targets_interacted_path = os.path.join(self.db_directory, FILENAME_INTERACTED_TARGETS)
-            # Add interacted target to targets_interacted.txt
-            with open(targets_interacted_path, 'a+', encoding="utf-8") as file_interacted_targets:
-                file_interacted_targets.write(f"{username} (source: {target_provider}) - {str(last_interaction)}\n")
+    @database_api
+    def log_get_profile_action(self, session_id, username):
+        self.profile.log_get_profile_action(session_id, username)
 
-    def add_scrapped_user(self, username, last_interaction=None, success=False):
-        if last_interaction is None:
-            last_interaction = datetime.now()
-        scraping_status = ScrappingStatus.SCRAPED if success else ScrappingStatus.NOT_SCRAPED
-        update_scraped_users(self.database, (username,), (last_interaction,), (scraping_status,))
+    @database_api
+    def log_like_action(self, session_id, username, source_type, source_name):
+        self.profile.log_like_action(session_id, username, source_type, source_name)
 
-    def add_filtered_user(self, username, filtered_at=None):
-        if filtered_at is None:
-            filtered_at = datetime.now()
-        update_filtered_users(self.database, (username,), (filtered_at,))
+    @database_api
+    def log_follow_action(self, session_id, username, source_type, source_name):
+        self.profile.log_follow_action(session_id, username, source_type, source_name)
 
-    def add_target(self, username, source, interaction_type):
-        """
-        Add a target to the scrapping_database (it's a database of original account for which we are scrapping).
-        """
-        for scrapping_database in self.scrapping_databases:
-            add_targets(scrapping_database, (username,), Provider.SCRAPING, source, interaction_type)
+    @database_api
+    def log_story_watch_action(self, session_id, username, source_type, source_name):
+        self.profile.log_story_watch_action(session_id, username, source_type, source_name)
+
+    @database_api
+    def log_comment_action(self, session_id, username, comment, source_type, source_name):
+        self.profile.log_comment_action(session_id, username, comment, source_type, source_name)
+
+    @database_api
+    def log_direct_message_action(self, session_id, username, message):
+        self.profile.log_direct_message_action(session_id, username, message)
+
+    @database_api
+    def log_unfollow_action(self, session_id, username):
+        self.profile.log_unfollow_action(session_id, username)
+
+    @database_api
+    def log_scrape_action(self, session_id, username, source_type, source_name):
+        self.profile.log_scrape_action(session_id, username, source_type, source_name)
+
+    @database_api
+    def log_filter_action(self, session_id, username):
+        self.profile.log_filter_action(session_id, username)
+
+    @database_api
+    def log_change_profile_info_action(self, session_id, profile_pic_url, name, description):
+        self.profile.log_change_profile_info_action(session_id, profile_pic_url, name, description)
+
+    @database_api
+    def publish_scrapped_account(self, username):
+        self.profile.publish_scrapped_account(username, self.scrape_for_account_list)
 
     def get_target(self):
         """
-        Read and remove a target from the targets table.
+        Get a target from args (users/posts) -> OR from targets file (users/posts) -> OR from scrapping (only users).
+        Picks only not yet interacted targets.
 
-        :return: a target or None if table is empty.
+        :returns: target and type
         """
-        if len(self.posts_urls_list) > 0:
-            target_type, target, provider = TargetType.URL, self.posts_urls_list.pop(0), Provider.TARGETS_LIST
-        else:
-            target_type = TargetType.USERNAME
-            target, provider = get_target(self.database, [self.is_user_in_blacklist,
-                                                          self.check_user_was_filtered,
-                                                          self.check_user_was_interacted,
-                                                          self.check_user_is_myself])
+        # From args
+        try:
+            return self.profiles_targets_list_from_parameters.pop(0), TargetType.USERNAME
+        except IndexError:
+            pass
 
-        return target_type, target, provider
+        try:
+            return self.url_targets_list_from_parameters.pop(0), TargetType.URL
+        except IndexError:
+            pass
 
-    def save_followers_for_today(self, followers_list, override=False):
-        # TODO: implement 'dump-followers' feature or remove this function
-        curr_day = str(datetime.date(datetime.now()))
-        if curr_day in self.account_followers:
-            if not override:
-                return
+        # From file
+        try:
+            with open(FILENAME_TARGETS, "r+", encoding="utf-8") as file:
+                lines = [line.rstrip() for line in file]
 
-        self.account_followers[curr_day] = followers_list
+                for i, line in enumerate(lines):
+                    # Skip comments
+                    if line.startswith("#"):
+                        continue
 
-        if self.followers_path is not None:
-            with open(self.followers_path, 'w', encoding="utf-8") as outfile:
-                json.dump(self.account_followers, outfile, indent=4, sort_keys=False)
+                    # Skip already interacted
+                    if "DONE" in line:
+                        continue
+
+                    data = line.strip()
+                    if data.startswith("https://"):
+                        target_type = TargetType.URL
+                    else:
+                        target_type = TargetType.USERNAME
+                    lines[i] += " - DONE"
+                    file.truncate(0)
+                    file.seek(0)
+                    file.write("\n".join(lines))
+                    return data, target_type
+        except FileNotFoundError:
+            pass
+
+        # From scrapping
+        scrapped_profile = self.profile.get_scrapped_profile_for_interaction()
+        if scrapped_profile is not None:
+            return scrapped_profile, TargetType.USERNAME
+        return None, None
 
     def is_user_in_whitelist(self, username):
         return username in self.whitelist
@@ -337,15 +274,29 @@ class Storage:
     def is_user_in_blacklist(self, username):
         return username in self.blacklist
 
+    def _count_targets_from_file(self):
+        count = 0
+        try:
+            with open(FILENAME_TARGETS, encoding="utf-8") as file:
+                lines = [line.rstrip() for line in file]
+
+                for i, line in enumerate(lines):
+                    # Skip comments
+                    if line.startswith("#"):
+                        continue
+
+                    # Skip already interacted
+                    if "DONE" in line:
+                        continue
+
+                    count += 1
+        except FileNotFoundError:
+            pass
+        return count
+
 
 @unique
 class FollowingStatus(Enum):
     NONE = 0
     FOLLOWED = 1
     UNFOLLOWED = 2
-
-
-@unique
-class ScrappingStatus(Enum):
-    SCRAPED = 0
-    NOT_SCRAPED = 1

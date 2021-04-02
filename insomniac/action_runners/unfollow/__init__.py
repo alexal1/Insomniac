@@ -29,6 +29,10 @@ class UnfollowActionRunner(CoreActionsRunner):
                     'default / latest / earliest. By default sorting by earliest',
             "metavar": 'latest',
             "default": 'earliest'
+        },
+        "whitelist_profiles": {
+            "nargs": '+',
+            "help": 'list of profiles you dont want to unfollow',
         }
     }
 

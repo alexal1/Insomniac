@@ -2,9 +2,8 @@ from functools import partial
 
 from insomniac.action_runners.actions_runners_manager import ActionState
 from insomniac.actions_impl import interact_with_user, InteractionStrategy
-from insomniac.actions_providers import Provider
 from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, StoryWatchAction, \
-    BloggerInteractionType, CommentAction
+    BloggerInteractionType, CommentAction, FilterAction, SourceType
 from insomniac.limits import process_limits
 from insomniac.report import print_short_report, print_interaction_types
 from insomniac.sleeper import sleeper
@@ -53,9 +52,11 @@ def handle_blogger(device,
                    is_passed_filters,
                    action_status):
     is_myself = username == session_state.my_username
+    source_type = f'{SourceType.BLOGGER.value}-{instructions.value}'
     interaction = partial(interact_with_user,
                           device=device,
                           user_source=username,
+                          source_type=source_type,
                           my_username=session_state.my_username,
                           on_action=on_action)
 
@@ -102,7 +103,7 @@ def handle_blogger(device,
         :return: whether we should continue interaction with other users after this one
         """
         is_interact_limit_reached, interact_reached_source_limit, interact_reached_session_limit = \
-            is_limit_reached(InteractAction(source=username, user=follower_name, succeed=True), session_state)
+            is_limit_reached(InteractAction(source_name=username, source_type=source_type, user=follower_name, succeed=True), session_state)
 
         if not process_limits(is_interact_limit_reached, interact_reached_session_limit,
                               interact_reached_source_limit, action_status, "Interaction"):
@@ -121,7 +122,7 @@ def handle_blogger(device,
             should_continue, is_all_filters_satisfied = is_passed_filters(device, follower_name, reset=True,
                                                                           filters_tags=['BEFORE_PROFILE_CLICK'])
             if not should_continue:
-                storage.add_filtered_user(follower_name)
+                on_action(FilterAction(user=follower_name))
                 return True
 
             if not is_all_filters_satisfied:
@@ -145,33 +146,30 @@ def handle_blogger(device,
             if not is_all_filters_satisfied:
                 should_continue, _ = is_passed_filters(device, follower_name, reset=False)
                 if not should_continue:
-                    storage.add_filtered_user(follower_name)
+                    on_action(FilterAction(user=follower_name))
                     # Continue to next follower
                     print("Back to profiles list")
                     device.back()
                     return True
 
         is_like_limit_reached, like_reached_source_limit, like_reached_session_limit = \
-            is_limit_reached(LikeAction(source=username, user=follower_name), session_state)
+            is_limit_reached(LikeAction(source_name=username, source_type=source_type, user=follower_name), session_state)
 
         is_follow_limit_reached, follow_reached_source_limit, follow_reached_session_limit = \
-            is_limit_reached(FollowAction(source=username, user=follower_name), session_state)
+            is_limit_reached(FollowAction(source_name=username, source_type=source_type, user=follower_name), session_state)
 
         is_watch_limit_reached, watch_reached_source_limit, watch_reached_session_limit = \
-            is_limit_reached(StoryWatchAction(user=follower_name), session_state)
+            is_limit_reached(StoryWatchAction(source_name=username, source_type=source_type,user=follower_name), session_state)
 
         is_comment_limit_reached, comment_reached_source_limit, comment_reached_session_limit = \
-            is_limit_reached(CommentAction(source=username, user=follower_name, comment=""), session_state)
+            is_limit_reached(CommentAction(source_name=username, source_type=source_type, user=follower_name, comment=""), session_state)
 
         is_private = follower_profile_view.is_private_account()
         if is_private:
             if is_passed_filters is None:
                 print(COLOR_OKGREEN + "@" + follower_name + " has private account, won't interact." + COLOR_ENDC)
-                storage.add_interacted_user(follower_name,
-                                            source=f"@{username}",
-                                            interaction_type=instructions.value,
-                                            provider=Provider.INTERACTION)
-                on_action(InteractAction(source=username, user=follower_name, succeed=False))
+                on_action(FilterAction(user=follower_name))
+                on_action(InteractAction(source_name=username, source_type=source_type, user=follower_name, succeed=False))
                 print("Back to profiles list")
                 device.back()
                 return True
@@ -197,12 +195,7 @@ def handle_blogger(device,
 
         if not can_interact:
             print("@" + follower_name + ": Cant be interacted (due to limits / already followed). Skip.")
-            storage.add_interacted_user(follower_name,
-                                        followed=False,
-                                        source=f"@{username}",
-                                        interaction_type=instructions.value,
-                                        provider=Provider.INTERACTION)
-            on_action(InteractAction(source=username, user=follower_name, succeed=False))
+            on_action(InteractAction(source_name=username, source_type=source_type, user=follower_name, succeed=False))
         else:
             print_interaction_types(follower_name, can_like, can_follow, can_watch, can_comment)
             interaction_strategy = InteractionStrategy(do_like=can_like,
@@ -218,20 +211,10 @@ def handle_blogger(device,
 
             is_liked, is_followed, is_watch, is_commented = interaction(username=follower_name, interaction_strategy=interaction_strategy)
             if is_liked or is_followed or is_watch or is_commented:
-                storage.add_interacted_user(follower_name,
-                                            followed=is_followed,
-                                            source=f"@{username}",
-                                            interaction_type=instructions.value,
-                                            provider=Provider.INTERACTION)
-                on_action(InteractAction(source=username, user=follower_name, succeed=True))
-                print_short_report(username, session_state)
+                on_action(InteractAction(source_name=username, source_type=source_type, user=follower_name, succeed=True))
+                print_short_report(f"@{username}", session_state)
             else:
-                storage.add_interacted_user(follower_name,
-                                            followed=False,
-                                            source=f"@{username}",
-                                            interaction_type=instructions.value,
-                                            provider=Provider.INTERACTION)
-                on_action(InteractAction(source=username, user=follower_name, succeed=False))
+                on_action(InteractAction(source_name=username, source_type=source_type, user=follower_name, succeed=False))
 
         can_continue = True
 

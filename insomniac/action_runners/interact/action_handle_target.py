@@ -3,7 +3,7 @@ from functools import partial
 from insomniac.action_runners.actions_runners_manager import ActionState
 from insomniac.actions_impl import interact_with_user, InteractionStrategy, is_private_account, open_user, do_have_story
 from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, StoryWatchAction, \
-    CommentAction, TargetType
+    CommentAction, TargetType, FilterAction
 from insomniac.limits import process_limits
 from insomniac.report import print_short_report, print_interaction_types
 from insomniac.sleeper import sleeper
@@ -16,7 +16,6 @@ is_all_filters_satisfied = False
 
 def handle_target(device,
                   target,
-                  provider,
                   target_type,
                   session_state,
                   likes_count,
@@ -30,9 +29,11 @@ def handle_target(device,
                   is_limit_reached,
                   is_passed_filters,
                   action_status):
+    source_type = None  # Must be None, so targeted-actions wont record any action-source on the database
     interaction = partial(interact_with_user,
                           device=device,
                           user_source=target,
+                          source_type=source_type,
                           my_username=session_state.my_username,
                           on_action=on_action)
 
@@ -42,7 +43,7 @@ def handle_target(device,
             should_continue, is_all_filters_satisfied = is_passed_filters(device, target_name, reset=True,
                                                                           filters_tags=['BEFORE_PROFILE_CLICK'])
             if not should_continue:
-                storage.add_filtered_user(target_name)
+                on_action(FilterAction(user=target_name))
                 return False
 
             if not is_all_filters_satisfied:
@@ -52,7 +53,7 @@ def handle_target(device,
 
     def interact_with_username_target(target_name, target_name_view):
         is_interact_limit_reached, interact_reached_source_limit, interact_reached_session_limit = \
-            is_limit_reached(InteractAction(source=target_name, user=target_name, succeed=True), session_state)
+            is_limit_reached(InteractAction(source_name=target, source_type=source_type, user=target_name, succeed=True), session_state)
 
         if not process_limits(is_interact_limit_reached, interact_reached_session_limit,
                               interact_reached_source_limit, action_status, "Interaction"):
@@ -71,28 +72,27 @@ def handle_target(device,
             if not is_all_filters_satisfied:
                 should_continue, _ = is_passed_filters(device, target_name, reset=False)
                 if not should_continue:
-                    storage.add_filtered_user(target_name)
+                    on_action(FilterAction(user=target_name))
                     print("Moving to next target")
                     return
 
         is_like_limit_reached, like_reached_source_limit, like_reached_session_limit = \
-            is_limit_reached(LikeAction(source=target_name, user=target_name), session_state)
+            is_limit_reached(LikeAction(source_name=target, source_type=source_type, user=target_name), session_state)
 
         is_follow_limit_reached, follow_reached_source_limit, follow_reached_session_limit = \
-            is_limit_reached(FollowAction(source=target_name, user=target_name), session_state)
+            is_limit_reached(FollowAction(source_name=target, source_type=source_type, user=target_name), session_state)
 
         is_watch_limit_reached, watch_reached_source_limit, watch_reached_session_limit = \
-            is_limit_reached(StoryWatchAction(user=target_name), session_state)
+            is_limit_reached(StoryWatchAction(source_name=target, source_type=source_type, user=target_name), session_state)
 
         is_comment_limit_reached, comment_reached_source_limit, comment_reached_session_limit = \
-            is_limit_reached(CommentAction(source=target_name, user=target_name, comment=""), session_state)
+            is_limit_reached(CommentAction(source_name=target, source_type=source_type, user=target_name, comment=""), session_state)
 
         is_private = is_private_account(device)
         if is_private:
             if is_passed_filters is None:
                 print(COLOR_OKGREEN + "@" + target_name + " has private account, won't interact." + COLOR_ENDC)
-                storage.add_interacted_user(target_name, provider=provider)
-                on_action(InteractAction(source=target_name, user=target_name, succeed=False))
+                on_action(InteractAction(source_name=target, source_type=source_type, user=target_name, succeed=False))
                 print("Moving to next target")
                 return
             print("@" + target_name + ": Private account - images wont be liked.")
@@ -117,8 +117,7 @@ def handle_target(device,
 
         if not can_interact:
             print("@" + target_name + ": Cant be interacted (due to limits / already followed). Skip.")
-            storage.add_interacted_user(target_name, followed=False, provider=provider)
-            on_action(InteractAction(source=target_name, user=target_name, succeed=False))
+            on_action(InteractAction(source_name=target, source_type=source_type, user=target_name, succeed=False))
         else:
             print_interaction_types(target_name, can_like, can_follow, can_watch, can_comment)
             interaction_strategy = InteractionStrategy(do_like=can_like,
@@ -134,12 +133,10 @@ def handle_target(device,
 
             is_liked, is_followed, is_watch, is_commented = interaction(username=target_name, interaction_strategy=interaction_strategy)
             if is_liked or is_followed or is_watch or is_commented:
-                storage.add_interacted_user(target_name, followed=is_followed, provider=provider)
-                on_action(InteractAction(source=target_name, user=target_name, succeed=True))
+                on_action(InteractAction(source_name=target, source_type=source_type, user=target_name, succeed=True))
                 print_short_report(target_name, session_state)
             else:
-                storage.add_interacted_user(target_name, followed=False, provider=provider)
-                on_action(InteractAction(source=target_name, user=target_name, succeed=False))
+                on_action(InteractAction(source_name=target, source_type=source_type, user=target_name, succeed=False))
 
         if ((is_like_limit_reached and is_likes_enabled) or not is_likes_enabled) and \
            ((is_follow_limit_reached and is_follow_enabled) or not is_follow_enabled) and \
@@ -160,7 +157,7 @@ def handle_target(device,
 
     def interact_with_post_id_target(target_post, target_username, target_name_view):
         is_interact_limit_reached, interact_reached_source_limit, interact_reached_session_limit = \
-            is_limit_reached(InteractAction(source=target_post, user=target_username, succeed=True), session_state)
+            is_limit_reached(InteractAction(source_name=target_username, source_type=source_type, user=target_username, succeed=True), session_state)
 
         if not process_limits(is_interact_limit_reached, interact_reached_session_limit,
                               interact_reached_source_limit, action_status, "Interaction"):
@@ -169,26 +166,26 @@ def handle_target(device,
         print(f"@{target_username} - {target_post}: interact")
 
         is_like_limit_reached, like_reached_source_limit, like_reached_session_limit = \
-            is_limit_reached(LikeAction(source=target_post, user=target_username), session_state)
+            is_limit_reached(LikeAction(source_name=target_username, source_type=source_type, user=target_username), session_state)
 
         can_like = not is_like_limit_reached
         can_interact = can_like
 
         if not can_interact:
             print(f"@{target_username} - {target_post}: Cant be interacted (due to limits / already interacted). Skip.")
-            on_action(InteractAction(source=target_post, user=target_username, succeed=False))
+            on_action(InteractAction(source_name=target_username, source_type=source_type, user=target_username, succeed=False))
         else:
             print_interaction_types(f"{target_username} - {target_post}", can_like, False, False, False)
 
             is_liked = opened_post_view.like_post()
 
             if is_liked:
-                print(COLOR_OKGREEN + "@{target_username} - {target_post} - photo been liked." + COLOR_ENDC)
-                on_action(LikeAction(source=target_post, user=target_username))
-                on_action(InteractAction(source=target_post, user=target_username, succeed=True))
-                print_short_report(target_post, session_state)
+                print(COLOR_OKGREEN + f"@{target_username} - {target_post} - photo been liked." + COLOR_ENDC)
+                on_action(LikeAction(source_name=target_username, source_type=source_type, user=target_username))
+                on_action(InteractAction(source_name=target_username, source_type=source_type, user=target_username, succeed=True))
+                print_short_report(f"@{target_username} - {target_post}", session_state)
             else:
-                on_action(InteractAction(source=target_post, user=target_username, succeed=False))
+                on_action(InteractAction(source_name=target_username, source_type=source_type, user=target_username, succeed=False))
 
         if is_like_limit_reached:
             # If one of the limits reached for source-limit, move to next source
@@ -214,7 +211,7 @@ def handle_target(device,
                 interact_with_username_target(target, None)
             else:
                 print("@" + target + " profile couldn't be opened. Skip.")
-                storage.add_interacted_user(target, followed=False, provider=provider)
+                on_action(InteractAction(source_name=target, source_type=source_type, user=target, succeed=False))
     else:
         url = target.strip()
         if validate_url(url) and "instagram.com/p/" in url:

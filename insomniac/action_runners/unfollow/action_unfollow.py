@@ -82,7 +82,6 @@ def unfollow(device, on_action, storage, unfollow_restriction, sort_order, sessi
                                  following_name_view, follow_status_button_view, on_action)
 
         if unfollowed:
-            storage.add_interacted_user(following_name, unfollowed=True)
             on_action(UnfollowAction(user=following_name))
             print(COLOR_OKGREEN + f"Unfollowed @{following_name}" + COLOR_ENDC)
             print_short_unfollow_report(session_state)
