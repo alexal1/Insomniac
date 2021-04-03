@@ -202,7 +202,7 @@ class DatabaseTests(unittest.TestCase):
             assert username == username4
 
             print(COLOR_BOLD + "Real: check account is excluded after story-watch-interaction" + COLOR_ENDC)
-            profile.log_comment_action(session_id, username4, "Wow!", SourceType.BLOGGER.name, "some_blogger")
+            profile.log_story_watch_action(session_id, username4, SourceType.BLOGGER.name, "some_blogger")
             username = profile.get_scrapped_profile_for_interaction()
             assert username == username5
 
@@ -253,6 +253,21 @@ class DatabaseTests(unittest.TestCase):
 
         def job_real(profile, _):
             print(COLOR_BOLD + "Real: check account is accepted if scraped again but for real account" + COLOR_ENDC)
+            username = profile.get_scrapped_profile_for_interaction()
+            assert username == username7
+        self._run_inside_session(real_account_username, job_real)
+
+        def job_real(profile, session_id):
+            print(f"Real: interact with {username7} from another account")
+            profile.log_get_profile_action(session_id, username7)
+            profile.log_like_action(session_id, username7, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_follow_action(session_id, username7, SourceType.HASHTAG.name, "some_hashtag")
+            profile.log_story_watch_action(session_id, username7, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_comment_action(session_id, username7, "Wow!", SourceType.PLACE.name, "some_place")
+        self._run_inside_session("some_another_account", job_real)
+
+        def job_real(profile, _):
+            print(COLOR_BOLD + "Real: check account is still accepted after interacted by another account" + COLOR_ENDC)
             username = profile.get_scrapped_profile_for_interaction()
             assert username == username7
         self._run_inside_session(real_account_username, job_real)

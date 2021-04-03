@@ -562,7 +562,7 @@ def _watch_stories(device, source_name, source_type, username, stories_value, on
         return False
 
     def story_sleep():
-        delay = uniform(0, 3)
+        delay = uniform(1, 5)
         print(f"Sleep for {delay:.2f} seconds")
         sleep(delay)
 
@@ -577,12 +577,13 @@ def _watch_stories(device, source_name, source_type, username, stories_value, on
 
             profile_picture.click()  # Open the first story
             on_action(StoryWatchAction(source_name=source_name, source_type=source_type, user=username))
-            story_sleep()
+            sleeper.random_sleep()
 
             for i in range(1, stories_value):
+                print("Watching a story...")
+                story_sleep()
                 if _skip_story(device):
-                    print("Watching next story...")
-                    story_sleep()
+                    print("Go next")
                 else:
                     print(COLOR_OKGREEN + "Watched all stories" + COLOR_ENDC)
                     break

@@ -373,52 +373,51 @@ class InstagramProfile(InsomniacModel):
                     return False
             return True
 
+    def count_scrapped_profiles_for_interaction(self):
+        with db.connection_context():
+            return len(self._get_scrapped_profiles_query())
+
     def get_scrapped_profile_for_interaction(self) -> Optional[str]:
         """
         Use this function when you are interacting with targets, and you are looking for the next scrapped target
         """
         with db.connection_context():
-            scrapped_profiles = ScrappedProfile.select(ScrappedProfile.name) \
-                .where(ScrappedProfile.target_actor_profile == self) \
-                .join(GetProfileAction, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == GetProfileAction.target_user)) \
-                .switch(ScrappedProfile) \
-                .join(LikeAction, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == LikeAction.target_user)) \
-                .switch(ScrappedProfile) \
-                .join(FollowAction, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == FollowAction.target_user)) \
-                .switch(ScrappedProfile) \
-                .join(StoryWatchAction, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == StoryWatchAction.target_user)) \
-                .switch(ScrappedProfile) \
-                .join(CommentAction, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == CommentAction.target_user)) \
-                .where(
-                    GetProfileAction.target_user.is_null()
-                    & LikeAction.target_user.is_null()
-                    & FollowAction.target_user.is_null()
-                    & StoryWatchAction.target_user.is_null()
-                    & CommentAction.target_user.is_null()
-                ) \
+            scrapped_profiles = self._get_scrapped_profiles_query() \
                 .order_by(ScrappedProfile.timestamp.desc()) \
                 .limit(1)
-
             return scrapped_profiles[0].name if len(scrapped_profiles) > 0 else None
 
-    def count_scrapped_profiles_for_interaction(self):
-        with db.connection_context():
-            return len(ScrappedProfile.select(ScrappedProfile.name)
-                       .where(ScrappedProfile.target_actor_profile == self)
-                       .join(GetProfileAction, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == GetProfileAction.target_user))
-                       .switch(ScrappedProfile)
-                       .join(LikeAction, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == LikeAction.target_user))
-                       .switch(ScrappedProfile)
-                       .join(FollowAction, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == FollowAction.target_user))
-                       .switch(ScrappedProfile)
-                       .join(StoryWatchAction, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == StoryWatchAction.target_user))
-                       .switch(ScrappedProfile)
-                       .join(CommentAction, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == CommentAction.target_user))
-                       .where(GetProfileAction.target_user.is_null()
-                              & LikeAction.target_user.is_null()
-                              & FollowAction.target_user.is_null()
-                              & StoryWatchAction.target_user.is_null()
-                              & CommentAction.target_user.is_null()))
+    def _get_scrapped_profiles_query(self):
+        def get_profiles_reached_by_action(action):
+            return (action
+                    .select(action.target_user)
+                    .join(InsomniacAction)
+                    .where(InsomniacAction.actor_profile == self))
+
+        profiles_reached_by_get_profile = get_profiles_reached_by_action(GetProfileAction)
+        profiles_reached_by_like = get_profiles_reached_by_action(LikeAction)
+        profiles_reached_by_follow = get_profiles_reached_by_action(FollowAction)
+        profiles_reached_by_story_watch = get_profiles_reached_by_action(StoryWatchAction)
+        profiles_reached_by_comment = get_profiles_reached_by_action(CommentAction)
+
+        return (ScrappedProfile.select(ScrappedProfile.name)
+                .where(ScrappedProfile.target_actor_profile == self)
+                .join(profiles_reached_by_get_profile, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == profiles_reached_by_get_profile.c.target_user))
+                .switch(ScrappedProfile)
+                .join(profiles_reached_by_like, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == profiles_reached_by_like.c.target_user))
+                .switch(ScrappedProfile)
+                .join(profiles_reached_by_follow, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == profiles_reached_by_follow.c.target_user))
+                .switch(ScrappedProfile)
+                .join(profiles_reached_by_story_watch, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == profiles_reached_by_story_watch.c.target_user))
+                .switch(ScrappedProfile)
+                .join(profiles_reached_by_comment, join_type=JOIN.LEFT_OUTER, on=(ScrappedProfile.name == profiles_reached_by_comment.c.target_user))
+                .where(
+                    profiles_reached_by_get_profile.c.target_user.is_null()
+                    & profiles_reached_by_like.c.target_user.is_null()
+                    & profiles_reached_by_follow.c.target_user.is_null()
+                    & profiles_reached_by_story_watch.c.target_user.is_null()
+                    & profiles_reached_by_comment.c.target_user.is_null()
+                ))
 
 
 class InstagramProfileInfo(InsomniacModel):

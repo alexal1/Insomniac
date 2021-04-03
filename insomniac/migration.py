@@ -164,13 +164,13 @@ def migrate_from_sql_to_peewee(my_username):
     print(f"[Migration] Migrating sessions to the {DATABASE_NAME}...")
     for session in get_all_sessions(database):
         my_profile.add_session(None,
-                               session["app_version"],
-                               session["args"],
+                               session["app_version"] or "",
+                               session["args"] or "",
                                ProfileStatus.VALID,
-                               session["followers"],
-                               session["following"],
-                               datetime.strptime(session["start_time"], '%Y-%m-%d %H:%M:%S.%f'),
-                               datetime.strptime(session["finish_time"], '%Y-%m-%d %H:%M:%S.%f'))
+                               session["followers"] or -1,
+                               session["following"] or -1,
+                               datetime.strptime(session["start_time"] or datetime.now(), '%Y-%m-%d %H:%M:%S.%f'),
+                               datetime.strptime(session["finish_time"] or datetime.now(), '%Y-%m-%d %H:%M:%S.%f'))
 
     session_id = my_profile.start_session(None, "Unknown app version: migration", "Unknown args: migration", ProfileStatus.VALID, -1, -1)
     print(f"[Migration] Migrating interacted users to the {DATABASE_NAME}...")
