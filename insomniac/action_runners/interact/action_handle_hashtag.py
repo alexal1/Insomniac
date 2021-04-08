@@ -242,7 +242,8 @@ def extract_hashtag_profiles_and_interact(device,
         else:
             print("Can't Find recent tab. Interacting with Popular.")
 
-        sleeper.random_sleep()
+    # Sleep longer because posts loading takes time
+    sleeper.random_sleep(multiplier=2.0)
 
     # Open post
     posts_view_list = PostsGridView(device).open_random_post()

@@ -351,7 +351,6 @@ class SearchView(InstagramView):
         search_edit_text = self._get_search_edit_text()
         search_edit_text.click()
         self._handle_permission_request()
-        sleeper.random_sleep()
 
         accounts_tab = self._get_tab_text_view(SearchTabs.ACCOUNTS)
         if not accounts_tab.exists():
@@ -365,7 +364,7 @@ class SearchView(InstagramView):
 
         # Check if username already exists in the recent search list -> act as human
         username_view_recent = self._get_username_row(username)
-        if username_view_recent.exists():
+        if username_view_recent.exists(quick=True):
             username_view_recent.click()
             on_action(GetProfileAction(user=username))
             return ProfileView(self.device, is_own_profile=False)
@@ -389,7 +388,6 @@ class SearchView(InstagramView):
         search_edit_text = self._get_search_edit_text()
         search_edit_text.click()
         self._handle_permission_request()
-        sleeper.random_sleep()
 
         hashtag_tab = self._get_tab_text_view(SearchTabs.TAGS)
         if not hashtag_tab.exists():
@@ -403,7 +401,7 @@ class SearchView(InstagramView):
 
         # Check if hashtag already exists in the recent search list -> act as human
         hashtag_view_recent = self._get_hashtag_row(hashtag)
-        if hashtag_view_recent.exists():
+        if hashtag_view_recent.exists(quick=True):
             hashtag_view_recent.click()
             sleeper.random_sleep()
             return HashTagView(self.device)
@@ -425,7 +423,6 @@ class SearchView(InstagramView):
         search_edit_text = self._get_search_edit_text()
         search_edit_text.click()
         self._handle_permission_request()
-        sleeper.random_sleep()
 
         places_tab = self._get_tab_text_view(SearchTabs.PLACES)
         if not places_tab.exists():
@@ -439,7 +436,7 @@ class SearchView(InstagramView):
 
         # Check if place already exists in the recent search list -> act as human
         place_view_recent = self._get_place_row(place)
-        if place_view_recent.exists():
+        if place_view_recent.exists(quick=True):
             place_view_recent.click()
             sleeper.random_sleep()
             return PlacesView(self.device)
@@ -463,7 +460,7 @@ class SearchView(InstagramView):
                                              className="android.widget.Button")
         checkbox = dialog_container.child(resourceId="com.android.packageinstaller:id/do_not_ask_checkbox",
                                           className="android.widget.CheckBox")
-        if dialog_container.exists():
+        if dialog_container.exists(quick=True):
             print("Deny Instagram permission request")
             checkbox.click(ignore_if_missing=True)
             deny_button.click(ignore_if_missing=True)
@@ -858,7 +855,7 @@ class PostsGridView(InstagramView):
             coords = (left + (right - left) / 2, top + (bottom - top) / 2)
             available_posts_coords.append(coords)
         if len(available_posts_coords) == 0:
-            print(COLOR_FAIL + f"No posts for this hashtag. Abort." + COLOR_ENDC)
+            print(COLOR_FAIL + f"No posts here. Abort." + COLOR_ENDC)
             return None
 
         # Pick random post from available ones

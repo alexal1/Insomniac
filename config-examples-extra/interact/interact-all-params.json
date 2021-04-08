@@ -60,6 +60,12 @@
     "description" : "if you have configured multiple Instagram accounts in your app, use this parameter in order to switch into a specific one. Not trying to switch account by default. If the account does not exist - the session wont started"
   },
   {
+    "parameter-name": "airplane_mode_on_off",
+    "enabled": false,
+    "value": "True",
+    "description" : "after each session switch Airplane mode on and off in order to change a local IP address"
+  },
+  {
     "parameter-name": "pre_session_script",
     "enabled": false,
     "value": "/path/to/script.bat or sh",

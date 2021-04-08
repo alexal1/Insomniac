@@ -211,7 +211,7 @@ def handle_target(device,
                 interact_with_username_target(target, None)
             else:
                 print("@" + target + " profile couldn't be opened. Skip.")
-                on_action(InteractAction(source_name=target, source_type=source_type, user=target, succeed=False))
+                on_action(FilterAction(user=target))
     else:
         url = target.strip()
         if validate_url(url) and "instagram.com/p/" in url:

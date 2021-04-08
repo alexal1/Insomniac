@@ -48,12 +48,6 @@
     "description" : "disable \"typing\" feature (typing symbols one-by-one as a human)"
   },
   {
-    "parameter-name": "db_directory_path",
-    "enabled": false,
-    "value": "main-db-directory-name",
-    "description" : "when using this parameter the bot will use a database file located under the provided directory. By default account directory is used to store the bot history"
-  },
-  {
     "parameter-name": "next_config_file",
     "enabled": false,
     "value": "2.json",
@@ -64,6 +58,12 @@
     "enabled": false,
     "value": "my_username",
     "description" : "if you have configured multiple Instagram accounts in your app, use this parameter in order to switch into a specific one. Not trying to switch account by default. If the account does not exist - the session wont started"
+  },
+  {
+    "parameter-name": "airplane_mode_on_off",
+    "enabled": false,
+    "value": "True",
+    "description" : "after each session switch Airplane mode on and off in order to change a local IP address"
   },
   {
     "parameter-name": "pre_session_script",

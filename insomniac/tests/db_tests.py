@@ -154,6 +154,7 @@ class DatabaseTests(unittest.TestCase):
         username5 = "username5"
         username6 = "username6"
         username7 = "username7"
+        username8 = "username8"
 
         def job_scraper(profile, _):
             print(COLOR_BOLD + "Scraper: check accounts are not scraped by default" + COLOR_ENDC)
@@ -167,6 +168,7 @@ class DatabaseTests(unittest.TestCase):
             profile.publish_scrapped_account(username4, [real_account_username])
             profile.publish_scrapped_account(username5, [real_account_username])
             profile.publish_scrapped_account(username6, [real_account_username])
+            profile.publish_scrapped_account(username7, [real_account_username])
 
             print(COLOR_BOLD + f"Scraper: check {username1} counts as scrapped" + COLOR_ENDC)
             assert profile.is_scrapped(username1, [real_account_username]) is True
@@ -176,7 +178,7 @@ class DatabaseTests(unittest.TestCase):
 
         def job_real(profile, session_id):
             print(COLOR_BOLD + "Real: check scraped accounts count is correct BEFORE interaction" + COLOR_ENDC)
-            assert profile.count_scrapped_profiles_for_interaction() == 6
+            assert profile.count_scrapped_profiles_for_interaction() == 7
 
             print(COLOR_BOLD + "Real: check order is FIFO" + COLOR_ENDC)
             username = profile.get_scrapped_profile_for_interaction()
@@ -211,14 +213,19 @@ class DatabaseTests(unittest.TestCase):
             username = profile.get_scrapped_profile_for_interaction()
             assert username == username6
 
-            print(COLOR_BOLD + "Real: check account is NOT excluded after unfollow / filter actions" + COLOR_ENDC)
-            profile.log_unfollow_action(session_id, username4)
-            profile.log_filter_action(session_id, username4)
+            print(COLOR_BOLD + "Real: check account is excluded after being filtered" + COLOR_ENDC)
+            profile.log_filter_action(session_id, username6)
             username = profile.get_scrapped_profile_for_interaction()
-            assert username == username6
+            assert username == username7
 
-            profile.log_like_action(session_id, username6, SourceType.BLOGGER.name, "some_blogger")
-            profile.log_like_action(session_id, username6, SourceType.BLOGGER.name, "some_blogger")  # double action check
+            print(COLOR_BOLD + "Real: check account is NOT excluded after unfollow / change profile info actions" + COLOR_ENDC)
+            profile.log_unfollow_action(session_id, username4)
+            profile.log_change_profile_info_action(session_id, "some_url", "some_name", "some_description")
+            username = profile.get_scrapped_profile_for_interaction()
+            assert username == username7
+
+            profile.log_like_action(session_id, username7, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_like_action(session_id, username7, SourceType.BLOGGER.name, "some_blogger")  # double action check
 
             print(COLOR_BOLD + "Real: check scraped accounts count is correct AFTER interaction" + COLOR_ENDC)
             assert profile.count_scrapped_profiles_for_interaction() == 0
@@ -237,7 +244,7 @@ class DatabaseTests(unittest.TestCase):
 
         def job_scraper(profile, _):
             print("Scraper: publishing scrapped accounts")
-            profile.publish_scrapped_account(username7, ["some_another_account"])
+            profile.publish_scrapped_account(username8, ["some_another_account"])
         self._run_inside_session(scraper_account_username, job_scraper)
 
         def job_real(profile, _):
@@ -248,28 +255,28 @@ class DatabaseTests(unittest.TestCase):
 
         def job_scraper(profile, _):
             print("Scraper: publishing scrapped accounts")
-            profile.publish_scrapped_account(username7, [real_account_username, "some_another_account"])
+            profile.publish_scrapped_account(username8, [real_account_username, "some_another_account"])
         self._run_inside_session(scraper_account_username, job_scraper)
 
         def job_real(profile, _):
             print(COLOR_BOLD + "Real: check account is accepted if scraped again but for real account" + COLOR_ENDC)
             username = profile.get_scrapped_profile_for_interaction()
-            assert username == username7
+            assert username == username8
         self._run_inside_session(real_account_username, job_real)
 
         def job_real(profile, session_id):
-            print(f"Real: interact with {username7} from another account")
-            profile.log_get_profile_action(session_id, username7)
-            profile.log_like_action(session_id, username7, SourceType.BLOGGER.name, "some_blogger")
-            profile.log_follow_action(session_id, username7, SourceType.HASHTAG.name, "some_hashtag")
-            profile.log_story_watch_action(session_id, username7, SourceType.BLOGGER.name, "some_blogger")
-            profile.log_comment_action(session_id, username7, "Wow!", SourceType.PLACE.name, "some_place")
+            print(f"Real: interact with {username8} from another account")
+            profile.log_get_profile_action(session_id, username8)
+            profile.log_like_action(session_id, username8, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_follow_action(session_id, username8, SourceType.HASHTAG.name, "some_hashtag")
+            profile.log_story_watch_action(session_id, username8, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_comment_action(session_id, username8, "Wow!", SourceType.PLACE.name, "some_place")
         self._run_inside_session("some_another_account", job_real)
 
         def job_real(profile, _):
             print(COLOR_BOLD + "Real: check account is still accepted after interacted by another account" + COLOR_ENDC)
             username = profile.get_scrapped_profile_for_interaction()
-            assert username == username7
+            assert username == username8
         self._run_inside_session(real_account_username, job_real)
 
     def tearDown(self):

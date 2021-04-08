@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from insomniac.storage import Storage
 from insomniac.actions_types import LikeAction, InteractAction, FollowAction, GetProfileAction, ScrapeAction, \
@@ -25,10 +26,10 @@ class SessionState:
     removedMassFollowers = []
     startTime = None
     finishTime = None
-    storage: Storage = None
+    storage: Optional[Storage] = None
 
     def __init__(self):
-        self.id = str(uuid.uuid4())
+        self.id = None
         self.args = {}
         self.app_id = None
         self.app_version = None
@@ -59,7 +60,8 @@ class SessionState:
 
     def end_session(self):
         self.finishTime = datetime.now()  # For metadata-in-memory only
-        self.storage.end_session(self.id)
+        if self.storage is not None:
+            self.storage.end_session(self.id)
 
     def add_action(self, action):
         if type(action) == GetProfileAction:
