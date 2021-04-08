@@ -12,7 +12,10 @@ def parse_arguments(all_args_dict, starter_conf_file_path):
 
     for name, val in all_args_dict.items():
         arg_name = "--{0}".format(name.replace('_', '-'))
-        parser.add_argument(arg_name, **val)
+        if "help" not in val:
+            parser.add_argument(arg_name, **val, help=argparse.SUPPRESS)
+        else:
+            parser.add_argument(arg_name, **val)
 
     parser.add_argument('--config-file',
                         help='add this argument if you want to load your configuration from a config file. '

@@ -258,15 +258,6 @@ will be added to database at target account directory
 add this argument to select an amount of sources from
 the scraping-list (sources are randomized). It can be a
 number (e.g. 4) or a range (e.g. 3-8)
-
-#### --scrapping-main-db-directory-name main-db-directory-name
-when using this parameter a scrapper will use a
-database file located under the provided directory.
-Use this parameter if you have multiple scrappers, and
-you want them to be synchronized within the same
-database in order to not scrape same accounts multiple
-times. By default scrapper account directory is used
-to store the scrapping history
                         
 ### Special features
 Other features that are unblocked by [joining Patreon $10 tier](https://www.patreon.com/join/insomniac_bot):

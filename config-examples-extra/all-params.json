@@ -48,12 +48,6 @@
     "description" : "disable \"typing\" feature (typing symbols one-by-one as a human)"
   },
   {
-    "parameter-name": "db_directory_path",
-    "enabled": false,
-    "value": "main-db-directory-name",
-    "description" : "when using this parameter the bot will use a database file located under the provided directory. By default account directory is used to store the bot history"
-  },
-  {
     "parameter-name": "next_config_file",
     "enabled": false,
     "value": "2.json",

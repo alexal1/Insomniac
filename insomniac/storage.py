@@ -1,8 +1,11 @@
 from insomniac import db_models
 from insomniac.actions_types import TargetType
+import insomniac.actions_types as insomniac_actions_types
 from insomniac.database_engine import *
 from insomniac.db_models import get_ig_profile_by_profile_name, ProfileStatus
+import insomniac.db_models as insomniac_db
 from insomniac.utils import *
+from insomniac.globals import task_id, execution_id
 
 FILENAME_WHITELIST = "whitelist.txt"
 FILENAME_BLACKLIST = "blacklist.txt"
@@ -32,6 +35,18 @@ STORAGE_ARGS = {
 
 
 IS_USING_DATABASE = False
+
+
+ACTION_TYPES_MAPPING = {
+    insomniac_actions_types.GetProfileAction: insomniac_db.GetProfileAction,
+    insomniac_actions_types.LikeAction: insomniac_db.LikeAction,
+    insomniac_actions_types.FollowAction: insomniac_db.FollowAction,
+    insomniac_actions_types.StoryWatchAction: insomniac_db.StoryWatchAction,
+    insomniac_actions_types.DirectMessageAction: insomniac_db.DirectMessageAction,
+    insomniac_actions_types.UnfollowAction: insomniac_db.UnfollowAction,
+    insomniac_actions_types.ScrapeAction: insomniac_db.ScrapeAction,
+    insomniac_actions_types.FilterAction: insomniac_db.FilterAction
+}
 
 
 def database_api(func):
@@ -175,52 +190,82 @@ class Storage:
 
     @database_api
     def log_get_profile_action(self, session_id, username):
-        self.profile.log_get_profile_action(session_id, username)
+        self.profile.log_get_profile_action(session_id, username, task_id, execution_id)
 
     @database_api
     def log_like_action(self, session_id, username, source_type, source_name):
-        self.profile.log_like_action(session_id, username, source_type, source_name)
+        self.profile.log_like_action(session_id, username, source_type, source_name, task_id, execution_id)
 
     @database_api
     def log_follow_action(self, session_id, username, source_type, source_name):
-        self.profile.log_follow_action(session_id, username, source_type, source_name)
+        self.profile.log_follow_action(session_id, username, source_type, source_name, task_id, execution_id)
 
     @database_api
     def log_story_watch_action(self, session_id, username, source_type, source_name):
-        self.profile.log_story_watch_action(session_id, username, source_type, source_name)
+        self.profile.log_story_watch_action(session_id, username, source_type, source_name, task_id, execution_id)
 
     @database_api
     def log_comment_action(self, session_id, username, comment, source_type, source_name):
-        self.profile.log_comment_action(session_id, username, comment, source_type, source_name)
+        self.profile.log_comment_action(session_id, username, comment, source_type, source_name, task_id, execution_id)
 
     @database_api
     def log_direct_message_action(self, session_id, username, message):
-        self.profile.log_direct_message_action(session_id, username, message)
+        self.profile.log_direct_message_action(session_id, username, message, task_id, execution_id)
 
     @database_api
     def log_unfollow_action(self, session_id, username):
-        self.profile.log_unfollow_action(session_id, username)
+        self.profile.log_unfollow_action(session_id, username, task_id, execution_id)
 
     @database_api
     def log_scrape_action(self, session_id, username, source_type, source_name):
-        self.profile.log_scrape_action(session_id, username, source_type, source_name)
+        self.profile.log_scrape_action(session_id, username, source_type, source_name, task_id, execution_id)
 
     @database_api
     def log_filter_action(self, session_id, username):
-        self.profile.log_filter_action(session_id, username)
+        self.profile.log_filter_action(session_id, username, task_id, execution_id)
 
     @database_api
     def log_change_profile_info_action(self, session_id, profile_pic_url, name, description):
-        self.profile.log_change_profile_info_action(session_id, profile_pic_url, name, description)
+        self.profile.log_change_profile_info_action(session_id, profile_pic_url, name, description, task_id, execution_id)
 
     @database_api
     def publish_scrapped_account(self, username):
         self.profile.publish_scrapped_account(username, self.scrape_for_account_list)
 
-    def get_target(self):
+    @database_api
+    def get_actions_count_within_hours(self, action_type, hours):
+        return self.profile.get_actions_count_within_hours(ACTION_TYPES_MAPPING[action_type], hours)
+
+    def get_target(self, session_id):
         """
         Get a target from args (users/posts) -> OR from targets file (users/posts) -> OR from scrapping (only users).
-        Picks only not yet interacted targets.
+
+        For each target checks that it's
+        1. Not is myself
+        2. Not in blacklist
+        3. Not was filtered
+        4. Not was interacted
+
+        :returns: target and type
+        """
+        target, target_type = self._get_target()
+        while target is not None:
+            if self.profile.name == target \
+                    or self.is_user_in_blacklist(target) \
+                    or self.check_user_was_filtered(target) \
+                    or self.check_user_was_interacted(target):
+                print(COLOR_OKGREEN + f"Target @{target} is dropped, going to the next target" + COLOR_ENDC)
+                # Mark this target as filtered,
+                # so that profile.get_scrapped_profile_for_interaction() won't return it again.
+                self.log_filter_action(session_id, target)
+                target, target_type = self._get_target()
+                continue
+            return target, target_type
+        return None, None
+
+    def _get_target(self):
+        """
+        Get a target from args (users/posts) -> OR from targets file (users/posts) -> OR from scrapping (only users).
 
         :returns: target and type
         """

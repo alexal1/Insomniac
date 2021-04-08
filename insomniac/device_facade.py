@@ -75,12 +75,6 @@ class DeviceFacade:
         """
         max_attempts = 5
 
-        def dump_hierarchy():
-            if self.deviceV1 is not None:
-                return self.deviceV1.dump()
-            else:
-                return self.deviceV2.dump_hierarchy()
-
         def normalize(hierarchy):
             """
             Remove all texts from hierarchy. It may contain some changing data, e.g. current time.
@@ -94,9 +88,9 @@ class DeviceFacade:
                 print(COLOR_FAIL + f"Tried to press back {attempts} times with no success. Will proceed next..." +
                       COLOR_ENDC)
                 break
-            hierarchy_before = normalize(dump_hierarchy())
+            hierarchy_before = normalize(self.dump_hierarchy())
             self._press_back()
-            hierarchy_after = normalize(dump_hierarchy())
+            hierarchy_after = normalize(self.dump_hierarchy())
             succeed = hierarchy_before != hierarchy_after
             if not succeed:
                 print(COLOR_OKGREEN + "Pressed back but nothing changed on the screen. Will try again." + COLOR_ENDC)
@@ -180,14 +174,16 @@ class DeviceFacade:
                 path = os.path.join(SCREEN_RECORDS_PATH, last_mp4)
                 print(COLOR_OKGREEN + f'Screen recorder has been stopped successfully! Saved as "{path}".' + COLOR_ENDC)
 
-    def dump_hierarchy(self, path):
+    def dump_hierarchy(self, path=None):
         if self.deviceV1 is not None:
             xml_dump = self.deviceV1.dump()
         else:
             xml_dump = self.deviceV2.dump_hierarchy()
 
-        with open(path, 'w', encoding="utf-8") as outfile:
-            outfile.write(xml_dump)
+        if path is not None:
+            with open(path, 'w', encoding="utf-8") as outfile:
+                outfile.write(xml_dump)
+        return xml_dump
 
     def is_screen_on(self):
         return self.get_info()["screenOn"]

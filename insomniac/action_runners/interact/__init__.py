@@ -311,7 +311,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
         from insomniac.action_runners.interact.action_handle_target import handle_target
 
-        target, target_type = storage.get_target()
+        target, target_type = storage.get_target(session_state.id)
         while target is not None:
             self.action_status = ActionStatus(ActionState.PRE_RUN)
 
@@ -351,7 +351,7 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
             if self.action_status.get_limit() == ActionState.SESSION_LIMIT_REACHED:
                 break
 
-            target, target_type = storage.get_target()
+            target, target_type = storage.get_target(session_state.id)
 
         if target is None:
             print("There are no more new targets to interact with in the database (all been already interacted / filtered).")

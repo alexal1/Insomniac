@@ -80,6 +80,10 @@ class Limit(object):
     LIMIT_ARGS = {"OVERRIDE": "OVERRIDE"}
 
     def set_limit(self, args):
+        self.reset()
+        self.set_limit_values(args)
+
+    def set_limit_values(self, args):
         raise NotImplementedError()
 
     def update_state(self, action):
@@ -110,7 +114,7 @@ class TotalLikesLimit(CoreLimit):
 
     total_likes_limit = 1000
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.total_likes_limit is not None:
             self.total_likes_limit = get_value(args.total_likes_limit, "Total likes limit: {}", 1000)
 
@@ -121,7 +125,7 @@ class TotalLikesLimit(CoreLimit):
         return session_state.totalLikes >= self.total_likes_limit
 
     def reset(self):
-        pass
+        self.total_likes_limit = 1000
 
     def update_state(self, action):
         pass
@@ -140,7 +144,7 @@ class TotalInteractionsLimit(CoreLimit):
 
     total_interactions_limit = None
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.total_interactions_limit is not None:
             self.total_interactions_limit = get_value(args.total_interactions_limit, "Total interactions limit: {}", 1000)
 
@@ -154,7 +158,7 @@ class TotalInteractionsLimit(CoreLimit):
         return sum(session_state.totalInteractions.values()) >= self.total_interactions_limit
 
     def reset(self):
-        pass
+        self.total_interactions_limit = None
 
     def update_state(self, action):
         pass
@@ -173,7 +177,7 @@ class TotalSuccessfulInteractionsLimit(CoreLimit):
 
     total_successful_interactions_limit = None
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.total_successful_interactions_limit is not None:
             self.total_successful_interactions_limit = get_value(args.total_successful_interactions_limit,
                                                                  "Total successful-interactions limit: {}", 1000)
@@ -188,7 +192,7 @@ class TotalSuccessfulInteractionsLimit(CoreLimit):
         return sum(session_state.successfulInteractions.values()) >= self.total_successful_interactions_limit
 
     def reset(self):
-        pass
+        self.total_successful_interactions_limit = None
 
     def update_state(self, action):
         pass
@@ -207,7 +211,7 @@ class TotalFollowLimit(CoreLimit):
 
     total_follow_limit = None
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.total_follow_limit is not None:
             self.total_follow_limit = get_value(args.total_follow_limit, "Total follow limit: {}", 70)
 
@@ -221,7 +225,7 @@ class TotalFollowLimit(CoreLimit):
         return sum(session_state.totalFollowed.values()) >= self.total_follow_limit
 
     def reset(self):
-        pass
+        self.total_follow_limit = None
 
     def update_state(self, action):
         pass
@@ -240,7 +244,7 @@ class TotalStoryWatchLimit(CoreLimit):
 
     total_story_limit = None
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.total_story_limit is not None:
             self.total_story_limit = get_value(args.total_story_limit, "Total story-watches limit: {}", 1000)
 
@@ -254,7 +258,7 @@ class TotalStoryWatchLimit(CoreLimit):
         return session_state.totalStoriesWatched >= self.total_story_limit
 
     def reset(self):
-        pass
+        self.total_story_limit = None
 
     def update_state(self, action):
         pass
@@ -274,7 +278,7 @@ class TotalCommentsLimit(CoreLimit):
 
     total_comments_limit = 50
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.total_comments_limit is not None:
             self.total_comments_limit = get_value(args.total_comments_limit, "Total comments limit: {}", 50)
 
@@ -285,7 +289,7 @@ class TotalCommentsLimit(CoreLimit):
         return session_state.totalComments >= self.total_comments_limit
 
     def reset(self):
-        pass
+        self.total_comments_limit = 50
 
     def update_state(self, action):
         pass
@@ -303,7 +307,7 @@ class SourceInteractionsLimit(CoreLimit):
 
     interactions_count = 70
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.interactions_count is not None:
             print(COLOR_REPORT + "You are using a deprecated limit. The limit new name is called "
                                  "'successful_interactions_limit_per_source'. Using interactions_count this time. "
@@ -319,7 +323,7 @@ class SourceInteractionsLimit(CoreLimit):
         return successful_interactions_count and successful_interactions_count >= self.interactions_count
 
     def reset(self):
-        pass
+        self.interactions_count = 70
 
     def update_state(self, action):
         pass
@@ -339,7 +343,7 @@ class SuccessfulInteractionsLimitPerSource(CoreLimit):
 
     successful_interactions_limit_per_source = 70
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.successful_interactions_limit_per_source is not None:
             self.successful_interactions_limit_per_source = get_value(args.successful_interactions_limit_per_source,
                                                                       "Successful interactions limit per source: {}", 70)
@@ -353,7 +357,7 @@ class SuccessfulInteractionsLimitPerSource(CoreLimit):
         return successful_interactions_count and successful_interactions_count >= self.successful_interactions_limit_per_source
 
     def reset(self):
-        pass
+        self.successful_interactions_limit_per_source = 70
 
     def update_state(self, action):
         pass
@@ -373,7 +377,7 @@ class InteractionsLimitPerSource(CoreLimit):
 
     interactions_limit_per_source = 140
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.interactions_limit_per_source is not None:
             self.interactions_limit_per_source = get_value(args.interactions_limit_per_source,
                                                            "Interactions limit per source: {}", 140)
@@ -387,7 +391,7 @@ class InteractionsLimitPerSource(CoreLimit):
         return interactions_count and interactions_count >= self.interactions_limit_per_source
 
     def reset(self):
-        pass
+        self.interactions_limit_per_source = 140
 
     def update_state(self, action):
         pass
@@ -405,7 +409,7 @@ class SourceFollowLimit(CoreLimit):
 
     follow_limit = None
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.follow_limit is not None:
             print(COLOR_REPORT + "You are using a deprecated limit. The limit new name is called "
                                  "'follow_limit_per_source'. Using 'follow_limit' this time. "
@@ -423,7 +427,7 @@ class SourceFollowLimit(CoreLimit):
         return followed_count is not None and followed_count >= self.follow_limit
 
     def reset(self):
-        pass
+        self.follow_limit = None
 
     def update_state(self, action):
         pass
@@ -442,7 +446,7 @@ class FollowLimitPerSource(CoreLimit):
 
     follow_limit_per_source = None
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.follow_limit_per_source is not None:
             self.follow_limit_per_source = get_value(args.follow_limit_per_source, "Follow limit: {}", 10)
 
@@ -457,7 +461,7 @@ class FollowLimitPerSource(CoreLimit):
         return followed_count is not None and followed_count >= self.follow_limit_per_source
 
     def reset(self):
-        pass
+        self.follow_limit_per_source = None
 
     def update_state(self, action):
         pass
@@ -470,7 +474,7 @@ class UnfollowingLimit(CoreLimit):
 
     unfollow_limit = None
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.unfollow is not None:
             self.unfollow_limit = get_value(args.unfollow, "Unfollow: {}", 100)
 
@@ -484,7 +488,7 @@ class UnfollowingLimit(CoreLimit):
         return session_state.totalUnfollowed >= self.unfollow_limit
 
     def reset(self):
-        pass
+        self.unfollow_limit = None
 
     def update_state(self, action):
         pass
@@ -503,7 +507,7 @@ class MinFollowing(CoreLimit):
 
     min_following_limit = 0
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         self.min_following_limit = int(args.min_following)
 
     def is_reached_for_action(self, action, session_state):
@@ -516,7 +520,7 @@ class MinFollowing(CoreLimit):
         return initial_following - unfollowed_count <= self.min_following_limit
 
     def reset(self):
-        pass
+        self.min_following_limit = None
 
     def update_state(self, action):
         pass
@@ -534,7 +538,7 @@ class MaxFollowing(CoreLimit):
 
     max_following_limit = None
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.max_following is not None:
             self.max_following_limit = int(args.max_following)
 
@@ -551,7 +555,7 @@ class MaxFollowing(CoreLimit):
         return initial_following + followed_count >= self.max_following_limit
 
     def reset(self):
-        pass
+        self.max_following_limit = None
 
     def update_state(self, action):
         pass
@@ -570,7 +574,7 @@ class TotalGetProfileLimit(CoreLimit):
 
     total_get_profile_limit = None
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.total_get_profile_limit is not None:
             self.total_get_profile_limit = get_value(args.total_get_profile_limit, "Total get-profile limit: {}", 1000)
 
@@ -584,7 +588,7 @@ class TotalGetProfileLimit(CoreLimit):
         return session_state.totalGetProfile >= self.total_get_profile_limit
 
     def reset(self):
-        pass
+        self.total_get_profile_limit = None
 
     def update_state(self, action):
         pass
@@ -603,7 +607,7 @@ class SessionTimeMaxLengthLimit(CoreLimit):
 
     session_length_in_mins_limit = None
 
-    def set_limit(self, args):
+    def set_limit_values(self, args):
         if args.session_length_in_mins_limit is not None:
             self.session_length_in_mins_limit = get_value(args.session_length_in_mins_limit, "Session max-length (minutes): {}", 60)
 
@@ -619,7 +623,7 @@ class SessionTimeMaxLengthLimit(CoreLimit):
         return mins_delta > self.session_length_in_mins_limit
 
     def reset(self):
-        pass
+        self.session_length_in_mins_limit = None
 
     def update_state(self, action):
         pass
