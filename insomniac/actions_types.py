@@ -16,6 +16,7 @@ CommentAction = namedtuple('CommentAction', 'source user comment')
 class BloggerInteractionType(Enum):
     FOLLOWERS = 'followers'
     FOLLOWING = 'following'
+    TAGGED = 'tagged'
 
 
 @unique

@@ -1,44 +1,23 @@
 from functools import partial
 
 from insomniac.action_runners.actions_runners_manager import ActionState
-from insomniac.actions_impl import interact_with_user, InteractionStrategy
+from insomniac.actions_impl import interact_with_user, InteractionStrategy, _open_photo_and_like_and_comment
 from insomniac.actions_providers import Provider
 from insomniac.actions_types import LikeAction, FollowAction, InteractAction, GetProfileAction, StoryWatchAction, \
     BloggerInteractionType, CommentAction
 from insomniac.limits import process_limits
+from insomniac.device_facade import DeviceFacade
 from insomniac.report import print_short_report, print_interaction_types
 from insomniac.sleeper import sleeper
 from insomniac.softban_indicator import softban_indicator
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 from insomniac.views import TabBarView, ProfileView
-from insomniac.action_runners.interact.action_handle_tagged import handle_tagged
 
 
-def extract_blogger_instructions(source):
-    split_idx = source.find('-')
-    if split_idx == -1:
-        print("There is no special interaction-instructions for " + source + ". Working with " + source + " followers.")
-        return source, BloggerInteractionType.FOLLOWERS
-
-    selected_instruction = None
-    source_profile_name = source[:split_idx]
-    interaction_instructions_str = source[split_idx+1:]
-
-    for blogger_instruction in BloggerInteractionType:
-        if blogger_instruction.value == interaction_instructions_str:
-            selected_instruction = blogger_instruction
-            break
-
-    if selected_instruction is None:
-        print("Couldn't use interaction-instructions " + interaction_instructions_str +
-              ". Working with " + source + " followers.")
-        selected_instruction = BloggerInteractionType.FOLLOWERS
-
-    return source_profile_name, selected_instruction
 
 
-def handle_blogger(device,
+def handle_tagged(device,
                    username,
                    instructions,
                    session_state,
@@ -52,7 +31,9 @@ def handle_blogger(device,
                    on_action,
                    is_limit_reached,
                    is_passed_filters,
-                   action_status):
+                   action_status,
+                   blogger_profile_view,
+                   tagged_grid_view):
     is_myself = username == session_state.my_username
     interaction = partial(interact_with_user,
                           device=device,
@@ -60,48 +41,7 @@ def handle_blogger(device,
                           my_username=session_state.my_username,
                           on_action=on_action)
 
-    search_view = TabBarView(device).navigate_to_search()
-    blogger_profile_view = search_view.navigate_to_username(username, on_action)
-
-    if blogger_profile_view is None:
-        return
-
-    sleeper.random_sleep()
-    is_profile_empty = softban_indicator.detect_empty_profile(device)
-
-    if is_profile_empty:
-        return
-
-    followers_following_list_view = None
-    if instructions == BloggerInteractionType.FOLLOWERS:
-        followers_following_list_view = blogger_profile_view.navigate_to_followers()
-    elif instructions == BloggerInteractionType.FOLLOWING:
-        followers_following_list_view = blogger_profile_view.navigate_to_following()
-    elif instructions == BloggerInteractionType.TAGGED:
-        tagged_grid_view = blogger_profile_view.navigate_to_photos_of_you_tab()
-        handle_tagged(device,
-                    username,  # drop "@"
-                    instructions,
-                    session_state,
-                    likes_count,
-                    stories_count,
-                    follow_percentage,
-                    like_percentage,
-                    comment_percentage,
-                    comments_list,
-                    storage,
-                    on_action,
-                    is_limit_reached,
-                    is_passed_filters,
-                    action_status,
-                    blogger_profile_view,
-                    tagged_grid_view)
-
-    if is_myself:
-        followers_following_list_view.scroll_to_bottom()
-        followers_following_list_view.scroll_to_top()
-
-    def pre_conditions(follower_name, follower_name_view):
+    def pre_conditions(is_myself, storage, follower_name, follower_name_view):
         if storage.is_user_in_blacklist(follower_name):
             print("@" + follower_name + " is in blacklist. Skip.")
             return False
@@ -115,9 +55,9 @@ def handle_blogger(device,
             print("@" + follower_name + ": already interacted in the last week. Skip.")
             return False
 
-        return True
 
-    def interact_with_follower(follower_name, follower_name_view):
+
+    def interact_with_follower(storage, follower_name, follower_name_view):
         """
         :return: whether we should continue interaction with other users after this one
         """
@@ -125,21 +65,21 @@ def handle_blogger(device,
             is_limit_reached(InteractAction(source=username, user=follower_name, succeed=True), session_state)
 
         if not process_limits(is_interact_limit_reached, interact_reached_session_limit,
-                              interact_reached_source_limit, action_status, "Interaction"):
+                            interact_reached_source_limit, action_status, "Interaction"):
             return False
 
         is_get_profile_limit_reached, get_profile_reached_source_limit, get_profile_reached_session_limit = \
             is_limit_reached(GetProfileAction(user=follower_name), session_state)
 
         if not process_limits(is_get_profile_limit_reached, get_profile_reached_session_limit,
-                              get_profile_reached_source_limit, action_status, "Get-Profile"):
+                            get_profile_reached_source_limit, action_status, "Get-Profile"):
             return False
 
         is_all_filters_satisfied = False
         if is_passed_filters is not None:
             print_debug(f"Running filter-ahead on @{follower_name}")
             should_continue, is_all_filters_satisfied = is_passed_filters(device, follower_name, reset=True,
-                                                                          filters_tags=['BEFORE_PROFILE_CLICK'])
+                                                                        filters_tags=['BEFORE_PROFILE_CLICK'])
             if not should_continue:
                 storage.add_filtered_user(follower_name)
                 return True
@@ -148,6 +88,7 @@ def handle_blogger(device,
                 print_debug("Not all filters are satisfied with filter-ahead, continue filtering inside the profile-page")
 
         print("@" + follower_name + ": interact")
+        #not clicking properly
         follower_name_view.click()
         on_action(GetProfileAction(user=follower_name))
 
@@ -221,15 +162,15 @@ def handle_blogger(device,
         else:
             print_interaction_types(follower_name, can_like, can_follow, can_watch, can_comment)
             interaction_strategy = InteractionStrategy(do_like=can_like,
-                                                       do_follow=can_follow,
-                                                       do_story_watch=can_watch,
-                                                       do_comment=can_comment,
-                                                       likes_count=likes_value,
-                                                       follow_percentage=follow_percentage,
-                                                       like_percentage=like_percentage,
-                                                       stories_count=stories_value,
-                                                       comment_percentage=comment_percentage,
-                                                       comments_list=comments_list)
+                                                    do_follow=can_follow,
+                                                    do_story_watch=can_watch,
+                                                    do_comment=can_comment,
+                                                    likes_count=likes_value,
+                                                    follow_percentage=follow_percentage,
+                                                    like_percentage=like_percentage,
+                                                    stories_count=stories_value,
+                                                    comment_percentage=comment_percentage,
+                                                    comments_list=comments_list)
 
             is_liked, is_followed, is_watch, is_commented = interaction(username=follower_name, interaction_strategy=interaction_strategy)
             if is_liked or is_followed or is_watch or is_commented:
@@ -251,18 +192,18 @@ def handle_blogger(device,
         can_continue = True
 
         if ((is_like_limit_reached and is_likes_enabled) or not is_likes_enabled) and \
-           ((is_follow_limit_reached and is_follow_enabled) or not is_follow_enabled) and \
-           ((is_comment_limit_reached and is_comment_enabled) or not is_comment_enabled) and \
-           ((is_watch_limit_reached and is_stories_enabled) or not is_stories_enabled):
+        ((is_follow_limit_reached and is_follow_enabled) or not is_follow_enabled) and \
+        ((is_comment_limit_reached and is_comment_enabled) or not is_comment_enabled) and \
+        ((is_watch_limit_reached and is_stories_enabled) or not is_stories_enabled):
             # If one of the limits reached for source-limit, move to next source
             if (like_reached_source_limit is not None and like_reached_session_limit is None) or \
-               (follow_reached_source_limit is not None and follow_reached_session_limit is None):
+            (follow_reached_source_limit is not None and follow_reached_session_limit is None):
                 can_continue = False
                 action_status.set_limit(ActionState.SOURCE_LIMIT_REACHED)
 
             # If all of the limits reached for session-limit, finish the session
             if ((like_reached_session_limit is not None and is_likes_enabled) or not is_likes_enabled) and \
-               ((follow_reached_session_limit is not None and is_follow_enabled) or not is_follow_enabled):
+            ((follow_reached_session_limit is not None and is_follow_enabled) or not is_follow_enabled):
                 can_continue = False
                 action_status.set_limit(ActionState.SESSION_LIMIT_REACHED)
 
@@ -271,4 +212,46 @@ def handle_blogger(device,
 
         return can_continue
 
-    followers_following_list_view.iterate_over_followers(is_myself, interact_with_follower, pre_conditions)
+
+
+    print("Open and like photo #" + str(1) + " (" + str(1) + " row, " + str(1) + " column)")
+
+    recycler_view = device.find(resourceId='android:id/list')
+    row_view = recycler_view.child(index=1)
+    if not row_view.exists():
+        return False
+    item_view = row_view.child(index=0)
+    if not item_view.exists():
+        return False
+    item_view.click()
+
+    # call preconditions and get profile name Careful here because the text view can be index 1 2 3 depending on if theres a story also theres two text views a second one for the business name
+    poster_name_view_grp = device.find(resourceId='android:id/list')
+    poster_name_view = poster_name_view_grp.child(index=1)
+    poster_name_button = poster_name_view.child(className='android.widget.TextView')
+
+    clean_poster_name = blogger_profile_view.cleanse_poster_name()
+
+
+
+    pre_conditions(is_myself, storage, clean_poster_name ,None)
+    #click on profile my code 
+    interact_with_follower(storage, clean_poster_name ,poster_name_view)
+
+    # call interact with follower
+
+    # scroll in action handle hashtag scroll new function     
+
+
+    #back to list view of followers
+
+    #scroll
+    #end condition
+
+
+
+
+    #can interact with likers of tagged photos too
+        
+    
+        

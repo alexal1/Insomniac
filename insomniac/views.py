@@ -1134,7 +1134,7 @@ class ProfileView(ActionBarView):
 
     def navigate_to_photos_of_you_tab(self):
         self._navigate_to_tab(ProfileTabs.PHOTOS_OF_YOU)
-        raise Exception("Not implemented")
+        return PostsGridView(self.device)
 
     def _navigate_to_tab(self, tab: ProfileTabs):
         TABS_RES_ID = f"{self.device.app_id}:id/profile_tab_layout"
@@ -1179,6 +1179,15 @@ class ProfileView(ActionBarView):
         CLASSNAME = "(androidx.recyclerview.widget.RecyclerView|android.view.View)"
 
         return self.device.find(classNameMatches=CLASSNAME)
+    
+    def cleanse_poster_name(self):
+        poster_name_view_grp = self.device.find(resourceId='android:id/list')
+        poster_name_view = poster_name_view_grp.child(index=1)
+        poster_name_button = poster_name_view.child(className='android.widget.TextView')
+        poster_name = poster_name_button.get_text()
+        size = len(poster_name)
+        cleanse_poster_name = poster_name[:size -3]
+        return cleanse_poster_name
 
 
 class FollowersFollowingListView(InstagramView):
