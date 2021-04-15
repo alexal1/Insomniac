@@ -13,3 +13,5 @@ blacklist.txt
 /dist
 /*.egg-info
 *.log
+*.bat
+/.vscode
