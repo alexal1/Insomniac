@@ -90,6 +90,7 @@ def handle_tagged(device,
         print("@" + follower_name + ": interact")
         #not clicking properly
         follower_name_view.click()
+        #this click should get on the posters profile
         on_action(GetProfileAction(user=follower_name))
 
         sleeper.random_sleep()
@@ -236,7 +237,7 @@ def handle_tagged(device,
 
     pre_conditions(is_myself, storage, clean_poster_name ,None)
     #click on profile my code 
-    interact_with_follower(storage, clean_poster_name ,poster_name_view)
+    interact_with_follower(storage, clean_poster_name ,item_view)
 
     # call interact with follower
 
