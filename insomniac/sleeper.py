@@ -29,6 +29,36 @@ class Sleeper:
         print(f"Sleep for {delay:.2f} seconds")
         sleep(delay)
 
+    def _set_random_sleep_range(self, speed, s1, s2):
+        start1, end1 = SLEEP_RANGE_BY_SPEED[s1]
+        start2, end2 = SLEEP_RANGE_BY_SPEED[s2]
+        x = (speed - s1) / (s2 - s1) if s2 != s1 else 1  # x is a value between [0, 1]
+
+        self.sleep_range_start = start1 + x * (start2 - start1)
+        self.sleep_range_end = end1 + x * (end2 - end1)
+
+        print(f"Sleep range will be from {self.sleep_range_start:.2f} to {self.sleep_range_end:.2f} seconds")
+
+    def set_random_sleep_range(self, speed_1_to_4):
+        if speed_1_to_4 == 1:
+            s1 = SPEED_ZERO
+            s2 = SPEED_UGLY
+            speed = SPEED_ZERO
+        elif speed_1_to_4 == 2:
+            s1 = SPEED_UGLY
+            s2 = SPEED_BAD
+            speed = SPEED_UGLY
+        elif speed_1_to_4 == 3:
+            s1 = SPEED_BAD
+            s2 = SPEED_GOOD
+            speed = SPEED_BAD
+        else:
+            s1 = SPEED_GOOD
+            s2 = SPEED_GOOD
+            speed = SPEED_GOOD
+
+        self._set_random_sleep_range(speed, s1, s2)
+
     def update_random_sleep_range(self):
         speed = _get_internet_speed()
         if SPEED_ZERO <= speed <= SPEED_UGLY:
@@ -44,15 +74,7 @@ class Sleeper:
             s1 = SPEED_GOOD
             s2 = SPEED_GOOD
 
-        start1, end1 = SLEEP_RANGE_BY_SPEED[s1]
-        start2, end2 = SLEEP_RANGE_BY_SPEED[s2]
-        x = (speed - s1) / (s2 - s1) if s2 != s1 else 1  # x is a value between [0, 1]
-
-        self.sleep_range_start = start1 + x * (start2 - start1)
-        self.sleep_range_end = end1 + x * (end2 - end1)
-
-        print(f"Sleep range will be from {self.sleep_range_start:.2f} to {self.sleep_range_end:.2f} seconds")
-
+        self._set_random_sleep_range(speed, s1, s2)
 
 def _get_internet_speed():
     from insomniac.tools import speedtest

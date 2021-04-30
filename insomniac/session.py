@@ -39,6 +39,12 @@ class InsomniacSession(object):
             'help': 'skip internet speed check at start',
             'action': 'store_true'
         },
+        "speed": {
+            'help': 'manually specify the speed setting, from 1 (slowest) to 4 (fastest)',
+            'metavar': '1-4',
+            'type': int,
+            'choices': range(1, 5)
+        },
         "no_typing": {
             'help': 'disable "typing" feature (typing symbols one-by-one as a human)',
             'action': 'store_true'
@@ -216,6 +222,9 @@ class InsomniacSession(object):
                 print("Checking your Internet speed to adjust the script speed, please wait for a minute...")
                 print("(use " + COLOR_BOLD + "--no-speed-check" + COLOR_ENDC + " to skip this check)")
                 sleeper.update_random_sleep_range()
+
+            if args.speed is not None:
+                sleeper.set_random_sleep_range(args.speed)
 
             device_wrapper, app_version = self.get_device_wrapper(args)
             if device_wrapper is None:

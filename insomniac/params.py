@@ -48,6 +48,9 @@ def parse_arguments(all_args_dict, starter_conf_file_path):
 
         refresh_args_by_conf_file(args)
 
+    if args.speed is not None:
+        args.no_speed_check = True
+
     return True, args
 
 
