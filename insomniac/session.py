@@ -218,13 +218,12 @@ class InsomniacSession(object):
         while True:
             self.print_session_params(args)
 
-            if not args.no_speed_check:
+            if args.speed is not None:
+                sleeper.set_random_sleep_range(args.speed)
+            elif not args.no_speed_check:
                 print("Checking your Internet speed to adjust the script speed, please wait for a minute...")
                 print("(use " + COLOR_BOLD + "--no-speed-check" + COLOR_ENDC + " to skip this check)")
                 sleeper.update_random_sleep_range()
-
-            if args.speed is not None:
-                sleeper.set_random_sleep_range(args.speed)
 
             device_wrapper, app_version = self.get_device_wrapper(args)
             if device_wrapper is None:
