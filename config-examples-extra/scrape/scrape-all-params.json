@@ -42,6 +42,12 @@
     "description" : "skip internet speed check at start"
   },
   {
+    "parameter-name": "speed",
+    "enabled": false,
+    "value": "2",
+    "description" : "manually specify the speed setting, from 1 (slowest) to 4 (fastest)"
+  },
+  {
     "parameter-name": "no_typing",
     "enabled": false,
     "value": "True",
@@ -70,6 +76,12 @@
     "enabled": false,
     "value": "/path/to/script.bat or sh",
     "description" : "use this parameter if you want to run a predefined script when session ends"
+  },
+  {
+    "parameter-name": "warmup_time_before_session",
+    "enabled": false,
+    "value": "2-6",
+    "description" : "set warmup length in minutes, disabled by default. It can be a number (e.g. 2) or a range (e.g. 1-3)."
   },
   {
     "parameter-name": "working_hours",

@@ -19,7 +19,7 @@ def get_my_profile_info(device, username):
         profile_view.refresh()
         sleeper.random_sleep()
 
-        ActionBarView.update_interaction_rect(device)
+        ActionBarView.create_instance(device)
 
         username, followers, following = profile_view.get_profile_info(swipe_up_if_needed=True)
     except UserSwitchFailedException as e:
@@ -43,7 +43,7 @@ def get_my_profile_info(device, username):
         profile_view.refresh()
         sleeper.random_sleep()
 
-        ActionBarView.update_interaction_rect(device)
+        ActionBarView.create_instance(device)
 
         username, followers, following = profile_view.get_profile_info(swipe_up_if_needed=True)
 

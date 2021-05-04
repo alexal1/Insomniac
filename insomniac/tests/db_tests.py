@@ -88,7 +88,7 @@ class DatabaseTests(unittest.TestCase):
 
         def job_interact(profile, session_id):
             print(COLOR_BOLD + f"Check interaction is not counted for {username1} if was too long ago" + COLOR_ENDC)
-            profile.log_like_action(session_id, username1, SourceType.BLOGGER.name, "some_blogger", datetime.now() - timedelta(hours=48))
+            profile.log_like_action(session_id, username1, SourceType.BLOGGER.name, "some_blogger", timestamp=datetime.now()-timedelta(hours=48))
             assert profile.is_interacted(username1) is True
             assert profile.is_interacted(username1, hours=24) is False
         self._run_inside_session(my_account2, job_interact)
@@ -108,7 +108,7 @@ class DatabaseTests(unittest.TestCase):
             assert profile.is_filtered(username1) is True
 
             print(COLOR_BOLD + f"Check that filter NOT works if filtered too long ago" + COLOR_ENDC)
-            profile.log_filter_action(session_id, username2, datetime.now() - timedelta(hours=48))
+            profile.log_filter_action(session_id, username2, timestamp=datetime.now()-timedelta(hours=48))
             assert profile.is_filtered(username2) is True
             assert profile.is_filtered(username2, hours=24) is False
         self._run_inside_session(my_account1, job_interact)

@@ -9,6 +9,7 @@ from insomniac.sleeper import sleeper
 from insomniac.softban_indicator import softban_indicator
 from insomniac.tools.spintax import spin
 from insomniac.utils import *
+from insomniac.validations import validate_ig_profile_existence
 from insomniac.views import ActionBarView, ProfileView, PostsViewList, OpenedPostView, LikersListView
 
 FOLLOWERS_BUTTON_ID_REGEX = '{0}:id/row_profile_header_followers_container' \
@@ -74,16 +75,16 @@ def is_private_account(device):
     return not recycler_view.exists(quick=True)
 
 
-def open_user(device, username, refresh=False, on_action=None):
-    return _open_user(device, username, False, False, refresh, on_action)
+def open_user(device, username, refresh=False, deep_link_usage_percentage=0, on_action=None):
+    return _open_user(device, username, False, False, refresh, deep_link_usage_percentage, on_action)
 
 
-def open_user_followers(device, username, refresh=False, on_action=None):
-    return _open_user(device, username, True, False, refresh, on_action)
+def open_user_followers(device, username, refresh=False, deep_link_usage_percentage=0, on_action=None):
+    return _open_user(device, username, True, False, refresh, deep_link_usage_percentage, on_action)
 
 
-def open_user_followings(device, username, refresh=False, on_action=None):
-    return _open_user(device, username, False, True, refresh, on_action)
+def open_user_followings(device, username, refresh=False, deep_link_usage_percentage=0, on_action=None):
+    return _open_user(device, username, False, True, refresh, deep_link_usage_percentage, on_action)
 
 
 def iterate_over_followers(device, is_myself, iteration_callback, iteration_callback_pre_conditions,
@@ -380,39 +381,7 @@ def _open_photo_and_like_and_comment(device, row, column, do_like, do_comment, l
             to_comment = False
 
     if to_like:
-        print("Double click!")
-        post_view = device.find(
-            resourceIdMatches=OpenedPostView.POST_VIEW_ID_REGEX.format(device.app_id, device.app_id, device.app_id),
-            className='android.widget.FrameLayout'
-        )
-        post_view.double_click()
-        sleeper.random_sleep()
-        if not post_view.exists(quick=True):
-            print(COLOR_OKGREEN + "Accidentally went out of the post page, going back..." + COLOR_ENDC)
-            device.back()
-
-        # If like button is not visible, scroll down
-        like_button = device.find(resourceId=f'{device.app_id}:id/row_feed_button_like',
-                                  className='android.widget.ImageView')
-        if not like_button.exists(quick=True) or not ActionBarView.is_in_interaction_rect(like_button):
-            print("Swiping down a bit to see if is liked")
-            device.swipe(DeviceFacade.Direction.TOP)
-
-        # If double click didn't work, set like by icon click
-        try:
-            # Click only button which is under the action bar and above the tab bar.
-            # It fixes bugs with accidental back / home clicks.
-            for like_button in device.find(resourceId=f'{device.app_id}:id/row_feed_button_like',
-                                           className='android.widget.ImageView',
-                                           selected=False):
-                if ActionBarView.is_in_interaction_rect(like_button):
-                    print("Double click didn't work, click on icon.")
-                    like_button.click()
-                    sleeper.random_sleep()
-                    break
-        except DeviceFacade.JsonRpcError:
-            print("Double click worked successfully.")
-
+        OpenedPostView(device).like()
         softban_indicator.detect_action_blocked_dialog(device)
         on_like()
 
@@ -616,7 +585,8 @@ def _is_story_opened(device):
     return reel_viewer.exists()
 
 
-def _open_user(device, username, open_followers=False, open_followings=False, refresh=False, on_action=None):
+def _open_user(device, username, open_followers=False, open_followings=False,
+               refresh=False, deep_link_usage_percentage=0, on_action=None):
     if refresh:
         print("Refreshing profile status...")
         coordinator_layout = device.find(resourceId=f'{device.app_id}:id/coordinator_root_layout')
@@ -634,10 +604,25 @@ def _open_user(device, username, open_followers=False, open_followings=False, re
             followings_button = device.find(resourceIdMatches=FOLLOWING_BUTTON_ID_REGEX.format(device.app_id, device.app_id))
             followings_button.click()
     else:
-        if not search_for(device, username=username, on_action=on_action):
-            return False
+        should_open_user_with_search = True
+        deep_link_usage_chance = randint(1, 100)
+        if deep_link_usage_chance <= deep_link_usage_percentage:
+            print(f"Going to open {username} using deeplink")
+            should_open_user_with_search = False
 
-        sleeper.random_sleep()
+            should_continue, is_profile_opened = _open_profile_using_deeplink(device, username)
+            if not should_continue:
+                return False
+
+            if not is_profile_opened:
+                print(f"Failed to open profile using deeplink. Using search instead")
+                should_open_user_with_search = True
+
+        if should_open_user_with_search:
+            if not search_for(device, username=username, on_action=on_action):
+                return False
+
+            sleeper.random_sleep()
 
         is_profile_empty = softban_indicator.detect_empty_profile(device)
         if is_profile_empty:
@@ -654,6 +639,30 @@ def _open_user(device, username, open_followers=False, open_followings=False, re
             followings_button.click()
 
     return True
+
+
+def _open_profile_using_deeplink(device, profile_name):
+    is_profile_opened = False
+    should_continue = True
+
+    profile_url = f"https://www.instagram.com/{profile_name}/"
+    if not open_instagram_with_url(device.device_id, device.app_id, profile_url):
+        return should_continue, is_profile_opened
+
+    sleeper.random_sleep()
+
+    user_not_found_text = device.find(resourceId=f'{device.app_id}:id/no_found_text',
+                                      className='android.widget.TextView')
+    if user_not_found_text.exists(quick=True):
+        print(COLOR_FAIL + f"Seems like profile {profile_name} is not exists. Pressing back." + COLOR_ENDC)
+        should_continue = False
+        is_profile_opened = False
+        device.back()
+    else:
+        should_continue = True
+        is_profile_opened = True
+
+    return should_continue, is_profile_opened
 
 
 def iterate_over_my_followings(device, iteration_callback, iteration_callback_pre_conditions):
@@ -755,12 +764,14 @@ def do_unfollow(device, my_username, username, storage, check_if_is_follower, us
             device.back()
             return False
 
-        if check_if_is_follower and _check_is_follower(device, username, my_username):
-            print("Skip @" + username + ". This user is following you.")
-            storage.update_follow_status(username, True, True)
-            print("Back to the followings list.")
-            device.back()
-            return False
+        if check_if_is_follower:
+            if _check_is_follower(device, username, my_username):
+                print("Skip @" + username + ". This user is following you.")
+                storage.update_follow_status(username, is_follow_me=True, do_i_follow_him=True)
+                print("Back to the followings list.")
+                device.back()
+                return False
+            storage.update_follow_status(username, is_follow_me=False, do_i_follow_him=True)
 
         unfollow_button = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
                                       clickable=True,
@@ -807,6 +818,27 @@ def open_likers(device):
             raise Exception("We are supposed to be on posts list, but something gone wrong.")
 
     return posts_view_list.open_likers()
+
+
+def interact_with_feed(navigate_to_feed, should_continue, interact_with_feed_post):
+    posts_views_list = navigate_to_feed()
+    if posts_views_list is None:
+        return False
+
+    while True:
+        if not posts_views_list.is_visible():
+            print(COLOR_FAIL + "Went away from posts list, going back..." + COLOR_ENDC)
+            posts_views_list = navigate_to_feed()
+            if posts_views_list is None:
+                return False
+
+        if not interact_with_feed_post(posts_views_list) or not should_continue():
+            print("Stopping interaction with feed...")
+            return True
+
+        print_debug("Scrolling down...")
+        posts_views_list.scroll_down()
+        sleeper.random_sleep()
 
 
 def _check_is_follower(device, username, my_username):

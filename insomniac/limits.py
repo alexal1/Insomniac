@@ -508,7 +508,8 @@ class MinFollowing(CoreLimit):
     min_following_limit = 0
 
     def set_limit_values(self, args):
-        self.min_following_limit = int(args.min_following)
+        if args.min_following is not None:
+            self.min_following_limit = int(args.min_following)
 
     def is_reached_for_action(self, action, session_state):
         if not type(action) == UnfollowAction:
@@ -620,7 +621,7 @@ class SessionTimeMaxLengthLimit(CoreLimit):
         delta = datetime.now() - session_state.startTime
         mins_delta = delta.seconds // 60
 
-        return mins_delta > self.session_length_in_mins_limit
+        return mins_delta >= self.session_length_in_mins_limit
 
     def reset(self):
         self.session_length_in_mins_limit = None

@@ -42,6 +42,12 @@
     "description" : "skip internet speed check at start"
   },
   {
+    "parameter-name": "speed",
+    "enabled": false,
+    "value": "2",
+    "description" : "manually specify the speed setting, from 1 (slowest) to 4 (fastest)"
+  },
+  {
     "parameter-name": "no_typing",
     "enabled": false,
     "value": "True",
@@ -74,7 +80,11 @@
       "amazingtrips-top-likers",
       "amazingtrips-recent-likers",
       "P-antartica-top-likers",
-      "P-antartica-recent-likers"
+      "P-antartica-recent-likers",
+      "amazingtrips-top-posts",
+      "amazingtrips-recent-posts",
+      "P-antartica-top-posts",
+      "P-antartica-recent-posts"
     ],
     "description" : "list of hashtags and usernames. Usernames should start with \"@\" symbol. The script will interact with hashtags\\' posts likers and with users\\' followers"
   },

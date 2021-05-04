@@ -39,7 +39,8 @@ class Typewriter:
     def write(self, view, text) -> bool:
         if not self.is_adb_keyboard_set:
             return False
-        view.click()
+        if not view.is_focused():
+            view.click()
         if not self.clear():
             return False
         text_b64 = base64.b64encode(text.encode('utf-8')).decode('utf-8')

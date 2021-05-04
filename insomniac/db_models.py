@@ -5,11 +5,12 @@ from enum import Enum, unique
 from typing import Optional
 
 from peewee import *
+from playhouse.migrate import SqliteMigrator, migrate
 
 from insomniac.utils import *
 
 DATABASE_NAME = 'insomniac.db'
-DATABASE_VERSION = 1
+DATABASE_VERSION = 2
 
 db = SqliteDatabase(DATABASE_NAME, autoconnect=False)
 
@@ -82,7 +83,7 @@ class InstagramProfile(InsomniacModel):
                                         followers=followers_count,
                                         following=following_count)
 
-    def log_get_profile_action(self, session_id, username, task_id, execution_id, timestamp=None):
+    def log_get_profile_action(self, session_id, username, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
         """
         Create InsomniacAction record
         Create GetProfileAction record
@@ -98,7 +99,7 @@ class InstagramProfile(InsomniacModel):
             GetProfileAction.create(action=action,
                                     target_user=username)
 
-    def log_like_action(self, session_id, username, source_type, source_name, task_id, execution_id, timestamp=None):
+    def log_like_action(self, session_id, username, source_type, source_name, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
         """
         Create InsomniacAction record
         Create LikeAction record
@@ -119,7 +120,7 @@ class InstagramProfile(InsomniacModel):
                                              type=source_type,
                                              name=source_name)
 
-    def log_follow_action(self, session_id, username, source_type, source_name, task_id, execution_id, timestamp=None):
+    def log_follow_action(self, session_id, username, source_type, source_name, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
         """
         Create InsomniacAction record
         Create FollowAction record
@@ -140,7 +141,7 @@ class InstagramProfile(InsomniacModel):
                                              type=source_type,
                                              name=source_name)
 
-    def log_story_watch_action(self, session_id, username, source_type, source_name, task_id, execution_id, timestamp=None):
+    def log_story_watch_action(self, session_id, username, source_type, source_name, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
         """
         Create InsomniacAction record
         Create StoryWatchAction record
@@ -161,7 +162,7 @@ class InstagramProfile(InsomniacModel):
                                              type=source_type,
                                              name=source_name)
 
-    def log_comment_action(self, session_id, username, comment, source_type, source_name, task_id, execution_id, timestamp=None):
+    def log_comment_action(self, session_id, username, comment, source_type, source_name, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
         """
         Create InsomniacAction record
         Create CommentAction record
@@ -183,7 +184,7 @@ class InstagramProfile(InsomniacModel):
                                              type=source_type,
                                              name=source_name)
 
-    def log_direct_message_action(self, session_id, username, message, task_id, execution_id, timestamp=None):
+    def log_direct_message_action(self, session_id, username, message, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
         """
         Create InsomniacAction record
         Create DirectMessageAction record
@@ -200,7 +201,7 @@ class InstagramProfile(InsomniacModel):
                                        target_user=username,
                                        message=message)
 
-    def log_unfollow_action(self, session_id, username, task_id, execution_id, timestamp=None):
+    def log_unfollow_action(self, session_id, username, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
         """
         Create InsomniacAction record
         Create UnfollowAction record
@@ -216,7 +217,7 @@ class InstagramProfile(InsomniacModel):
             UnfollowAction.create(action=action,
                                   target_user=username)
 
-    def log_scrape_action(self, session_id, username, source_type, source_name, task_id, execution_id, timestamp=None):
+    def log_scrape_action(self, session_id, username, source_type, source_name, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
         """
         Create InsomniacAction record
         Create ScrapeAction record
@@ -237,7 +238,7 @@ class InstagramProfile(InsomniacModel):
                                              type=(source_type if source_type is not None else None),
                                              name=source_name)
 
-    def log_filter_action(self, session_id, username, task_id, execution_id, timestamp=None):
+    def log_filter_action(self, session_id, username, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
         """
         Create InsomniacAction record
         Create FilterAction record
@@ -253,7 +254,7 @@ class InstagramProfile(InsomniacModel):
             FilterAction.create(action=action,
                                 target_user=username)
 
-    def log_change_profile_info_action(self, session_id, profile_pic_url, name, description, task_id, execution_id, timestamp=None):
+    def log_change_profile_info_action(self, session_id, profile_pic_url, name, description, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
         """
         Create InsomniacAction record
         Create ChangeProfileInfoAction record
@@ -439,8 +440,8 @@ class InstagramProfile(InsomniacModel):
 class InstagramProfileInfo(InsomniacModel):
     profile = ForeignKeyField(InstagramProfile, backref='profile_info_records')
     status = TextField()
-    followers = BigIntegerField()
-    following = BigIntegerField()
+    followers = BigIntegerField(null=True)
+    following = BigIntegerField(null=True)
     timestamp = TimestampField(default=datetime.now)
 
     class Meta:
@@ -449,7 +450,7 @@ class InstagramProfileInfo(InsomniacModel):
 
 class SessionInfo(InsomniacModel):
     app_id = TextField(null=True)
-    app_version = TextField()
+    app_version = TextField(null=True)
     start = TimestampField(default=datetime.now)
     end = TimestampField(null=True)
     args = TextField()
@@ -627,12 +628,29 @@ def init() -> bool:
     Initialize database and return whether it was just created.
     """
     with db.connection_context():
-        # Migration logic between schema versions can be added here later
         if len(db.get_tables()) == 0:
             print(f"Creating tables in {DATABASE_NAME}...")
             db.create_tables(MODELS)
             SchemaVersion.create()
             return True
+
+        # Migration logic
+        current_db_version = _get_db_version()
+        if current_db_version is None:
+            print(COLOR_FAIL + "Cannot read database version from SchemaVersion table!" + COLOR_ENDC)
+            return False
+
+        if current_db_version > DATABASE_VERSION:
+            raise Exception("Bot version is too low, cannot work with the current database! "
+                            "Please update the bot or delete the database!")
+
+        if current_db_version < DATABASE_VERSION:
+            print(f"[Database] Going to migrate database to a newer version...")
+            while current_db_version < DATABASE_VERSION:
+                migrator = SqliteMigrator(db)
+                _migrate(current_db_version, migrator)
+                current_db_version = _get_db_version()
+            return False
     return False
 
 
@@ -664,3 +682,40 @@ def get_ig_profiles_actions_by_task_id(actions_task_id, action_types_list) -> di
             ig_profiles_to_actions[profile.name] = ig_profiles_to_actions.pop(profile.id)
 
     return ig_profiles_to_actions
+
+
+def _get_db_version() -> Optional[int]:
+    versions = SchemaVersion.select() \
+        .order_by(SchemaVersion.updated_at.desc()) \
+        .limit(1)
+    return versions[0].version if len(versions) > 0 else None
+
+
+def _migrate_db_from_version_1_to_2(migrator):
+    """
+    Changes added on DB version 2:
+
+        * Made InstagramProfileInfo.followers nullable
+        * Made InstagramProfileInfo.followings nullable
+        * Made SessionInfo.app_info nullable
+    """
+    migrate(
+        migrator.drop_not_null('instagram_profiles_info', 'followers'),
+        migrator.drop_not_null('instagram_profiles_info', 'following'),
+        migrator.drop_not_null('sessions_info', 'app_version')
+    )
+
+
+def _migrate(curr_version, migrator):
+    print(f"[Database] Going to run database migration from version {curr_version} to {curr_version+1}")
+    migration_method = database_migrations[f"{curr_version}->{curr_version + 1}"]
+    with db.atomic():
+        migration_method(migrator)
+    print(f"[Database] database migration from version {curr_version} to {curr_version+1} has been done successfully")
+    print(f"[Database] Updating database version to be {curr_version + 1}")
+    SchemaVersion.create(version=curr_version+1)
+
+
+database_migrations = {
+    "1->2": _migrate_db_from_version_1_to_2
+}

@@ -1,13 +1,14 @@
-import uuid
 from datetime import datetime
 from typing import Optional
 
-from insomniac.storage import Storage
 from insomniac.actions_types import LikeAction, InteractAction, FollowAction, GetProfileAction, ScrapeAction, \
     UnfollowAction, RemoveMassFollowerAction, StoryWatchAction, CommentAction, DirectMessageAction, FilterAction
+from insomniac.storage import Storage
 
 
 class SessionState:
+    SOURCE_NAME_TARGETS = "targets"
+
     id = None
     args = {}
     app_id = None
@@ -79,6 +80,7 @@ class SessionState:
                 self.totalFollowed[action.source_name] += 1
 
             self.storage.log_follow_action(self.id, action.user, action.source_type, action.source_name)
+            self.storage.update_follow_status(action.user, do_i_follow_him=True)
 
         if type(action) == StoryWatchAction:
             self.totalStoriesWatched += 1
@@ -95,6 +97,7 @@ class SessionState:
         if type(action) == UnfollowAction:
             self.totalUnfollowed += 1
             self.storage.log_unfollow_action(self.id, action.user)
+            self.storage.update_follow_status(action.user, do_i_follow_him=False)
 
         if type(action) == ScrapeAction:
             if self.totalScraped.get(action.source_name) is None:
@@ -109,16 +112,17 @@ class SessionState:
             self.storage.log_filter_action(self.id, action.user)
 
         if type(action) == InteractAction:
-            if self.totalInteractions.get(action.source_name) is None:
-                self.totalInteractions[action.source_name] = 1
+            source_name = action.source_name if action.source_type is not None else self.SOURCE_NAME_TARGETS
+            if self.totalInteractions.get(source_name) is None:
+                self.totalInteractions[source_name] = 1
             else:
-                self.totalInteractions[action.source_name] += 1
+                self.totalInteractions[source_name] += 1
 
-            if self.successfulInteractions.get(action.source_name) is None:
-                self.successfulInteractions[action.source_name] = 1 if action.succeed else 0
+            if self.successfulInteractions.get(source_name) is None:
+                self.successfulInteractions[source_name] = 1 if action.succeed else 0
             else:
                 if action.succeed:
-                    self.successfulInteractions[action.source_name] += 1
+                    self.successfulInteractions[source_name] += 1
 
         if type(action) == RemoveMassFollowerAction:
             self.removedMassFollowers.append(action.user)

@@ -42,11 +42,29 @@ class ActivationController:
                                               f"?activation_code={self.activation_code}"
                                               f"&version={__version__}")
         if code == HTTP_OK and body is not None:
-            return base64.b64decode(zlib.decompress(body))
+            extra_feature = base64.b64decode(zlib.decompress(body))
+            return self.load_extra_feature(extra_feature, module)
 
         print(COLOR_FAIL + f"Cannot get {'ui-' if ui else ''}module {module} from v{__version__}: "
                            f"{code} ({fail_reason})" + COLOR_ENDC)
         return None
+
+    def load_extra_feature(self, extra_feature, module):
+        print_debug_ui(f"Loading extra-feature-module: {module}")
+
+        import sourcedefender
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as tmpdir:
+            from os import path as os_path
+            target_basename = f'{module}.pye'
+            module_name = os_path.splitext(target_basename)[0]
+            save_filename = os_path.join(tmpdir, target_basename)
+            with open(save_filename, 'wb') as f:
+                f.write(extra_feature)
+            from sys import path as sys_path
+            sys_path.append(tmpdir)
+
+            return __import__(module_name).code
 
 
 def print_activation_required_to(action):
