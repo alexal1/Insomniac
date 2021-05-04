@@ -5,7 +5,6 @@ from insomniac.database_engine import *
 from insomniac.db_models import get_ig_profile_by_profile_name, ProfileStatus
 import insomniac.db_models as insomniac_db
 from insomniac.utils import *
-from insomniac.globals import task_id, execution_id
 
 FILENAME_WHITELIST = "whitelist.txt"
 FILENAME_BLACKLIST = "blacklist.txt"
@@ -172,7 +171,10 @@ class Storage:
     def get_following_status(self, username):
         if not self.profile.used_to_follow(username):
             return FollowingStatus.NONE
-        return FollowingStatus.FOLLOWED if self.profile.do_i_follow(username) else FollowingStatus.UNFOLLOWED
+        do_i_follow = self.profile.do_i_follow(username)
+        if do_i_follow is None:
+            return FollowingStatus.NONE
+        return FollowingStatus.FOLLOWED if do_i_follow else FollowingStatus.UNFOLLOWED
 
     @database_api
     def is_profile_follows_me_by_cache(self, username):
@@ -185,48 +187,55 @@ class Storage:
         return self.profile.is_follow_me(username, hours=self.recheck_follow_status_after) is True
 
     @database_api
-    def update_follow_status(self, username, is_follow_me, do_i_follow_him):
+    def update_follow_status(self, username, is_follow_me=None, do_i_follow_him=None):
+        if is_follow_me is None and do_i_follow_him is None:
+            print(COLOR_FAIL + "Provide either is_follow_me or do_i_follow_him or both in update_follow_status()!")
+            return
+        if is_follow_me is None:
+            is_follow_me = self.profile.is_follow_me(username)
+        if do_i_follow_him is None:
+            do_i_follow_him = self.profile.do_i_follow(username)
         self.profile.update_follow_status(username, is_follow_me, do_i_follow_him)
 
     @database_api
     def log_get_profile_action(self, session_id, username):
-        self.profile.log_get_profile_action(session_id, username, task_id, execution_id)
+        self.profile.log_get_profile_action(session_id, username)
 
     @database_api
     def log_like_action(self, session_id, username, source_type, source_name):
-        self.profile.log_like_action(session_id, username, source_type, source_name, task_id, execution_id)
+        self.profile.log_like_action(session_id, username, source_type, source_name)
 
     @database_api
     def log_follow_action(self, session_id, username, source_type, source_name):
-        self.profile.log_follow_action(session_id, username, source_type, source_name, task_id, execution_id)
+        self.profile.log_follow_action(session_id, username, source_type, source_name)
 
     @database_api
     def log_story_watch_action(self, session_id, username, source_type, source_name):
-        self.profile.log_story_watch_action(session_id, username, source_type, source_name, task_id, execution_id)
+        self.profile.log_story_watch_action(session_id, username, source_type, source_name)
 
     @database_api
     def log_comment_action(self, session_id, username, comment, source_type, source_name):
-        self.profile.log_comment_action(session_id, username, comment, source_type, source_name, task_id, execution_id)
+        self.profile.log_comment_action(session_id, username, comment, source_type, source_name)
 
     @database_api
     def log_direct_message_action(self, session_id, username, message):
-        self.profile.log_direct_message_action(session_id, username, message, task_id, execution_id)
+        self.profile.log_direct_message_action(session_id, username, message)
 
     @database_api
     def log_unfollow_action(self, session_id, username):
-        self.profile.log_unfollow_action(session_id, username, task_id, execution_id)
+        self.profile.log_unfollow_action(session_id, username)
 
     @database_api
     def log_scrape_action(self, session_id, username, source_type, source_name):
-        self.profile.log_scrape_action(session_id, username, source_type, source_name, task_id, execution_id)
+        self.profile.log_scrape_action(session_id, username, source_type, source_name)
 
     @database_api
     def log_filter_action(self, session_id, username):
-        self.profile.log_filter_action(session_id, username, task_id, execution_id)
+        self.profile.log_filter_action(session_id, username)
 
     @database_api
     def log_change_profile_info_action(self, session_id, profile_pic_url, name, description):
-        self.profile.log_change_profile_info_action(session_id, profile_pic_url, name, description, task_id, execution_id)
+        self.profile.log_change_profile_info_action(session_id, profile_pic_url, name, description)
 
     @database_api
     def publish_scrapped_account(self, username):

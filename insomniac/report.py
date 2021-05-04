@@ -22,6 +22,8 @@ def print_full_report(sessions):
             print_timeless(COLOR_REPORT + "Total comments: " + str(session.totalComments) + COLOR_ENDC)
             print_timeless(COLOR_REPORT + "Total unfollowed: " + str(session.totalUnfollowed) + COLOR_ENDC)
             print_timeless(COLOR_REPORT + "Total get-profile: " + str(session.totalGetProfile) + COLOR_ENDC)
+            print_timeless(COLOR_REPORT + "Total scraped: "
+                           + _stringify_interactions(session.totalScraped) + COLOR_ENDC)
             print_timeless(COLOR_REPORT + "Removed mass followers: "
                            + _stringify_removed_mass_followers(session.removedMassFollowers) + COLOR_ENDC)
 
@@ -40,6 +42,7 @@ def print_full_report(sessions):
     total_interactions = {}
     successful_interactions = {}
     total_followed = {}
+    total_scraped = {}
     total_removed_mass_followers = []
     for session in sessions:
         for source, count in session.totalInteractions.items():
@@ -59,6 +62,12 @@ def print_full_report(sessions):
                 total_followed[source] = count
             else:
                 total_followed[source] += count
+
+        for source, count in session.totalScraped.items():
+            if total_scraped.get(source) is None:
+                total_scraped[source] = count
+            else:
+                total_scraped[source] += count
 
         for username in session.removedMassFollowers:
             total_removed_mass_followers.append(username)
@@ -83,6 +92,8 @@ def print_full_report(sessions):
 
     total_get_profile = sum(session.totalGetProfile for session in sessions)
     print_timeless(COLOR_REPORT + "Total get-profile: " + str(total_get_profile) + COLOR_ENDC)
+
+    print_timeless(COLOR_REPORT + "Total scraped: " + _stringify_interactions(total_scraped) + COLOR_ENDC)
 
     print_timeless(COLOR_REPORT + "Removed mass followers: "
                    + _stringify_removed_mass_followers(total_removed_mass_followers) + COLOR_ENDC)

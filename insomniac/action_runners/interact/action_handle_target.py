@@ -6,9 +6,11 @@ from insomniac.actions_types import LikeAction, FollowAction, InteractAction, Ge
     CommentAction, TargetType, FilterAction
 from insomniac.limits import process_limits
 from insomniac.report import print_short_report, print_interaction_types
+from insomniac.session_state import SessionState
 from insomniac.sleeper import sleeper
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
+from insomniac.validations import validate_url
 from insomniac.views import OpenedPostView
 
 is_all_filters_satisfied = False
@@ -134,7 +136,7 @@ def handle_target(device,
             is_liked, is_followed, is_watch, is_commented = interaction(username=target_name, interaction_strategy=interaction_strategy)
             if is_liked or is_followed or is_watch or is_commented:
                 on_action(InteractAction(source_name=target, source_type=source_type, user=target_name, succeed=True))
-                print_short_report(target_name, session_state)
+                print_short_report(SessionState.SOURCE_NAME_TARGETS, session_state)
             else:
                 on_action(InteractAction(source_name=target, source_type=source_type, user=target_name, succeed=False))
 
@@ -177,15 +179,11 @@ def handle_target(device,
         else:
             print_interaction_types(f"{target_username} - {target_post}", can_like, False, False, False)
 
-            is_liked = opened_post_view.like_post()
-
-            if is_liked:
-                print(COLOR_OKGREEN + f"@{target_username} - {target_post} - photo been liked." + COLOR_ENDC)
-                on_action(LikeAction(source_name=target_username, source_type=source_type, user=target_username))
-                on_action(InteractAction(source_name=target_username, source_type=source_type, user=target_username, succeed=True))
-                print_short_report(f"@{target_username} - {target_post}", session_state)
-            else:
-                on_action(InteractAction(source_name=target_username, source_type=source_type, user=target_username, succeed=False))
+            opened_post_view.like()
+            print(COLOR_OKGREEN + f"@{target_username} - {target_post} - photo been liked." + COLOR_ENDC)
+            on_action(LikeAction(source_name=target_username, source_type=source_type, user=target_username))
+            on_action(InteractAction(source_name=target_username, source_type=source_type, user=target_username, succeed=True))
+            print_short_report(SessionState.SOURCE_NAME_TARGETS, session_state)
 
         if is_like_limit_reached:
             # If one of the limits reached for source-limit, move to next source
@@ -207,7 +205,7 @@ def handle_target(device,
             return
 
         if pre_conditions(target, None):
-            if open_user(device=device, username=target, refresh=False, on_action=on_action):
+            if open_user(device=device, username=target, refresh=False, deep_link_usage_percentage=50, on_action=on_action):
                 interact_with_username_target(target, None)
             else:
                 print("@" + target + " profile couldn't be opened. Skip.")
@@ -215,10 +213,10 @@ def handle_target(device,
     else:
         url = target.strip()
         if validate_url(url) and "instagram.com/p/" in url:
-            if open_instagram_with_url(device_id=device.device_id, url=url) is True:
+            if open_instagram_with_url(device_id=device.device_id, app_id=device.app_id, url=url) is True:
                 sleeper.random_sleep()
                 opened_post_view = OpenedPostView(device)
-                username = opened_post_view.get_user_name()
+                username = opened_post_view.get_author_name()
                 if username is None:
                     print(url + " target user-name couldn't be processed. Skip.")
                     return

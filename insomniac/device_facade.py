@@ -650,6 +650,20 @@ class DeviceFacade:
                 except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 
+        def is_focused(self) -> bool:
+            if self.viewV1 is not None:
+                import uiautomator
+                try:
+                    self.viewV1.info["focused"]
+                except uiautomator.JsonRPCError as e:
+                    raise DeviceFacade.JsonRpcError(e)
+            else:
+                import uiautomator2
+                try:
+                    return self.viewV2.info["focused"]
+                except uiautomator2.JSONRPCError as e:
+                    raise DeviceFacade.JsonRpcError(e)
+
         def set_text(self, text):
             if self.device.typewriter.write(self, text):
                 return

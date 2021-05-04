@@ -2,12 +2,13 @@ from functools import partial
 
 from insomniac.action_runners.actions_runners_manager import ActionState
 from insomniac.actions_impl import interact_with_user, ScrollEndDetector, open_likers, iterate_over_likers, \
-    is_private_account, InteractionStrategy, do_have_story
+    is_private_account, InteractionStrategy, do_have_story, interact_with_feed
 from insomniac.actions_types import InteractAction, LikeAction, FollowAction, GetProfileAction, StoryWatchAction, \
     PlaceInteractionType, CommentAction, FilterAction, SourceType
 from insomniac.limits import process_limits
 from insomniac.navigation import search_for
 from insomniac.report import print_short_report, print_interaction_types
+from insomniac.safely_runner import RestartJobRequiredException
 from insomniac.sleeper import sleeper
 from insomniac.softban_indicator import softban_indicator
 from insomniac.storage import FollowingStatus
@@ -213,27 +214,93 @@ def handle_place(device,
 
         return can_continue
 
-    extract_place_profiles_and_interact(device,
-                                        place,
-                                        instructions,
-                                        interact_with_profile,
-                                        pre_conditions,
-                                        on_action)
+    def navigate_to_feed():
+        if not search_for(device, place=place, on_action=on_action):
+            return None
+
+        # Switch to Recent tab
+        if instructions == PlaceInteractionType.RECENT_LIKERS or instructions == PlaceInteractionType.RECENT_POSTS:
+            print("Switching to Recent tab")
+            tab_layout = device.find(resourceId=f'{device.app_id}:id/tab_layout',
+                                     className='android.widget.LinearLayout')
+            if tab_layout.exists():
+                tab_layout.child(index=1).click()
+            else:
+                print("Can't Find recent tab. Interacting with Popular.")
+
+        # Sleep longer because posts loading takes time
+        sleeper.random_sleep(multiplier=2.0)
+
+        # Open post
+        posts_view_list = PostsGridView(device).open_random_post()
+        if posts_view_list is None:
+            return None
+
+        return posts_view_list
+
+    def should_continue_interact_with_feed():
+        return True
+
+    def interact_with_feed_post(posts_views_list):
+        is_interact_limit_reached, interact_reached_source_limit, interact_reached_session_limit = \
+            is_limit_reached(
+                InteractAction(source_name=place, source_type=source_type, user=None, succeed=True),
+                session_state)
+
+        if not process_limits(is_interact_limit_reached, interact_reached_session_limit,
+                              interact_reached_source_limit, action_status, "Interaction"):
+            return False
+
+        is_like_limit_reached, like_reached_source_limit, like_reached_session_limit = \
+            is_limit_reached(LikeAction(source_name=place, source_type=source_type, user=None),
+                             session_state)
+
+        if not process_limits(is_like_limit_reached, like_reached_session_limit,
+                              like_reached_source_limit, action_status, "Likes"):
+            return False
+
+        opened_post_view = posts_views_list.get_current_post()
+        author_name = opened_post_view.get_author_name()
+
+        like_chance = randint(1, 100)
+        if like_chance > like_percentage:
+            print("Not going to like image due to like-percentage hit")
+            on_action(InteractAction(source_name=place, source_type=source_type, user=author_name, succeed=False))
+        else:
+            print("Like post")
+            opened_post_view.like()
+            if author_name is not None:
+                on_action(LikeAction(source_name=place, source_type=source_type, user=author_name))
+                on_action(InteractAction(source_name=place, source_type=source_type, user=author_name, succeed=True))
+
+        return True
+
+    if instructions == PlaceInteractionType.RECENT_LIKERS or instructions == PlaceInteractionType.TOP_LIKERS:
+        extract_place_likers_and_interact(device,
+                                          place,
+                                          instructions,
+                                          navigate_to_feed,
+                                          interact_with_profile,
+                                          pre_conditions,
+                                          on_action)
+    elif instructions == PlaceInteractionType.RECENT_POSTS or instructions == PlaceInteractionType.TOP_POSTS:
+        interact_with_feed(navigate_to_feed, should_continue_interact_with_feed, interact_with_feed_post)
 
 
-def extract_place_profiles_and_interact(device,
-                                        place,
-                                        instructions,
-                                        iteration_callback,
-                                        iteration_callback_pre_conditions,
-                                        on_action):
+def extract_place_likers_and_interact(device,
+                                      place,
+                                      instructions,
+                                      navigate_to_feed,
+                                      iteration_callback,
+                                      iteration_callback_pre_conditions,
+                                      on_action):
     print("Interacting with place-{0}-{1}".format(place, instructions.value))
 
     if not search_for(device, place=place, on_action=on_action):
         return
 
     # Switch to Recent tab
-    if instructions == PlaceInteractionType.RECENT_LIKERS:
+    if instructions == PlaceInteractionType.RECENT_LIKERS or instructions == PlaceInteractionType.RECENT_POSTS:
         print("Switching to Recent tab")
         tab_layout = device.find(resourceId=f'{device.app_id}:id/tab_layout',
                                  className='android.widget.LinearLayout')
@@ -246,7 +313,7 @@ def extract_place_profiles_and_interact(device,
     sleeper.random_sleep(multiplier=2.0)
 
     # Open post
-    posts_view_list = PostsGridView(device).open_random_post()
+    posts_view_list = navigate_to_feed()
     if posts_view_list is None:
         return
 
@@ -256,12 +323,20 @@ def extract_place_profiles_and_interact(device,
         posts_end_detector.notify_username_iterated(liker_username)
         return iteration_callback_pre_conditions(liker_username, liker_username_view)
 
+    no_likes_count = 0
+
     while True:
         if not open_likers(device):
+            no_likes_count += 1
             print(COLOR_OKGREEN + "No likes, let's scroll down." + COLOR_ENDC)
             posts_view_list.scroll_down()
+            if no_likes_count == 10:
+                print(COLOR_FAIL + "Seen this message too many times. Lets restart the job." + COLOR_ENDC)
+                raise RestartJobRequiredException
+
             continue
 
+        no_likes_count = 0
         print("List of likers is opened.")
         posts_end_detector.notify_new_page()
         sleeper.random_sleep()

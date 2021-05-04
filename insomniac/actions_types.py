@@ -19,7 +19,6 @@ class SourceType(Enum):
     BLOGGER = "blogger"
     HASHTAG = "hashtag"
     PLACE = "place"
-    TARGET = "target"
 
 
 @unique
@@ -32,12 +31,16 @@ class BloggerInteractionType(Enum):
 class HashtagInteractionType(Enum):
     TOP_LIKERS = 'top-likers'
     RECENT_LIKERS = 'recent-likers'
+    RECENT_POSTS = 'recent-posts'
+    TOP_POSTS = 'top-posts'
 
 
 @unique
 class PlaceInteractionType(Enum):
     TOP_LIKERS = 'top-likers'
     RECENT_LIKERS = 'recent-likers'
+    RECENT_POSTS = 'recent-posts'
+    TOP_POSTS = 'top-posts'
 
 
 @unique

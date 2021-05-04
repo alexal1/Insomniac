@@ -7,16 +7,16 @@ import sys
 import traceback
 import random
 import colorama
+import base64
 from datetime import datetime
 from random import randint
 from subprocess import PIPE
 from time import sleep
-from urllib.parse import urlparse
 
 from colorama import Fore, Style, AnsiToWin32
 
 import insomniac.__version__ as __version__
-import insomniac.globals as globals
+import insomniac.globals as insomniac_globals
 
 random.seed()
 # Init colorama but set "wrap" to False to not replace sys.stdout with a proxy object. It's meaningless as
@@ -125,10 +125,10 @@ def open_instagram(device_id, app_id):
         print(COLOR_FAIL + err + COLOR_ENDC)
 
 
-def open_instagram_with_url(device_id, url):
+def open_instagram_with_url(device_id, app_id, url):
     print("Open Instagram app with url: {}".format(url))
     cmd = ("adb" + ("" if device_id is None else " -s " + device_id) +
-           " shell am start -a android.intent.action.VIEW -d {}".format(url))
+           f" shell am start -a android.intent.action.VIEW -d {url} {app_id}")
     cmd_res = subprocess.run(cmd, stdout=PIPE, stderr=PIPE, shell=True, encoding="utf8")
     err = cmd_res.stderr.strip()
 
@@ -143,6 +143,9 @@ def close_instagram(device_id, app_id):
     print("Close Instagram app")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              f" shell am force-stop {app_id}").close()
+    # Press HOME to leave a possible state of opened system dialog(s)
+    os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
+             f" shell input keyevent 4").close()
 
 
 def clear_instagram_data(device_id, app_id):
@@ -181,7 +184,7 @@ def save_crash(device, ex=None):
 
             if ex:
                 outfile.write("\n")
-                outfile.write(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
+                outfile.write(describe_exception(ex))
 
         shutil.make_archive(os.path.join("crashes", directory_name), 'zip', os.path.join("crashes", directory_name))
         shutil.rmtree(os.path.join("crashes", directory_name))
@@ -191,7 +194,7 @@ def save_crash(device, ex=None):
         print(COLOR_OKGREEN + "https://github.com/alexal1/Insomniac/issues\n" + COLOR_ENDC)
     except Exception as e:
         print(COLOR_FAIL + f"Could not save crash after an error. Crash-save-error: {str(e)}" + COLOR_ENDC)
-        print(COLOR_FAIL + traceback.format_exc() + COLOR_ENDC)
+        print(COLOR_FAIL + describe_exception(e) + COLOR_ENDC)
 
 
 def print_copyright():
@@ -201,7 +204,7 @@ def print_copyright():
 
 def _print_with_time_decorator(standard_print, print_time, debug, ui_log):
     def wrapper(*args, **kwargs):
-        if globals.is_ui_process and not ui_log:
+        if insomniac_globals.is_ui_process and not ui_log:
             return
 
         if debug and not __version__.__debug_mode__:
@@ -300,15 +303,6 @@ def describe_exception(ex):
     return description
 
 
-def validate_url(x):
-    try:
-        result = urlparse(x)
-        return all([result.scheme, result.netloc, result.path])
-    except Exception as e:
-        print(COLOR_FAIL + f"Error validating URL {x}. Error: {e}" + COLOR_ENDC)
-        return False
-
-
 def split_list_items_with_separator(original_list, separator):
     values = []
     for record in original_list:
@@ -319,8 +313,22 @@ def split_list_items_with_separator(original_list, separator):
     return values
 
 
+def to_base_64(text):
+    text_bytes = text.encode(encoding='UTF-8', errors='strict')
+    base64_bytes = base64.b64encode(text_bytes)
+    base64_text = base64_bytes.decode(encoding='UTF-8', errors='strict')
+    return base64_text
+
+
+def from_base_64(base64_text):
+    base64_bytes = base64_text.encode(encoding='UTF-8', errors='strict')
+    text_bytes = base64.b64decode(base64_bytes)
+    text = text_bytes.decode(encoding='UTF-8', errors='strict')
+    return text
+
+
 def _get_logs_dir_name():
-    if globals.is_ui_process:
+    if insomniac_globals.is_ui_process:
         return UI_LOGS_DIR_NAME
     return ENGINE_LOGS_DIR_NAME
 
@@ -328,7 +336,7 @@ def _get_logs_dir_name():
 def _get_log_file_name(logs_directory_name):
     os.makedirs(os.path.join(logs_directory_name), exist_ok=True)
     curr_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    log_name = f"insomniac_log-{curr_time}{'-'+globals.execution_id if globals.execution_id != '' else ''}.log"
+    log_name = f"insomniac_log-{curr_time}{'-'+insomniac_globals.execution_id if insomniac_globals.execution_id != '' else ''}.log"
     log_path = os.path.join(logs_directory_name, log_name)
     return log_path
 
