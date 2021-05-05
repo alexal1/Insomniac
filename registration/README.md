@@ -1,6 +1,4 @@
-## Registration Flow (experimental feature)
-
-_IMPORTANT! This is an experimental feature. It means that the code is working, but we don't have an exact recipe how to avoid a CAPTCHA. Instagram is very strict when it comes to creating new accounts._
+## Registration Flow
 
 Insomniac gives the possibility to create Instagram accounts automatically. This can be done via `--register registration/users.txt` argument. Insomniac will do the following:
 1. Open the app and **create new identity** if you're using a clone via [appcloner.app](https://appcloner.app), or just clear app data if you're not.

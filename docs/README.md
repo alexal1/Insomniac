@@ -262,6 +262,10 @@ number (e.g. 4) or a range (e.g. 3-8)
 ### Special features
 Other features that are unblocked by [joining Patreon $10 tier](https://www.patreon.com/join/insomniac_bot):
 
+#### --warmup-time-before-session 2-6
+Set warmup length in minutes, disabled by default. 
+It can be a number (e.g. 2) or a range (e.g. 1-3).
+
 #### --remove-mass-followers 10-20
 Remove given number of mass followers from the list of
 your followers. "Mass followers" are those who has

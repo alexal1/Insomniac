@@ -1,4 +1,6 @@
 # Targets to interact with. Provide either usernames or posts urls.
+# Important: This file is shared as targets file across all of the accounts you run insomniac with.
+# If you wish to create a targets file thats dedicated to a specific accout, copy this file and name it <PROFILE-NAME>-targets.txt (replace <PROFILE-NAME> with your profile-name)
 #
 # Example:
 # natgeo

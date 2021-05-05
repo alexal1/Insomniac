@@ -1,3 +1,4 @@
+from insomniac.sleeper import sleeper
 from insomniac.utils import *
 from insomniac.views import TabBarView, ProfileView, TabBarTabs, LanguageNotEnglishException
 
@@ -16,7 +17,18 @@ def navigate(device, tab, switch_to_english_on_exception=True):
 
 
 def search_for(device, username=None, hashtag=None, place=None, on_action=None):
-    search_view = TabBarView(device).navigate_to_search()
+    tab_bar_view = TabBarView(device)
+
+    # There may be no TabBarView if Instagram was opened via a deeplink. Then we have to clear the backstack.
+    is_message_printed = False
+    while not tab_bar_view.is_visible():
+        if not is_message_printed:
+            print(COLOR_OKGREEN + "Clearing the back stack..." + COLOR_ENDC)
+            is_message_printed = True
+        tab_bar_view.press_back_arrow()
+        sleeper.random_sleep()
+
+    search_view = tab_bar_view.navigate_to_search()
     target_view = None
 
     if username is not None:

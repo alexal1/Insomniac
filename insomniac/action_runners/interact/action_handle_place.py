@@ -54,6 +54,23 @@ def handle_place(device,
                  is_limit_reached,
                  is_passed_filters,
                  action_status):
+    if not search_for(device, place=place, on_action=on_action):
+        return None
+
+    # Switch to Recent tab if needed
+    if instructions == PlaceInteractionType.RECENT_LIKERS or instructions == PlaceInteractionType.RECENT_POSTS:
+        sleeper.random_sleep()
+        print("Switching to Recent tab")
+        tab_layout = device.find(resourceId=f'{device.app_id}:id/tab_layout',
+                                 className='android.widget.LinearLayout')
+        if tab_layout.exists():
+            tab_layout.child(index=1).click()
+        else:
+            print("Can't Find recent tab. Interacting with Popular.")
+
+    # Sleep longer because posts loading takes time
+    sleeper.random_sleep(multiplier=2.0)
+
     source_type = f'{SourceType.PLACE.value}-{instructions.value}'
     interaction = partial(interact_with_user,
                           device=device,
@@ -215,22 +232,6 @@ def handle_place(device,
         return can_continue
 
     def navigate_to_feed():
-        if not search_for(device, place=place, on_action=on_action):
-            return None
-
-        # Switch to Recent tab
-        if instructions == PlaceInteractionType.RECENT_LIKERS or instructions == PlaceInteractionType.RECENT_POSTS:
-            print("Switching to Recent tab")
-            tab_layout = device.find(resourceId=f'{device.app_id}:id/tab_layout',
-                                     className='android.widget.LinearLayout')
-            if tab_layout.exists():
-                tab_layout.child(index=1).click()
-            else:
-                print("Can't Find recent tab. Interacting with Popular.")
-
-        # Sleep longer because posts loading takes time
-        sleeper.random_sleep(multiplier=2.0)
-
         # Open post
         posts_view_list = PostsGridView(device).open_random_post()
         if posts_view_list is None:
@@ -295,22 +296,6 @@ def extract_place_likers_and_interact(device,
                                       iteration_callback_pre_conditions,
                                       on_action):
     print("Interacting with place-{0}-{1}".format(place, instructions.value))
-
-    if not search_for(device, place=place, on_action=on_action):
-        return
-
-    # Switch to Recent tab
-    if instructions == PlaceInteractionType.RECENT_LIKERS or instructions == PlaceInteractionType.RECENT_POSTS:
-        print("Switching to Recent tab")
-        tab_layout = device.find(resourceId=f'{device.app_id}:id/tab_layout',
-                                 className='android.widget.LinearLayout')
-        if tab_layout.exists():
-            tab_layout.child(index=1).click()
-        else:
-            print("Can't Find recent tab. Interacting with Popular.")
-
-    # Sleep longer because posts loading takes time
-    sleeper.random_sleep(multiplier=2.0)
 
     # Open post
     posts_view_list = navigate_to_feed()

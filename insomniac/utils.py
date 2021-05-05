@@ -35,6 +35,8 @@ COLOR_BOLD = Style.BRIGHT
 ENGINE_LOGS_DIR_NAME = 'logs'
 UI_LOGS_DIR_NAME = 'ui-logs'
 
+APP_REOPEN_WARNING = "Warning: Activity not started, intent has been delivered to currently running top-most instance."
+
 
 def get_instagram_version(device_id, app_id):
     stream = os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
@@ -121,7 +123,7 @@ def open_instagram(device_id, app_id):
 
     cmd_res = subprocess.run(cmd, stdout=PIPE, stderr=PIPE, shell=True, encoding="utf8")
     err = cmd_res.stderr.strip()
-    if err:
+    if err and err != APP_REOPEN_WARNING:
         print(COLOR_FAIL + err + COLOR_ENDC)
 
 
@@ -132,7 +134,7 @@ def open_instagram_with_url(device_id, app_id, url):
     cmd_res = subprocess.run(cmd, stdout=PIPE, stderr=PIPE, shell=True, encoding="utf8")
     err = cmd_res.stderr.strip()
 
-    if err:
+    if err and err != APP_REOPEN_WARNING:
         print(COLOR_FAIL + err + COLOR_ENDC)
         return False
 

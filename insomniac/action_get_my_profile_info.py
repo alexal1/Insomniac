@@ -49,6 +49,7 @@ def get_my_profile_info(device, username):
 
     report_string = ""
     if username:
+        username = username.strip()
         report_string += "Hello, @" + username + "! "
     if followers is not None:
         report_string += "You have " + str(followers) + " followers"

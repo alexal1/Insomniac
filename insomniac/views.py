@@ -95,6 +95,9 @@ class TabBarView(InstagramView):
         super().__init__(device)
         self.top = None
 
+    def is_visible(self) -> bool:
+        return self._get_tab_bar().exists()
+
     def _get_tab_bar(self):
         self.device.close_keyboard()
 
@@ -331,13 +334,21 @@ class SearchView(InstagramView):
         )
 
     def _get_place_row(self, place):
-        return self.device.find(
-            resourceIdMatches=case_insensitive_re(
-                f"{self.device.app_id}:id/row_place_title"
-            ),
-            className="android.widget.TextView",
-            textMatches=case_insensitive_re(place)
-        )
+        if place is None:
+            return self.device.find(
+                resourceIdMatches=case_insensitive_re(
+                    f"{self.device.app_id}:id/row_place_title"
+                ),
+                className="android.widget.TextView"
+            )
+        else:
+            return self.device.find(
+                resourceIdMatches=case_insensitive_re(
+                    f"{self.device.app_id}:id/row_place_title"
+                ),
+                className="android.widget.TextView",
+                textMatches = case_insensitive_re(place)
+            )
 
     def _get_tab_text_view(self, tab: SearchTabs):
         tab_layout = self.device.find(
@@ -500,7 +511,7 @@ class SearchView(InstagramView):
                 return None
         places_tab.click()
 
-        place_view = self._get_place_row(place)
+        place_view = self._get_place_row(None)  # just open first place we see
         if not place_view.exists():
             print(COLOR_FAIL + f"Cannot find place {place}, abort." + COLOR_ENDC)
             save_crash(self.device)

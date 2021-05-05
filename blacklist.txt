@@ -1,2 +1,5 @@
+# Important: This file is shared as blacklist file across all of the accounts you run insomniac with.
+# If you wish to create a blacklist file thats dedicated to a specific accout, copy this file and name it <PROFILE-NAME>-blacklist.txt (replace <PROFILE-NAME> with your profile-name)
+
 username1
 username2
