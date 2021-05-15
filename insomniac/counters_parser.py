@@ -1,8 +1,9 @@
-from insomniac.navigation import switch_to_english, LanguageChangedException
-from insomniac.utils import *
+def parse(text) -> int:
+    """
+    Parses given text.
 
-
-def parse(device, text):
+    :return: parsed value or ValueError if couldn't parse
+    """
     multiplier = 1
     text = text.replace(",", "")
     is_dot_in_text = False
@@ -22,12 +23,5 @@ def parse(device, text):
 
         if is_dot_in_text:
             multiplier = 100000
-    try:
-        count = int(float(text) * multiplier)
-    except ValueError as ex:
-        print_timeless(COLOR_FAIL + "Cannot parse \"" + text + "\". Probably wrong language, will set English now." +
-                       COLOR_ENDC)
-        save_crash(device, ex)
-        switch_to_english(device)
-        raise LanguageChangedException()
-    return count
+
+    return int(float(text) * multiplier)

@@ -665,13 +665,32 @@ def _open_profile_using_deeplink(device, profile_name):
     return should_continue, is_profile_opened
 
 
+def iterate_over_my_followers(device, iteration_callback, iteration_callback_pre_conditions):
+    _iterate_over_my_followers_or_followings(device,
+                                             iteration_callback,
+                                             iteration_callback_pre_conditions,
+                                             is_followers=True)
+
+
 def iterate_over_my_followings(device, iteration_callback, iteration_callback_pre_conditions):
+    _iterate_over_my_followers_or_followings(device,
+                                             iteration_callback,
+                                             iteration_callback_pre_conditions,
+                                             is_followers=False)
+
+
+def _iterate_over_my_followers_or_followings(device,
+                                             iteration_callback,
+                                             iteration_callback_pre_conditions,
+                                             is_followers):
+    entities_name = "followers" if is_followers else "followings"
+
     # Wait until list is rendered
     device.find(resourceId=f'{device.app_id}:id/follow_list_container',
                 className='android.widget.LinearLayout').wait()
 
     while True:
-        print("Iterate over visible followings")
+        print(f"Iterate over visible {entities_name}")
         sleeper.random_sleep()
         screen_iterated_followings = 0
 
@@ -697,7 +716,7 @@ def iterate_over_my_followings(device, iteration_callback, iteration_callback_pr
             if to_continue:
                 sleeper.random_sleep()
             else:
-                print(COLOR_OKBLUE + "Stopping iteration over followings" + COLOR_ENDC)
+                print(COLOR_OKBLUE + f"Stopping iteration over {entities_name}" + COLOR_ENDC)
                 return
 
         if screen_iterated_followings > 0:
@@ -706,7 +725,7 @@ def iterate_over_my_followings(device, iteration_callback, iteration_callback_pr
                                     className='android.widget.ListView')
             list_view.scroll(DeviceFacade.Direction.BOTTOM)
         else:
-            print(COLOR_OKGREEN + "No followings were iterated, finish." + COLOR_ENDC)
+            print(COLOR_OKGREEN + f"No {entities_name} were iterated, finish." + COLOR_ENDC)
             return
 
 

@@ -17,26 +17,20 @@ from insomniac.views import PostsGridView
 
 
 def extract_place_instructions(source):
-    split_idx = source.find('-')
-    if split_idx == -1:
-        print("There is no special interaction-instructions for " + source + ". Working with " + source + " recent-likers.")
-        return source, PlaceInteractionType.RECENT_LIKERS
-
+    source = source.replace('_', ' ')
     selected_instruction = None
-    source_profile_name = source[:split_idx]
-    interaction_instructions_str = source[split_idx+1:]
-
-    for hashtag_instruction in PlaceInteractionType:
-        if hashtag_instruction.value == interaction_instructions_str:
-            selected_instruction = hashtag_instruction
+    source_place_name = None
+    for place_instruction in PlaceInteractionType:
+        if source.endswith(f'-{place_instruction.value}'):
+            selected_instruction = place_instruction
+            source_place_name = source[:len(source) - len(place_instruction.value) - 1]
             break
 
     if selected_instruction is None:
-        print("Couldn't use interaction-instructions " + interaction_instructions_str +
-              ". Working with " + source + " recent-likers.")
-        selected_instruction = PlaceInteractionType.RECENT_LIKERS
+        print("There is no special interaction-instructions for " + source + ". Working with " + source + " recent-likers.")
+        return source, PlaceInteractionType.RECENT_LIKERS
 
-    return source_profile_name, selected_instruction
+    return source_place_name, selected_instruction
 
 
 def handle_place(device,

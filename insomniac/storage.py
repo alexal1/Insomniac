@@ -203,6 +203,10 @@ class Storage:
         return self.profile.is_follow_me(username, hours=self.recheck_follow_status_after) is True
 
     @database_api
+    def is_new_follower(self, username):
+        return self.profile.is_follow_me(username) is None
+
+    @database_api
     def update_follow_status(self, username, is_follow_me=None, do_i_follow_him=None):
         if is_follow_me is None and do_i_follow_him is None:
             print(COLOR_FAIL + "Provide either is_follow_me or do_i_follow_him or both in update_follow_status()!")
