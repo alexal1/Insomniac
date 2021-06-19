@@ -603,6 +603,11 @@ def _open_user(device, username, open_followers=False, open_followings=False,
             print("Open your followings")
             followings_button = device.find(resourceIdMatches=FOLLOWING_BUTTON_ID_REGEX.format(device.app_id, device.app_id))
             followings_button.click()
+            sleeper.random_sleep()
+            followings_tab = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
+                                         clickable=True,
+                                         textContains=' Following')
+            followings_tab.click()
     else:
         should_open_user_with_search = True
         deep_link_usage_chance = randint(1, 100)
@@ -637,6 +642,11 @@ def _open_user(device, username, open_followers=False, open_followings=False,
             print("Open @" + username + " followings")
             followings_button = device.find(resourceIdMatches=FOLLOWING_BUTTON_ID_REGEX.format(device.app_id, device.app_id))
             followings_button.click()
+            sleeper.random_sleep()
+            followings_tab = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
+                                         clickable=True,
+                                         textContains=' Following')
+            followings_tab.click()
 
     return True
 
