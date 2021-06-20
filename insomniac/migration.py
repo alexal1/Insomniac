@@ -1,6 +1,6 @@
 import json
 
-from insomniac.db_models import DATABASE_NAME
+from insomniac.db_models import DATABASE_NAME, is_ig_profile_exists
 from insomniac.session_state import SessionState
 from insomniac.sessions import FILENAME_SESSIONS, Sessions
 from insomniac.storage import *
@@ -155,7 +155,8 @@ def migrate_from_sql_to_peewee(my_username):
     if not check_database_exists(my_username, False):
         return
 
-    if not db_models.init():
+    db_models.init()
+    if is_ig_profile_exists(my_username):
         return
 
     database = get_database(my_username)

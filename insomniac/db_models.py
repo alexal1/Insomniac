@@ -623,22 +623,22 @@ MODELS = [
 ]
 
 
-def init() -> bool:
+def init():
     """
-    Initialize database and return whether it was just created.
+    Initialize database.
     """
     with db.connection_context():
         if len(db.get_tables()) == 0:
             print(f"Creating tables in {DATABASE_NAME}...")
             db.create_tables(MODELS)
             SchemaVersion.create()
-            return True
+            return
 
         # Migration logic
         current_db_version = _get_db_version()
         if current_db_version is None:
             print(COLOR_FAIL + "Cannot read database version from SchemaVersion table!" + COLOR_ENDC)
-            return False
+            return
 
         if current_db_version > DATABASE_VERSION:
             raise Exception("Bot version is too low, cannot work with the current database! "
@@ -650,14 +650,18 @@ def init() -> bool:
                 migrator = SqliteMigrator(db)
                 _migrate(current_db_version, migrator)
                 current_db_version = _get_db_version()
-            return False
-    return False
 
 
 def get_ig_profile_by_profile_name(profile_name) -> InstagramProfile:
     with db.connection_context():
         profile, is_created = InstagramProfile.get_or_create(name=profile_name)
     return profile
+
+
+def is_ig_profile_exists(profile_name) -> bool:
+    with db.connection_context():
+        is_exists = InstagramProfile.select().where(InstagramProfile.name == profile_name).exists()
+    return is_exists
 
 
 def get_ig_profiles_actions_by_task_id(actions_task_id, action_types_list) -> dict:

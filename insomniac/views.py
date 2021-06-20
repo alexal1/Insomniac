@@ -1,5 +1,5 @@
 import datetime
-from enum import Enum
+from enum import Enum, unique
 from typing import Optional
 
 from insomniac.actions_types import GetProfileAction
@@ -491,16 +491,10 @@ class SearchView(InstagramView):
         return PlacesView(self.device)
 
     def _handle_permission_request(self):
-        dialog_container = self.device.find(resourceId="com.android.packageinstaller:id/dialog_container",
-                                            className="android.widget.LinearLayout")
-        deny_button = dialog_container.child(resourceId="com.android.packageinstaller:id/permission_deny_button",
-                                             className="android.widget.Button")
-        checkbox = dialog_container.child(resourceId="com.android.packageinstaller:id/do_not_ask_checkbox",
-                                          className="android.widget.CheckBox")
-        if dialog_container.exists(quick=True):
-            print("Deny Instagram permission request")
-            checkbox.click(ignore_if_missing=True)
-            deny_button.click(ignore_if_missing=True)
+        dialog_view = DialogView(self.device)
+        if dialog_view.is_visible():
+            print("Deny location permission request")
+            dialog_view.click_deny_location_access()
 
 
 class PostsViewList(InstagramView):
@@ -902,8 +896,11 @@ class ProfileView(ActionBarView):
 
     def change_to_username(self, username):
         action_bar = self._get_action_bar_title_btn()
-        current_profile_name = action_bar.get_text().upper()
-        if current_profile_name == username.upper():
+
+        def is_username_profile_opened():
+            return action_bar.get_text().strip().upper() == username.upper()
+
+        if is_username_profile_opened():
             print(COLOR_OKBLUE + f"You are already logged as {username}!" + COLOR_ENDC)
             return True
 
@@ -917,8 +914,7 @@ class ProfileView(ActionBarView):
             print(f"Switching to {username}...")
             found_obj.click()
             sleeper.random_sleep()
-            current_profile_name = action_bar.get_text().upper()
-            if current_profile_name == username.upper():
+            if is_username_profile_opened():
                 return True
         return False
 
@@ -1120,15 +1116,17 @@ class ProfileView(ActionBarView):
         print_debug("Navigate to Followers")
         followers_button = self.device.find(resourceIdMatches=self.FOLLOWERS_BUTTON_ID_REGEX.format(self.device.app_id, self.device.app_id))
         followers_button.click()
-
-        return FollowersFollowingListView(self.device)
+        followers_following_list_view = FollowersFollowingListView(self.device)
+        followers_following_list_view.switch_to_tab(FollowersFollowingListView.Tab.FOLLOWERS)
+        return followers_following_list_view
 
     def navigate_to_following(self):
         print_debug("Navigate to Followers")
         following_button = self.device.find(resourceIdMatches=self.FOLLOWING_BUTTON_ID_REGEX.format(self.device.app_id, self.device.app_id))
         following_button.click()
-
-        return FollowersFollowingListView(self.device)
+        followers_following_list_view = FollowersFollowingListView(self.device)
+        followers_following_list_view.switch_to_tab(FollowersFollowingListView.Tab.FOLLOWING)
+        return followers_following_list_view
 
     def open_messages(self):
         message_button = self.device.find(
@@ -1155,6 +1153,28 @@ class ProfileActionsView(InstagramView):
 
 
 class FollowersFollowingListView(InstagramView):
+
+    @unique
+    class Tab(Enum):
+        FOLLOWERS = 0
+        FOLLOWING = 1
+
+    def switch_to_tab(self, tab):
+        """
+        :type tab: FollowersFollowingListView.Tab
+        """
+        sleeper.random_sleep()
+        following_tab = self.device.find(className="android.widget.TextView",
+                                         clickable=True,
+                                         textContains="Following")
+        followers_tab = self.device.find(className="android.widget.TextView",
+                                         clickable=True,
+                                         textContains="Followers")
+        if tab == self.Tab.FOLLOWERS:
+            followers_tab.click()
+        else:
+            following_tab.click()
+
     def scroll_to_bottom(self):
         print("Scroll to the bottom of the list")
 
@@ -1331,6 +1351,50 @@ class CurrentStoryView(InstagramView):
                     datetime.datetime.now() - datetime.timedelta(days=value)
                 )
         return None
+
+
+class DialogView(InstagramView):
+
+    UNFOLLOW_BUTTON_ID_REGEX = '{0}:id/follow_sheet_unfollow_row|{1}:id/button_positive|{2}:id/primary_button'
+    UNFOLLOW_BUTTON_CLASS_NAME_REGEX = 'android.widget.TextView|android.widget.Button'
+    UNFOLLOW_BUTTON_TEXT_REGEX = case_insensitive_re("Unfollow")
+    LOCATION_DENY_BUTTON_ID_REGEX = '.*?:id/permission_deny.*?'
+    LOCATION_DENY_BUTTON_CLASS_NAME_REGEX = 'android.widget.TextView|android.widget.Button'
+    LOCATION_CHECKBOX_ID_REGEX = '.*?:id/do_not_ask_checkbox'
+
+    def is_visible(self) -> bool:
+        dialog_v1 = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_root_view',
+                                     className='android.widget.FrameLayout')
+        dialog_v2 = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_container',
+                                     className='android.view.ViewGroup')
+        dialog_v3 = self.device.find(resourceId=f'{self.device.app_id}:id/content',
+                                     className='android.widget.FrameLayout')
+        dialog_v4 = self.device.find(resourceIdMatches='com.android.(permissioncontroller|packageinstaller):id/.*?',
+                                     className='android.widget.LinearLayout')
+        return dialog_v1.exists(quick=True) or dialog_v2.exists(quick=True) or dialog_v3.exists(quick=True) or dialog_v4.exists(quick=True)
+
+    def click_unfollow(self) -> bool:
+        unfollow_button = self.device.find(
+            resourceIdMatches=self.UNFOLLOW_BUTTON_ID_REGEX.format(self.device.app_id, self.device.app_id, self.device.app_id),
+            classNameMatches=self.UNFOLLOW_BUTTON_CLASS_NAME_REGEX,
+            textMatches=self.UNFOLLOW_BUTTON_TEXT_REGEX
+        )
+        if unfollow_button.exists():
+            unfollow_button.click()
+            return True
+        return False
+
+    def click_deny_location_access(self) -> bool:
+
+        deny_button = self.device.find(resourceIdMatches=self.LOCATION_DENY_BUTTON_ID_REGEX,
+                                       classNameMatches=self.LOCATION_DENY_BUTTON_CLASS_NAME_REGEX)
+        checkbox = self.device.find(resourceIdMatches=self.LOCATION_CHECKBOX_ID_REGEX,
+                                    className="android.widget.CheckBox")
+        checkbox.click(ignore_if_missing=True)
+        if deny_button.exists():
+            deny_button.click()
+            return True
+        return False
 
 
 class LanguageNotEnglishException(Exception):

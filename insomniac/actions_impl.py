@@ -9,8 +9,7 @@ from insomniac.sleeper import sleeper
 from insomniac.softban_indicator import softban_indicator
 from insomniac.tools.spintax import spin
 from insomniac.utils import *
-from insomniac.validations import validate_ig_profile_existence
-from insomniac.views import ActionBarView, ProfileView, PostsViewList, OpenedPostView, LikersListView
+from insomniac.views import ActionBarView, ProfileView, PostsViewList, OpenedPostView, LikersListView, DialogView
 
 FOLLOWERS_BUTTON_ID_REGEX = '{0}:id/row_profile_header_followers_container' \
                             '|{1}:id/row_profile_header_container_followers'
@@ -18,9 +17,6 @@ TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
 FOLLOW_REGEX = 'Follow|Follow Back'
 ALREADY_FOLLOWING_REGEX = 'Following|Requested'
 SHOP_REGEX = 'Add Shop|View Shop'
-UNFOLLOW_REGEX = 'Unfollow'
-FOLLOWING_BUTTON_ID_REGEX = '{0}:id/row_profile_header_following_container' \
-                            '|{1}:id/row_profile_header_container_following'
 USER_AVATAR_VIEW_ID = '{0}:id/circular_image|^$'
 LISTVIEW_OR_RECYCLERVIEW_REGEX = 'android.widget.ListView|androidx.recyclerview.widget.RecyclerView'
 
@@ -596,18 +592,11 @@ def _open_user(device, username, open_followers=False, open_followings=False,
     if username is None:
         if open_followers:
             print("Open your followers")
-            followers_button = device.find(resourceIdMatches=FOLLOWERS_BUTTON_ID_REGEX.format(device.app_id, device.app_id))
-            followers_button.click()
+            ProfileView(device, is_own_profile=True).navigate_to_followers()
 
         if open_followings:
-            print("Open your followings")
-            followings_button = device.find(resourceIdMatches=FOLLOWING_BUTTON_ID_REGEX.format(device.app_id, device.app_id))
-            followings_button.click()
-            sleeper.random_sleep()
-            followings_tab = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
-                                         clickable=True,
-                                         textContains=' Following')
-            followings_tab.click()
+            print("Open your following")
+            ProfileView(device, is_own_profile=True).navigate_to_following()
     else:
         should_open_user_with_search = True
         deep_link_usage_chance = randint(1, 100)
@@ -635,18 +624,11 @@ def _open_user(device, username, open_followers=False, open_followings=False,
 
         if open_followers:
             print("Open @" + username + " followers")
-            followers_button = device.find(resourceIdMatches=FOLLOWERS_BUTTON_ID_REGEX.format(device.app_id, device.app_id))
-            followers_button.click()
+            ProfileView(device, is_own_profile=True).navigate_to_followers()
 
         if open_followings:
-            print("Open @" + username + " followings")
-            followings_button = device.find(resourceIdMatches=FOLLOWING_BUTTON_ID_REGEX.format(device.app_id, device.app_id))
-            followings_button.click()
-            sleeper.random_sleep()
-            followings_tab = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
-                                         clickable=True,
-                                         textContains=' Following')
-            followings_tab.click()
+            print("Open @" + username + " following")
+            ProfileView(device, is_own_profile=True).navigate_to_following()
 
     return True
 
@@ -762,12 +744,17 @@ def sort_followings_by_date(device, sort_order):
         return
 
     if sort_order == FollowingsSortOrder.DEFAULT:
-        sort_options_recycler_view.child(index=0).child(index=1).click()
+        sort_item = sort_options_recycler_view.child(index=0)
     elif sort_order == FollowingsSortOrder.LATEST:
-        sort_options_recycler_view.child(index=1).child(index=1).click()
+        sort_item = sort_options_recycler_view.child(index=1)
     else:  # EARLIEST
-        sort_options_recycler_view.child(index=2).child(index=1).click()
+        sort_item = sort_options_recycler_view.child(index=2)
 
+    if not sort_item.exists():
+        print(COLOR_FAIL + f"Cannot find an option to sort by {sort_order.name}" + COLOR_ENDC)
+        device.back()
+        return
+    sort_item.click()
 
 def do_unfollow(device, my_username, username, storage, check_if_is_follower, username_view, follow_status_button_view, on_action):
     """
@@ -782,7 +769,7 @@ def do_unfollow(device, my_username, username, storage, check_if_is_follower, us
         print("Unfollowing a profile directly from the following list.")
         follow_status_button_view.click()
     else:
-        print("Unfollowing a profile from his profile page.")
+        print("Unfollowing a profile from their profile page.")
         username_view.click()
         on_action(GetProfileAction(user=username))
         sleeper.random_sleep()
@@ -813,21 +800,18 @@ def do_unfollow(device, my_username, username, storage, check_if_is_follower, us
 
         print(f"Unfollowing @{username}...")
         unfollow_button.click()
-
         sleeper.random_sleep()
 
-        confirm_unfollow_button = device.find(resourceId=f'{device.app_id}:id/follow_sheet_unfollow_row',
-                                              className='android.widget.TextView')
-        if not confirm_unfollow_button.exists():
-            print(COLOR_FAIL + "Cannot confirm unfollow." + COLOR_ENDC)
-            save_crash(device)
-            device.back()
-            return False
-        confirm_unfollow_button.click()
+    unfollow_confirmed = False
+    dialog_view = DialogView(device)
+    if dialog_view.is_visible():
+        print("Confirming unfollow...")
+        unfollow_confirmed = dialog_view.click_unfollow()
 
-    sleeper.random_sleep()
-    _close_confirm_dialog_if_shown(device)
-    softban_indicator.detect_action_blocked_dialog(device)
+    if unfollow_confirmed:
+        sleeper.random_sleep()
+    else:
+        softban_indicator.detect_action_blocked_dialog(device)
 
     if need_to_go_back_to_list:
         print("Back to the followings list.")
@@ -872,9 +856,7 @@ def interact_with_feed(navigate_to_feed, should_continue, interact_with_feed_pos
 
 def _check_is_follower(device, username, my_username):
     print(COLOR_OKGREEN + "Check if @" + username + " is following you." + COLOR_ENDC)
-    following_container = device.find(resourceIdMatches=FOLLOWING_BUTTON_ID_REGEX.format(device.app_id, device.app_id))
-    following_container.click()
-
+    ProfileView(device, is_own_profile=True).navigate_to_following()
     sleeper.random_sleep()
 
     is_list_empty = softban_indicator.detect_empty_list(device)
@@ -893,45 +875,6 @@ def _check_is_follower(device, username, my_username):
         print("Back to the profile.")
         device.back()
         return result
-
-
-def _close_confirm_dialog_if_shown(device):
-    if not _close_confirm_dialog_by_version(device, 2):
-        _close_confirm_dialog_by_version(device, 1)
-
-
-def _close_confirm_dialog_by_version(device, version):
-    if version == 1:
-        dialog_root_view = device.find(resourceId=f'{device.app_id}:id/dialog_root_view',
-                                       className='android.widget.FrameLayout')
-    elif version == 2:
-        dialog_root_view = device.find(resourceId=f'{device.app_id}:id/dialog_container',
-                                       className='android.view.ViewGroup')
-    else:
-        raise ValueError("Close unfollow confrim dialog for vis not exists.")
-
-    if not dialog_root_view.exists(quick=True):
-        return False
-
-    # Avatar existence is the way to distinguish confirm dialog from block dialog
-    user_avatar_view = device.find(resourceIdMatches=USER_AVATAR_VIEW_ID.format(device.app_id),
-                                   className='android.widget.ImageView')
-    if not user_avatar_view.exists(quick=True):
-        return False
-
-    print(COLOR_OKGREEN + "Dialog shown, confirm unfollowing." + COLOR_ENDC)
-    sleeper.random_sleep()
-    if version == 1:
-        unfollow_button = dialog_root_view.child(resourceId=f'{device.app_id}:id/primary_button',
-                                                 classNameMatches=TEXTVIEW_OR_BUTTON_REGEX)
-    elif version == 2:
-        unfollow_button = dialog_root_view.child(resourceId=f'{device.app_id}:id/primary_button',
-                                                 classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
-                                                 textMatches=UNFOLLOW_REGEX)
-
-    unfollow_button.click()
-    sleeper.random_sleep()
-    return True
 
 
 def _get_action_bar(device):

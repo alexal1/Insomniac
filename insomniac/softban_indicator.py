@@ -1,7 +1,7 @@
 from enum import unique, Enum
 
 from insomniac.utils import *
-from insomniac.views import ProfileView, FollowersFollowingListView, InstagramView
+from insomniac.views import ProfileView, FollowersFollowingListView, DialogView
 
 EMPTY_LIST_TRESHOLD = 5
 EMPTY_PROFILE_TRESHOLD = 5
@@ -74,8 +74,7 @@ class SoftBanIndicator:
 
     @check_softban_feature_flag
     def detect_action_blocked_dialog(self, device):
-        curr_view = InstagramView(device)
-        is_blocked = curr_view.is_block_dialog_present()
+        is_blocked = DialogView(device).is_visible()
         if is_blocked:
             print(COLOR_FAIL + "Probably block dialog is shown. "
                                "Counting that as a soft-ban indicator!." + COLOR_ENDC)

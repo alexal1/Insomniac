@@ -29,10 +29,11 @@ class ActivationController:
                            f"{dot}{COLOR_BOLD}Filtering{COLOR_ENDC} - skip unwanted accounts by various parameters"
                            f"{dot}{COLOR_BOLD}Scrapping{COLOR_ENDC} - technique that makes interactions "
                            f"significantly safer and faster"
+                           f"{dot}{COLOR_BOLD}Warmup{COLOR_ENDC} - interact with your feed and Explore several minutes "
+                           f"before session to behave more like a human"
                            f"{dot}{COLOR_BOLD}Working hours{COLOR_ENDC} - the script will wait till specified hours "
                            f"before each session"
                            f"{dot}{COLOR_BOLD}Removing mass followers{COLOR_ENDC} - automate \"cleaning\" you account"
-                           f"{dot}{COLOR_BOLD}Analytics tool{COLOR_ENDC} - build presentation that shows your growth\n"
                            f"Activate by supporting our small team: {COLOR_BOLD}{HOST}{PATH_ACTIVATE}{COLOR_ENDC}\n")
 
     def get_extra_feature(self, module, ui=False):
