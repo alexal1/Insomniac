@@ -2,8 +2,6 @@ from http.client import HTTPException
 from socket import timeout
 
 from insomniac.device_facade import DeviceFacade
-from insomniac.extra_features.actions_impl import airplane_mode_on_off
-from insomniac.extra_features.utils import new_identity
 from insomniac.navigation import navigate, LanguageChangedException
 from insomniac.sleeper import sleeper
 from insomniac.utils import *
@@ -42,6 +40,9 @@ def run_safely(device_wrapper):
 
 
 def run_registration_safely(device_wrapper):
+    from insomniac.extra_features.actions_impl import airplane_mode_on_off
+    from insomniac.extra_features.utils import new_identity
+
     def actual_decorator(func):
         def wrapper(*args, **kwargs):
             try:
