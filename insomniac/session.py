@@ -184,7 +184,6 @@ class InsomniacSession(object):
         if __version__.__debug_mode__:
             device_wrapper.get().start_screen_record()
         open_instagram(args.device, args.app_id)
-        sleeper.random_sleep()
         if save_profile_info:
             self.session_state.my_username, \
                 self.session_state.my_followers_count, \

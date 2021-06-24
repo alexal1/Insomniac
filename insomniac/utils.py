@@ -1,18 +1,18 @@
+import base64
 import os
-import string
+import random
 import re
 import shutil
+import string
 import subprocess
 import sys
 import traceback
-import random
-import colorama
-import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 from random import randint
 from subprocess import PIPE
 from time import sleep
 
+import colorama
 from colorama import Fore, Style, AnsiToWin32
 
 import insomniac.__version__ as __version__
@@ -341,6 +341,31 @@ def _get_log_file_name(logs_directory_name):
     log_name = f"insomniac_log-{curr_time}{'-'+insomniac_globals.execution_id if insomniac_globals.execution_id != '' else ''}.log"
     log_path = os.path.join(logs_directory_name, log_name)
     return log_path
+
+
+class Timer:
+
+    duration = None
+    start_time = None
+    end_time = None
+
+    def __init__(self, seconds):
+        self.duration = timedelta(seconds=seconds)
+        self.start()
+
+    def start(self):
+        self.start_time = datetime.now()
+        self.end_time = self.start_time + self.duration
+
+    def is_expired(self):
+        return datetime.now() > self.end_time
+
+    def get_seconds_left(self):
+        time_since_start = datetime.now() - self.start_time
+        if time_since_start >= self.duration:
+            return 0
+        else:
+            return int((self.duration - time_since_start).total_seconds())
 
 
 class Logger(object):

@@ -25,7 +25,6 @@ def run_safely(device_wrapper):
                 close_instagram(device_wrapper.device_id, device_wrapper.app_id)
                 sleeper.random_sleep()
                 open_instagram(device_wrapper.device_id, device_wrapper.app_id)
-                sleeper.random_sleep()
                 navigate(device_wrapper.get(), TabBarTabs.PROFILE)
             except LanguageChangedException:
                 print_timeless("")

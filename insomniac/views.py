@@ -10,6 +10,9 @@ from insomniac.sleeper import sleeper
 from insomniac.utils import *
 
 
+TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
+
+
 def case_insensitive_re(str_list):
     if isinstance(str_list, str):
         strings = str_list
@@ -173,11 +176,18 @@ class TabBarView(InstagramView):
                 descriptionMatches=case_insensitive_re(TabBarView.PROFILE_CONTENT_DESC)
             )
 
-        if button.exists():
-            # Two clicks to reset tab content
-            button.click()
-            button.click()
-            return
+        timer = Timer(seconds=20)
+        while not timer.is_expired():
+            if button.exists():
+                # Two clicks to reset tab content
+                button.click()
+                button.click()
+                return
+            else:
+                seconds_left = timer.get_seconds_left()
+                if seconds_left > 0:
+                    print(COLOR_OKGREEN + f"Opening {tab_name}, {seconds_left} seconds left..." + COLOR_ENDC)
+                    sleep(2)
 
         print(COLOR_FAIL + f"Didn't find tab {tab_name} in the tab bar... "
                            f"Maybe English language is not set!?" + COLOR_ENDC)
@@ -318,7 +328,7 @@ class SearchView(InstagramView):
 
     def refresh(self):
         posts_grid = self.device.find(resourceId=PostsGridView.POSTS_GRID_RESOURCE_ID.format(self.device.app_id),
-                                      className=PostsGridView.POSTS_GRID_CLASS_NAME)
+                                      classNameMatches=PostsGridView.POSTS_GRID_CLASS_NAME)
         if posts_grid.exists():
             posts_grid.scroll(DeviceFacade.Direction.TOP)
 
@@ -326,7 +336,7 @@ class SearchView(InstagramView):
         search_edit_text = self.device.find(resourceId=f"{self.device.app_id}:id/action_bar_search_edit_text",
                                             className="android.widget.EditText")
         if not search_edit_text.exists(quick=True):
-            print(COLOR_FAIL + "Cannot find search bar. Will try to refresh the page." + COLOR_ENDC)
+            print(COLOR_OKGREEN + "Cannot find search bar. Will try to refresh the page." + COLOR_ENDC)
             self.refresh()
         return search_edit_text
 
@@ -386,6 +396,10 @@ class SearchView(InstagramView):
     def navigate_to_username(self, username, on_action):
         print_debug(f"Navigate to profile @{username}")
 
+        search_edit_text = self._get_search_edit_text()
+        search_edit_text.click()
+        self._handle_permission_request()
+
         # Check if username already exists in the recent search list -> act as human
         username_view_recent = self._get_username_row(username)
         if username_view_recent.exists(quick=True):
@@ -394,11 +408,7 @@ class SearchView(InstagramView):
             return ProfileView(self.device, is_own_profile=False)
         print(f"@{username} is not in recent searching history...")
 
-        search_edit_text = self._get_search_edit_text()
-        search_edit_text.click()
-        self._handle_permission_request()
         search_edit_text.set_text(username)
-
         search_text = self.device.find(resourceId=self.SEARCH_TEXT_ID.format(self.device.app_id),
                                        className=self.SEARCH_TEXT_CLASSNAME)
         search_text.click(ignore_if_missing=True)
@@ -423,6 +433,10 @@ class SearchView(InstagramView):
     def navigate_to_hashtag(self, hashtag):
         print_debug(f"Navigate to hashtag #{hashtag}")
 
+        search_edit_text = self._get_search_edit_text()
+        search_edit_text.click()
+        self._handle_permission_request()
+
         # Check if hashtag already exists in the recent search list -> act as human
         hashtag_view_recent = self._get_hashtag_row(hashtag)
         if hashtag_view_recent.exists(quick=True):
@@ -431,11 +445,7 @@ class SearchView(InstagramView):
             return HashTagView(self.device)
         print(f"#{hashtag} is not in recent searching history...")
 
-        search_edit_text = self._get_search_edit_text()
-        search_edit_text.click()
-        self._handle_permission_request()
         search_edit_text.set_text(hashtag)
-
         search_text = self.device.find(resourceId=self.SEARCH_TEXT_ID.format(self.device.app_id),
                                        className=self.SEARCH_TEXT_CLASSNAME)
         search_text.click(ignore_if_missing=True)
@@ -458,6 +468,10 @@ class SearchView(InstagramView):
     def navigate_to_place(self, place):
         print_debug(f"Navigate to place {place}")
 
+        search_edit_text = self._get_search_edit_text()
+        search_edit_text.click()
+        self._handle_permission_request()
+
         # Check if place already exists in the recent search list -> act as human
         place_view_recent = self._get_place_row(place)
         if place_view_recent.exists(quick=True):
@@ -466,11 +480,7 @@ class SearchView(InstagramView):
             return PlacesView(self.device)
         print(f"{place} is not in recent searching history...")
 
-        search_edit_text = self._get_search_edit_text()
-        search_edit_text.click()
-        self._handle_permission_request()
         search_edit_text.set_text(place)
-
         search_text = self.device.find(resourceId=self.SEARCH_TEXT_ID.format(self.device.app_id),
                                        className=self.SEARCH_TEXT_CLASSNAME)
         search_text.click(ignore_if_missing=True)
@@ -793,13 +803,13 @@ class OpenedPostView(InstagramView):
 class PostsGridView(InstagramView):
 
     POSTS_GRID_RESOURCE_ID = '{0}:id/recycler_view'
-    POSTS_GRID_CLASS_NAME = 'androidx.recyclerview.widget.RecyclerView'
+    POSTS_GRID_CLASS_NAME = 'androidx.recyclerview.widget.RecyclerView|android.view.View'
 
     def open_random_post(self) -> Optional['PostsViewList']:
         # Scroll down several times to pick random post
         scroll_times = randint(0, 5)
         posts_grid = self.device.find(resourceId=self.POSTS_GRID_RESOURCE_ID.format(self.device.app_id),
-                                      className=self.POSTS_GRID_CLASS_NAME)
+                                      classNameMatches=self.POSTS_GRID_CLASS_NAME)
         print(f"Scroll down {scroll_times} times.")
         for _ in range(0, scroll_times):
             posts_grid.scroll(DeviceFacade.Direction.BOTTOM)
@@ -845,8 +855,10 @@ class PostsGridView(InstagramView):
 
 
 class ProfileView(ActionBarView):
+
     FOLLOWERS_BUTTON_ID_REGEX = '{0}:id/row_profile_header_followers_container|{1}:id/row_profile_header_container_followers'
     FOLLOWING_BUTTON_ID_REGEX = '{0}:id/row_profile_header_following_container|{1}:id/row_profile_header_container_following'
+    MESSAGE_BUTTON_CLASS_NAME_REGEX = TEXTVIEW_OR_BUTTON_REGEX
 
     def __init__(self, device: DeviceFacade, is_own_profile=False):
         super().__init__(device)
@@ -1130,8 +1142,7 @@ class ProfileView(ActionBarView):
 
     def open_messages(self):
         message_button = self.device.find(
-            className='android.widget.Button',
-            clickable=True,
+            classNameMatches=self.MESSAGE_BUTTON_CLASS_NAME_REGEX,
             textMatches=case_insensitive_re('Message')
         )
         if message_button.exists(quick=True):
@@ -1166,10 +1177,10 @@ class FollowersFollowingListView(InstagramView):
         sleeper.random_sleep()
         following_tab = self.device.find(className="android.widget.TextView",
                                          clickable=True,
-                                         textContains="Following")
+                                         textMatches="(?i).*?following")
         followers_tab = self.device.find(className="android.widget.TextView",
                                          clickable=True,
-                                         textContains="Followers")
+                                         textMatches="(?i).*?followers")
         if tab == self.Tab.FOLLOWERS:
             followers_tab.click()
         else:
@@ -1356,17 +1367,17 @@ class CurrentStoryView(InstagramView):
 class DialogView(InstagramView):
 
     UNFOLLOW_BUTTON_ID_REGEX = '{0}:id/follow_sheet_unfollow_row|{1}:id/button_positive|{2}:id/primary_button'
-    UNFOLLOW_BUTTON_CLASS_NAME_REGEX = 'android.widget.TextView|android.widget.Button'
+    UNFOLLOW_BUTTON_CLASS_NAME_REGEX = TEXTVIEW_OR_BUTTON_REGEX
     UNFOLLOW_BUTTON_TEXT_REGEX = case_insensitive_re("Unfollow")
     LOCATION_DENY_BUTTON_ID_REGEX = '.*?:id/permission_deny.*?'
-    LOCATION_DENY_BUTTON_CLASS_NAME_REGEX = 'android.widget.TextView|android.widget.Button'
+    LOCATION_DENY_BUTTON_CLASS_NAME_REGEX = TEXTVIEW_OR_BUTTON_REGEX
     LOCATION_CHECKBOX_ID_REGEX = '.*?:id/do_not_ask_checkbox'
 
     def is_visible(self) -> bool:
         dialog_v1 = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_root_view',
                                      className='android.widget.FrameLayout')
         dialog_v2 = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_container',
-                                     className='android.view.ViewGroup')
+                                     classNameMatches='android.view.ViewGroup|android.view.View')
         dialog_v3 = self.device.find(resourceId=f'{self.device.app_id}:id/content',
                                      className='android.widget.FrameLayout')
         dialog_v4 = self.device.find(resourceIdMatches='com.android.(permissioncontroller|packageinstaller):id/.*?',
