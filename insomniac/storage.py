@@ -89,7 +89,7 @@ class Storage:
         self._reset_state()
 
         if my_username is None:
-            print(COLOR_FAIL + "No username, so the script won't read/write from the database" + COLOR_ENDC)
+            print(COLOR_OKGREEN + "No username, so the script won't read/write from the database" + COLOR_ENDC)
             return
 
         global IS_USING_DATABASE

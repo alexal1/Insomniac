@@ -204,7 +204,7 @@ class DeviceFacade:
 
     def is_alive(self):
         if self.deviceV1 is not None:
-            return self.deviceV1.alive()
+            return self.deviceV1.server.alive
         else:
             return self.deviceV2._is_alive()
 
@@ -557,7 +557,7 @@ class DeviceFacade:
             if self.viewV1 is not None:
                 import uiautomator
                 try:
-                    self.deviceV1.wait.idle()
+                    self.device.deviceV1.wait.idle()
                 except uiautomator.JsonRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
                 return True

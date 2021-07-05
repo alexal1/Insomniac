@@ -9,7 +9,6 @@ from insomniac.scroll_end_detector import ScrollEndDetector
 from insomniac.sleeper import sleeper
 from insomniac.utils import *
 
-
 TEXTVIEW_OR_BUTTON_REGEX = 'android.widget.TextView|android.widget.Button'
 
 
@@ -182,7 +181,11 @@ class TabBarView(InstagramView):
                 # Two clicks to reset tab content
                 button.click()
                 button.click()
-                return
+                if self._is_correct_tab_opened(tab):
+                    return
+                else:
+                    print(COLOR_FAIL + f"{tab_name} tab is not opened, will try again." + COLOR_ENDC)
+                    sleeper.random_sleep()
             else:
                 seconds_left = timer.get_seconds_left()
                 if seconds_left > 0:
@@ -193,6 +196,17 @@ class TabBarView(InstagramView):
                            f"Maybe English language is not set!?" + COLOR_ENDC)
 
         raise LanguageNotEnglishException()
+
+    def _is_correct_tab_opened(self, tab: TabBarTabs) -> bool:
+        if tab == TabBarTabs.HOME:
+            return HomeView(self.device).is_visible()
+        elif tab == TabBarTabs.SEARCH:
+            return SearchView(self.device).is_visible()
+        elif tab == TabBarTabs.PROFILE:
+            return ProfileView(self.device, is_own_profile=True).is_visible()
+        else:
+            # We can support more tabs' checks here
+            return True
 
     def _get_top(self):
         if self.top is None:
@@ -271,8 +285,15 @@ class ActionBarView(InstagramView):
 
 
 class HomeView(ActionBarView):
+    LOGO_ID = '{0}:id/action_bar_textview_custom_title_container'
+    LOGO_CLASS_NAME = 'android.widget.FrameLayout'
+
     def __init__(self, device: DeviceFacade):
         super().__init__(device)
+
+    def is_visible(self) -> bool:
+        return self.device.find(resourceId=self.LOGO_ID.format(self.device.app_id),
+                                className=self.LOGO_CLASS_NAME).exists()
 
     def navigate_to_search(self):
         print_debug("Navigate to Search")
@@ -325,6 +346,9 @@ class PlacesView(InstagramView):
 class SearchView(InstagramView):
     SEARCH_TEXT_ID = '{0}:id/echo_text'
     SEARCH_TEXT_CLASSNAME = 'android.widget.TextView'
+
+    def is_visible(self) -> bool:
+        return self._get_search_edit_text().exists()
 
     def refresh(self):
         posts_grid = self.device.find(resourceId=PostsGridView.POSTS_GRID_RESOURCE_ID.format(self.device.app_id),
@@ -859,6 +883,7 @@ class ProfileView(ActionBarView):
     FOLLOWERS_BUTTON_ID_REGEX = '{0}:id/row_profile_header_followers_container|{1}:id/row_profile_header_container_followers'
     FOLLOWING_BUTTON_ID_REGEX = '{0}:id/row_profile_header_following_container|{1}:id/row_profile_header_container_following'
     MESSAGE_BUTTON_CLASS_NAME_REGEX = TEXTVIEW_OR_BUTTON_REGEX
+    USERNAME_REGEX = re.compile(r'[a-z0-9_-]+')
 
     def __init__(self, device: DeviceFacade, is_own_profile=False):
         super().__init__(device)
@@ -944,12 +969,17 @@ class ProfileView(ActionBarView):
             resourceIdMatches=re_case_insensitive, className="android.widget.TextView"
         )
 
-    def get_username(self, error=True):
+    def get_username(self):
         title_view = self._get_action_bar_title_btn()
         if title_view.exists():
-            return title_view.get_text()
-        if error:
-            print(COLOR_FAIL + "Cannot get username" + COLOR_ENDC)
+            username = title_view.get_text()
+            if self.USERNAME_REGEX.fullmatch(username) is not None:
+                return title_view.get_text()
+            else:
+                print(COLOR_FAIL + f"Username doesn't look like real username: {username}" + COLOR_ENDC)
+                return None
+
+        print(COLOR_FAIL + "Cannot get username" + COLOR_ENDC)
         return None
 
     def get_followers_count(self, swipe_up_if_needed=False) -> Optional[int]:
@@ -1374,15 +1404,21 @@ class DialogView(InstagramView):
     LOCATION_CHECKBOX_ID_REGEX = '.*?:id/do_not_ask_checkbox'
 
     def is_visible(self) -> bool:
-        dialog_v1 = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_root_view',
+        dialog_v1 = self.device.find(resourceId=f'{self.device.app_id}:id/bottom_sheet_container',
                                      className='android.widget.FrameLayout')
-        dialog_v2 = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_container',
+        dialog_v2 = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_root_view',
+                                     className='android.widget.FrameLayout')
+        dialog_v3 = self.device.find(resourceId=f'{self.device.app_id}:id/dialog_container',
                                      classNameMatches='android.view.ViewGroup|android.view.View')
-        dialog_v3 = self.device.find(resourceId=f'{self.device.app_id}:id/content',
+        dialog_v4 = self.device.find(resourceId=f'{self.device.app_id}:id/content',
                                      className='android.widget.FrameLayout')
-        dialog_v4 = self.device.find(resourceIdMatches='com.android.(permissioncontroller|packageinstaller):id/.*?',
+        dialog_v5 = self.device.find(resourceIdMatches='com.android.(permissioncontroller|packageinstaller):id/.*?',
                                      className='android.widget.LinearLayout')
-        return dialog_v1.exists(quick=True) or dialog_v2.exists(quick=True) or dialog_v3.exists(quick=True) or dialog_v4.exists(quick=True)
+        return dialog_v1.exists(quick=True) \
+            or dialog_v2.exists(quick=True) \
+            or dialog_v3.exists(quick=True) \
+            or dialog_v4.exists(quick=True) \
+            or dialog_v5.exists(quick=True)
 
     def click_unfollow(self) -> bool:
         unfollow_button = self.device.find(
