@@ -883,7 +883,7 @@ class ProfileView(ActionBarView):
     FOLLOWERS_BUTTON_ID_REGEX = '{0}:id/row_profile_header_followers_container|{1}:id/row_profile_header_container_followers'
     FOLLOWING_BUTTON_ID_REGEX = '{0}:id/row_profile_header_following_container|{1}:id/row_profile_header_container_following'
     MESSAGE_BUTTON_CLASS_NAME_REGEX = TEXTVIEW_OR_BUTTON_REGEX
-    USERNAME_REGEX = re.compile(r'[a-z0-9_-]+')
+    USERNAME_REGEX = re.compile(r'[a-z0-9._-]+')
 
     def __init__(self, device: DeviceFacade, is_own_profile=False):
         super().__init__(device)
