@@ -972,9 +972,9 @@ class ProfileView(ActionBarView):
     def get_username(self):
         title_view = self._get_action_bar_title_btn()
         if title_view.exists():
-            username = title_view.get_text()
+            username = title_view.get_text().strip()
             if self.USERNAME_REGEX.fullmatch(username) is not None:
-                return title_view.get_text()
+                return username
             else:
                 print(COLOR_FAIL + f"Username doesn't look like real username: {username}" + COLOR_ENDC)
                 return None
