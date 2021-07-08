@@ -8,8 +8,9 @@ from peewee import *
 from playhouse.migrate import SqliteMigrator, migrate
 
 from insomniac.utils import *
+from insomniac.globals import db_name
 
-DATABASE_NAME = 'insomniac.db'
+DATABASE_NAME = db_name
 DATABASE_VERSION = 2
 
 db = SqliteDatabase(DATABASE_NAME, autoconnect=False)

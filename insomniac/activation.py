@@ -33,7 +33,7 @@ class ActivationController:
                            f"before session to behave more like a human"
                            f"{dot}{COLOR_BOLD}Working hours{COLOR_ENDC} - the script will wait till specified hours "
                            f"before each session"
-                           f"{dot}{COLOR_BOLD}Removing mass followers{COLOR_ENDC} - automate \"cleaning\" you account"
+                           f"{dot}{COLOR_BOLD}Removing mass followers{COLOR_ENDC} - automate \"cleaning\" your account\n"
                            f"Activate by supporting our small team: {COLOR_BOLD}{HOST}{PATH_ACTIVATE}{COLOR_ENDC}\n")
 
     def get_extra_feature(self, module, ui=False):

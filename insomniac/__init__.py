@@ -43,9 +43,9 @@ def is_newer_version_available():
 
 
 def print_version():
-    print_timeless_ui(COLOR_HEADER + f"Insomniac v{__version__.__version__}" + COLOR_ENDC)
+    print_timeless_ui(COLOR_HEADER + f"Engine v{__version__.__version__}" + COLOR_ENDC)
     is_new_version_available, latest_version = is_newer_version_available()
-    if is_new_version_available:
+    if is_new_version_available and insomniac_globals.is_insomniac():
         print_timeless(COLOR_HEADER + f"Newer version is available (v{latest_version}). Please run" + COLOR_ENDC)
         print_timeless(COLOR_HEADER + COLOR_BOLD + "python3 -m pip install insomniac --upgrade" + COLOR_ENDC)
     print_timeless("")

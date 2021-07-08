@@ -262,6 +262,9 @@ class ActionBarView(InstagramView):
             self.tab_bar_top = TabBarView(self.device).get_top()
         return self.tab_bar_top
 
+    def get_child(self, *args, **kwargs):
+        return self.action_bar.child(*args, **kwargs)
+
     def _get_action_bar(self):
         tab_bar = self.device.find(
             resourceIdMatches=case_insensitive_re(f"{self.device.app_id}:id/action_bar_container"),
@@ -284,12 +287,9 @@ class ActionBarView(InstagramView):
         return ActionBarView.INSTANCE
 
 
-class HomeView(ActionBarView):
+class HomeView(InstagramView):
     LOGO_ID = '{0}:id/action_bar_textview_custom_title_container'
     LOGO_CLASS_NAME = 'android.widget.FrameLayout'
-
-    def __init__(self, device: DeviceFacade):
-        super().__init__(device)
 
     def is_visible(self) -> bool:
         return self.device.find(resourceId=self.LOGO_ID.format(self.device.app_id),
@@ -297,7 +297,7 @@ class HomeView(ActionBarView):
 
     def navigate_to_search(self):
         print_debug("Navigate to Search")
-        search_btn = self.action_bar.child(
+        search_btn = ActionBarView.INSTANCE.get_child(
             descriptionMatches=case_insensitive_re(TabBarView.SEARCH_CONTENT_DESC)
         )
         search_btn.click()
@@ -878,7 +878,7 @@ class PostsGridView(InstagramView):
             return None
 
 
-class ProfileView(ActionBarView):
+class ProfileView(InstagramView):
 
     FOLLOWERS_BUTTON_ID_REGEX = '{0}:id/row_profile_header_followers_container|{1}:id/row_profile_header_container_followers'
     FOLLOWING_BUTTON_ID_REGEX = '{0}:id/row_profile_header_following_container|{1}:id/row_profile_header_container_following'
@@ -912,7 +912,7 @@ class ProfileView(ActionBarView):
         print_debug("Navigate to Options")
         # We wanna pick last view in the action bar
         options_view = None
-        for options_view in self.action_bar.child(clickable=True):
+        for options_view in ActionBarView.INSTANCE.get_child(clickable=True):
             pass
         if options_view is None or not options_view.exists():
             print(COLOR_FAIL + "No idea how to open menu..." + COLOR_ENDC)
@@ -965,7 +965,7 @@ class ProfileView(ActionBarView):
                 f"{self.device.app_id}:id/action_bar_large_title_auto_size"
             ]
         )
-        return self.action_bar.child(
+        return ActionBarView.INSTANCE.get_child(
             resourceIdMatches=re_case_insensitive, className="android.widget.TextView"
         )
 

@@ -620,8 +620,8 @@ def _run_migrations(cursor):
         return
 
     if current_version > latest_version:
-        raise Exception(f"[Database] Current DB version (v{current_version}) is newer from your Insomniac version and "
-                        f"not supported. Please update Insomniac.")
+        raise Exception(f"[Database] Current DB version (v{current_version}) is newer from your version and "
+                        f"not supported. Please update version.")
 
     if current_version < latest_version:
         print(f"[Database] Going to migrate database to a newer version...")

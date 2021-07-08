@@ -191,17 +191,19 @@ def save_crash(device, ex=None):
         shutil.make_archive(os.path.join("crashes", directory_name), 'zip', os.path.join("crashes", directory_name))
         shutil.rmtree(os.path.join("crashes", directory_name))
 
-        print(COLOR_OKGREEN + "Crash saved as \"crashes/" + directory_name + ".zip\"." + COLOR_ENDC)
-        print(COLOR_OKGREEN + "Please attach this file if you gonna report the crash at" + COLOR_ENDC)
-        print(COLOR_OKGREEN + "https://github.com/alexal1/Insomniac/issues\n" + COLOR_ENDC)
+        if insomniac_globals.is_insomniac():
+            print(COLOR_OKGREEN + "Crash saved as \"crashes/" + directory_name + ".zip\"." + COLOR_ENDC)
+            print(COLOR_OKGREEN + "Please attach this file if you gonna report the crash at" + COLOR_ENDC)
+            print(COLOR_OKGREEN + "https://github.com/alexal1/Insomniac/issues\n" + COLOR_ENDC)
     except Exception as e:
         print(COLOR_FAIL + f"Could not save crash after an error. Crash-save-error: {str(e)}" + COLOR_ENDC)
         print(COLOR_FAIL + describe_exception(e) + COLOR_ENDC)
 
 
 def print_copyright():
-    print_timeless("\nIf you like this bot, please " + COLOR_BOLD + "give us a star" + COLOR_ENDC + ":")
-    print_timeless(COLOR_BOLD + "https://github.com/alexal1/Insomniac\n" + COLOR_ENDC)
+    if insomniac_globals.is_insomniac():
+        print_timeless("\nIf you like this bot, please " + COLOR_BOLD + "give us a star" + COLOR_ENDC + ":")
+        print_timeless(COLOR_BOLD + "https://github.com/alexal1/Insomniac\n" + COLOR_ENDC)
 
 
 def _print_with_time_decorator(standard_print, print_time, debug, ui_log):

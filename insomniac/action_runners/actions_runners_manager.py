@@ -31,11 +31,11 @@ class ActionRunnersManager(object):
             return None
 
         if len(selected_action_runners) > 1:
-            print_timeless(COLOR_FAIL + "Running Insomniac with two or more actions is not supported yet." + COLOR_ENDC)
+            print_timeless(COLOR_FAIL + "Executing two or more actions is not supported yet." + COLOR_ENDC)
             return None
 
         print(COLOR_BOLD +
-              "Running Insomniac with the \"{0}\" action.".format(selected_action_runners[0].ACTION_ID) +
+              "Executing \"{0}\" action.".format(selected_action_runners[0].ACTION_ID) +
               COLOR_ENDC)
 
         return selected_action_runners[0]
