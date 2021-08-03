@@ -828,6 +828,7 @@ class PostsGridView(InstagramView):
 
     POSTS_GRID_RESOURCE_ID = '{0}:id/recycler_view'
     POSTS_GRID_CLASS_NAME = 'androidx.recyclerview.widget.RecyclerView|android.view.View'
+    POST_CLASS_NAME = 'android.widget.ImageView|android.widget.Button'
 
     def open_random_post(self) -> Optional['PostsViewList']:
         # Scroll down several times to pick random post
@@ -843,7 +844,7 @@ class PostsGridView(InstagramView):
         available_posts_coords = []
         print("Choosing a random post from those on the screen")
         for post_view in posts_grid.child(resourceId=f'{self.device.app_id}:id/image_button',
-                                          className='android.widget.ImageView'):
+                                          classNameMatches=self.POST_CLASS_NAME):
             if not ActionBarView.is_in_interaction_rect(post_view):
                 continue
             bounds = post_view.get_bounds()
