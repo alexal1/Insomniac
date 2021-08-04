@@ -807,7 +807,13 @@ def do_unfollow(device, my_username, username, storage, check_if_is_follower, us
     if dialog_view.is_visible():
         print("Confirming unfollow...")
         unfollow_confirmed = dialog_view.click_unfollow()
+        sleeper.random_sleep()
 
+        confirmation_dialog_view = DialogView(device)
+        if confirmation_dialog_view.is_visible():
+            print("Confirming unfollowing...")
+            unfollow_confirmed = confirmation_dialog_view.click_unfollow()
+            sleeper.random_sleep()        
     if unfollow_confirmed:
         sleeper.random_sleep()
     else:
