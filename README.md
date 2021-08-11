@@ -5,8 +5,8 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/insomniac)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/insomniac)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)
-<a href="https://instagram.en.uptodown.com/android/download/3778076">
-	<img src="https://img.shields.io/badge/IG%20version-195.0.0.31.123-red">
+<a href="https://insomniac-bot.com/get_latest_supported_ig_apk/">
+	<img src="https://img.shields.io/endpoint?url=https://insomniac-bot.com/get_latest_supported_ig_version/">
 </a>
 
 [español](https://github.com/alexal1/Insomniac/blob/master/res/README_es.md) | [português](https://github.com/alexal1/Insomniac/blob/master/res/README_pt_BR.md)
