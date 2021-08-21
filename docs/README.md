@@ -15,6 +15,12 @@ python3 start.py --interact @natgeo
 ```
 This is a basic command that will start interaction with @natgeo's followers with default parameters. The script will open Instagram app itself and close it when finished. To stop immediately press _Ctrl+C_ (_control+C_ on Mac).
 
+## How to update
+
+**TL;DR** `python3 -m pip install --upgrade insomniac`
+
+Doesn't work for you or want more details? Please check [How to update](/how-to-update) page.
+
 ## Core features
 "Core" features means everything you need for basic usage of Insomniac. This is an [open source](https://github.com/alexal1/Insomniac/tree/master/insomniac) part of the project. If you feel that you need more – welcome to the [Extra features](/?id=extra-features) section.
 

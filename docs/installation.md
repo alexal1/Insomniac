@@ -20,7 +20,7 @@ If you prefer video lessons, welcome to the [Udemy Course](https://insomniac-bot
 > Android 8.0.0 (API level 26) and Android 8.1.0 (API level 26): Settings > System > About Phone > Build Number
 >
 > Android 7.1 (API level 25) and lower: Settings > About Phone > Build Number
-10. Switch on **USB debugging** (and also **Install apps via USB** and **Allow ADB debugging in charge only mode** if there are such options) on the Developer options screen.
+10. Switch on **USB debugging** (and also **Install apps via USB** and **Allow ADB debugging in charge only mode** if there are such options) on the Developer options screen. You may also want to enable **Stay awake while charging**.
 11. Android device will ask you to allow computer connection. Press "Connect".
 12. Type `adb devices` in Command Prompt. It will display attached devices. There should be exactly one device.
 
@@ -41,7 +41,7 @@ If you prefer video lessons, welcome to the [Udemy Course](https://insomniac-bot
 > Android 8.0.0 (API level 26) and Android 8.1.0 (API level 26): Settings > System > About Phone > Build Number
 >
 > Android 7.1 (API level 25) and lower: Settings > About Phone > Build Number
-10. Switch on **USB debugging** (and also **Install apps via USB** and **Allow ADB debugging in charge only mode** if there are such options) on the Developer options screen.
+10. Switch on **USB debugging** (and also **Install apps via USB** and **Allow ADB debugging in charge only mode** if there are such options) on the Developer options screen. You may also want to enable **Stay awake while charging**.
 11. Android device will ask you to allow computer connection. Press "Connect".
 12. Type `adb devices` in Terminal. It will display attached devices. There should be exactly one device.
 
@@ -61,7 +61,7 @@ If you prefer video lessons, welcome to the [Udemy Course](https://insomniac-bot
 > Android 8.0.0 (API level 26) and Android 8.1.0 (API level 26): Settings > System > About Phone > Build Number
 >
 > Android 7.1 (API level 25) and lower: Settings > About Phone > Build Number
-9. Switch on **USB debugging** (and also **Install apps via USB** and **Allow ADB debugging in charge only mode** if there are such options) on the Developer options screen.
+9. Switch on **USB debugging** (and also **Install apps via USB** and **Allow ADB debugging in charge only mode** if there are such options) on the Developer options screen. You may also want to enable **Stay awake while charging**.
 10. Android device will ask you to allow computer connection. Press "Connect".
 11. Type `adb devices` in Terminal. It will display attached devices. There should be exactly one device.
 
@@ -71,7 +71,7 @@ If you prefer video lessons, welcome to the [Udemy Course](https://insomniac-bot
 3. Run `python3 -m pip install insomniac` to install insomniac package.
 4. Download [start.py](https://raw.githubusercontent.com/alexal1/Insomniac/master/start.py) to a directory where you're going to launch the script from (right-click on the link, then Save link as).
 5. Run `sudo apt-get update && sudo apt-get upgrade` to update & upgrade current packages.
-6. Run `sudo apt-get install -y android-tools-adb android-tools-fastboot` to install Android platform tools.
+6. Run `sudo apt-get install -y android-tools-adb android-tools-fastboot libopenjp2-7` to install Android platform tools.
 7. Connect your Android phone via USB cable _or_ use [emulator](https://www.patreon.com/posts/how-to-install-43485861).
 8. Enable [Developer options](https://developer.android.com/studio/debug/dev-options#enable) on the Android phone/emulator:
 >On Android 4.1 and lower, the Developer options screen is available by default. On Android 4.2 and higher, you must enable this screen. To enable developer options, tap the Build Number option 7 times. You can find this option in one of the following locations, depending on your Android version:
@@ -81,6 +81,6 @@ If you prefer video lessons, welcome to the [Udemy Course](https://insomniac-bot
 > Android 8.0.0 (API level 26) and Android 8.1.0 (API level 26): Settings > System > About Phone > Build Number
 >
 > Android 7.1 (API level 25) and lower: Settings > About Phone > Build Number
-9. Switch on **USB debugging** (and also **Install apps via USB** and **Allow ADB debugging in charge only mode** if there are such options) on the Developer options screen.
+9. Switch on **USB debugging** (and also **Install apps via USB** and **Allow ADB debugging in charge only mode** if there are such options) on the Developer options screen. You may also want to enable **Stay awake while charging**.
 10. Android device will ask you to allow computer connection. Press "Connect".
 11. Type `adb devices` in Terminal. It will display attached devices. There should be exactly one device.
