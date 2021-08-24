@@ -1,5 +1,3 @@
-import base64
-
 import insomniac
 from insomniac.utils import *
 

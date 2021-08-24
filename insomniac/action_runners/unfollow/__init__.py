@@ -1,7 +1,9 @@
 from insomniac.action_runners import *
 from insomniac.actions_impl import FollowingsSortOrder
+from insomniac.navigation import navigate
 from insomniac.safely_runner import run_safely
 from insomniac.utils import *
+from insomniac.views import TabBarTabs
 
 
 class UnfollowActionRunner(CoreActionsRunner):
@@ -49,8 +51,6 @@ class UnfollowActionRunner(CoreActionsRunner):
         self.followings_sort_order = FollowingsSortOrder.EARLIEST
 
     def set_params(self, args):
-        self.reset_params()
-
         if args.unfollow_followed_by_anyone is not None:
             self.unfollow_followed_by_anyone = True
 
@@ -75,6 +75,7 @@ class UnfollowActionRunner(CoreActionsRunner):
         @run_safely(device_wrapper=device_wrapper)
         def job():
             self.action_status.set(ActionState.RUNNING)
+            navigate(device_wrapper.get(), TabBarTabs.PROFILE)
             unfollow(device=device_wrapper.get(),
                      on_action=on_action,
                      storage=storage,

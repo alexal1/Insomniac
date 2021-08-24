@@ -1,14 +1,12 @@
+from abc import ABC
+
 from insomniac.action_runners import *
 from insomniac.utils import *
 
 
-class ActionRunnersManager(object):
-    action_runners = {}
-
+class ActionRunnersManager(ABC):
     def __init__(self):
-        for clazz in get_core_action_runners_classes():
-            instance = clazz()
-            self.action_runners[instance.ACTION_ID] = instance
+        self.action_runners = {}
 
     def get_actions_args(self):
         actions_args = {}
@@ -39,3 +37,12 @@ class ActionRunnersManager(object):
               COLOR_ENDC)
 
         return selected_action_runners[0]
+
+
+class CoreActionRunnersManager(ActionRunnersManager):
+    def __init__(self):
+        super().__init__()
+
+        for clazz in get_core_action_runners_classes():
+            instance = clazz()
+            self.action_runners[instance.ACTION_ID] = instance

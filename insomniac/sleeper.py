@@ -93,8 +93,9 @@ def _get_internet_speed():
         s.download(threads=1)
         s.upload(threads=1)
         results_dict = s.results.dict()
-    except Exception:
+    except Exception as ex:
         print(COLOR_FAIL + "Failed to determine Internet speed, supposing it's zero" + COLOR_ENDC)
+        print(COLOR_FAIL + describe_exception(ex) + COLOR_ENDC)
         return SPEED_ZERO
 
     download_speed = results_dict['download']

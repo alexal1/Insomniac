@@ -1,34 +1,8 @@
-from datetime import timedelta
-
 from insomniac.utils import *
 
 
 def print_full_report(sessions):
-    if len(sessions) > 1:
-        for index, session in enumerate(sessions):
-            finish_time = session.finishTime or datetime.now()
-            print_timeless("\n")
-            print_timeless(COLOR_REPORT + "SESSION #" + str(index + 1) + f" - {session.my_username}" + COLOR_ENDC)
-            print_timeless(COLOR_REPORT + "Start time: " + str(session.startTime) + COLOR_ENDC)
-            print_timeless(COLOR_REPORT + "Finish time: " + str(finish_time) + COLOR_ENDC)
-            print_timeless(COLOR_REPORT + "Duration: " + str(finish_time - session.startTime) + COLOR_ENDC)
-            print_timeless(COLOR_REPORT + "Total interactions: " + _stringify_interactions(session.totalInteractions)
-                           + COLOR_ENDC)
-            print_timeless(COLOR_REPORT + "Successful interactions: "
-                           + _stringify_interactions(session.successfulInteractions) + COLOR_ENDC)
-            print_timeless(COLOR_REPORT + "Total followed: "
-                           + _stringify_interactions(session.totalFollowed) + COLOR_ENDC)
-            print_timeless(COLOR_REPORT + "Total likes: " + str(session.totalLikes) + COLOR_ENDC)
-            print_timeless(COLOR_REPORT + "Total comments: " + str(session.totalComments) + COLOR_ENDC)
-            print_timeless(COLOR_REPORT + "Total unfollowed: " + str(session.totalUnfollowed) + COLOR_ENDC)
-            print_timeless(COLOR_REPORT + "Total get-profile: " + str(session.totalGetProfile) + COLOR_ENDC)
-            print_timeless(COLOR_REPORT + "Total scraped: "
-                           + _stringify_interactions(session.totalScraped) + COLOR_ENDC)
-            print_timeless(COLOR_REPORT + "Removed mass followers: "
-                           + _stringify_removed_mass_followers(session.removedMassFollowers) + COLOR_ENDC)
-
     print_timeless("\n")
-    print_timeless(COLOR_REPORT + "TOTAL" + COLOR_ENDC)
 
     completed_sessions = [session for session in sessions if session.is_finished()]
     print_timeless(COLOR_REPORT + "Completed sessions: " + str(len(completed_sessions)) + COLOR_ENDC)

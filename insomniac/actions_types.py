@@ -12,6 +12,7 @@ ScrapeAction = namedtuple('ScrapeAction', 'source_name source_type user')
 FilterAction = namedtuple('FilterAction', 'user')
 InteractAction = namedtuple('InteractAction', 'source_name source_type user succeed')
 RemoveMassFollowerAction = namedtuple('RemoveMassFollowerAction', 'user')
+StartSessionAction = namedtuple('StartSessionAction', '')
 
 
 @unique

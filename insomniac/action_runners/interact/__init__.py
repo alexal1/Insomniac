@@ -1,7 +1,9 @@
 from insomniac.action_runners import *
 from insomniac.actions_types import TargetType
+from insomniac.navigation import navigate
 from insomniac.safely_runner import run_safely
 from insomniac.utils import *
+from insomniac.views import TabBarTabs
 
 
 class InteractBySourceActionRunner(CoreActionsRunner):
@@ -80,8 +82,6 @@ class InteractBySourceActionRunner(CoreActionsRunner):
         self.comments_list = []
 
     def set_params(self, args):
-        self.reset_params()
-
         if args.likes_count is not None:
             self.likes_count = args.likes_count
 
@@ -144,6 +144,7 @@ class InteractBySourceActionRunner(CoreActionsRunner):
             @run_safely(device_wrapper=device_wrapper)
             def job():
                 self.action_status.set(ActionState.RUNNING)
+                navigate(device_wrapper.get(), TabBarTabs.PROFILE)
                 if source[0] == '@':
                     source_name, instructions = extract_blogger_instructions(source)
                     handle_blogger(device_wrapper.get(),
@@ -288,8 +289,6 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
         self.comments_list = []
 
     def set_params(self, args):
-        self.reset_params()
-
         if args.likes_count is not None:
             self.likes_count = args.likes_count
 

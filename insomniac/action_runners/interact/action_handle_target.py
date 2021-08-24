@@ -45,7 +45,6 @@ def handle_target(device,
             should_continue, is_all_filters_satisfied = is_passed_filters(device, target_name, reset=True,
                                                                           filters_tags=['BEFORE_PROFILE_CLICK'])
             if not should_continue:
-                on_action(FilterAction(user=target_name))
                 return False
 
             if not is_all_filters_satisfied:
@@ -74,7 +73,6 @@ def handle_target(device,
             if not is_all_filters_satisfied:
                 should_continue, _ = is_passed_filters(device, target_name, reset=False)
                 if not should_continue:
-                    on_action(FilterAction(user=target_name))
                     print("Moving to next target")
                     return
 

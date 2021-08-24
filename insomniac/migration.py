@@ -168,20 +168,20 @@ def migrate_from_sql_to_peewee(my_username):
             None,
             session["app_version"],
             session["args"] or "",
-            ProfileStatus.VALID,
+            ProfileStatus.VALID.value,
             session["followers"],
             session["following"],
             datetime.strptime(session["start_time"], '%Y-%m-%d %H:%M:%S.%f') if session["start_time"] is not None else datetime.now(),
             datetime.strptime(session["finish_time"], '%Y-%m-%d %H:%M:%S.%f') if session["finish_time"] is not None else None
         )
 
-    session_id = my_profile.start_session(None, "Unknown app version: migration", "Unknown args: migration", ProfileStatus.VALID, -1, -1)
+    session_id = my_profile.start_session(None, "Unknown app version: migration", "Unknown args: migration", ProfileStatus.VALID.value, -1, -1)
     print(f"[Migration] Migrating interacted users to the {DATABASE_NAME}...")
     for interacted_user in get_all_interacted_users(database):
-        my_profile.log_like_action(session_id, interacted_user["username"], None, None)
+        my_profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, interacted_user["username"], None, None)
     print(f"[Migration] Migrating filtered users to the {DATABASE_NAME}...")
     for filtered_user in get_all_filtered_users(database):
-        my_profile.log_filter_action(session_id, filtered_user["username"])
+        my_profile.log_filter_action(session_id, SessionPhase.TASK_LOGIC.value, filtered_user["username"])
     print(f"[Migration] Migrating scraped users to the {DATABASE_NAME}...")
     for scraped_user in get_all_scraped_users(database):
         my_profile.publish_scrapped_account(scraped_user["username"], [my_username])

@@ -1,4 +1,5 @@
 from insomniac.device_facade import create_device
+from insomniac.params import resolve_app_id
 from insomniac.typewriter import Typewriter
 from insomniac.utils import *
 
@@ -6,9 +7,10 @@ from insomniac.utils import *
 class DeviceWrapper(object):
     device = None
 
-    def __init__(self, device_id, old_uiautomator, wait_for_device, app_id, dont_set_typewriter):
+    def __init__(self, device_id, old_uiautomator, wait_for_device, app_id, app_name, dont_set_typewriter):
         self.device_id = device_id
-        self.app_id = app_id
+        self.app_id = resolve_app_id(app_id, device_id, app_name)
+        self.app_name = app_name
         self.old_uiautomator = old_uiautomator
 
         self.create(wait_for_device, dont_set_typewriter)

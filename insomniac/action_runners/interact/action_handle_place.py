@@ -110,7 +110,6 @@ def handle_place(device,
             should_continue, is_all_filters_satisfied = is_passed_filters(device, liker_username, reset=True,
                                                                           filters_tags=['BEFORE_PROFILE_CLICK'])
             if not should_continue:
-                on_action(FilterAction(liker_username))
                 return True
 
             if not is_all_filters_satisfied:
@@ -132,7 +131,6 @@ def handle_place(device,
             if not is_all_filters_satisfied:
                 should_continue, _ = is_passed_filters(device, liker_username, reset=False)
                 if not should_continue:
-                    on_action(FilterAction(liker_username))
                     # Continue to next follower
                     print("Back to likers list")
                     device.back()

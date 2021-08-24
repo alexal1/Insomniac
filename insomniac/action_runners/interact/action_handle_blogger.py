@@ -122,7 +122,6 @@ def handle_blogger(device,
             should_continue, is_all_filters_satisfied = is_passed_filters(device, follower_name, reset=True,
                                                                           filters_tags=['BEFORE_PROFILE_CLICK'])
             if not should_continue:
-                on_action(FilterAction(user=follower_name))
                 return True
 
             if not is_all_filters_satisfied:
@@ -146,7 +145,6 @@ def handle_blogger(device,
             if not is_all_filters_satisfied:
                 should_continue, _ = is_passed_filters(device, follower_name, reset=False)
                 if not should_continue:
-                    on_action(FilterAction(user=follower_name))
                     # Continue to next follower
                     print("Back to profiles list")
                     device.back()

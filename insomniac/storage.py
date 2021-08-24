@@ -1,9 +1,9 @@
+import insomniac.actions_types as insomniac_actions_types
+import insomniac.db_models as insomniac_db
 from insomniac import db_models
 from insomniac.actions_types import TargetType
-import insomniac.actions_types as insomniac_actions_types
 from insomniac.database_engine import *
-from insomniac.db_models import get_ig_profile_by_profile_name, ProfileStatus
-import insomniac.db_models as insomniac_db
+from insomniac.db_models import get_ig_profile_by_profile_name
 from insomniac.utils import *
 
 FILENAME_WHITELIST = "whitelist.txt"
@@ -105,8 +105,8 @@ class Storage:
             self.refilter_after = get_value(args.refilter_after, "Re-filter after {} hours", 168)
         if args.recheck_follow_status_after is not None:
             self.recheck_follow_status_after = get_value(args.recheck_follow_status_after, "Re-check follow status after {} hours", 168)
-        self.profiles_targets_list_from_parameters = args.__dict__.get('targets_list', [])
-        self.url_targets_list_from_parameters = args.__dict__.get('posts_urls_list', [])
+        self.profiles_targets_list_from_parameters = args.__dict__.get('targets_list', None) or []  # None may be there after --next-config-file
+        self.url_targets_list_from_parameters = args.__dict__.get('posts_urls_list', None) or []  # None may be there after --next-config-file
         whitelist_from_parameters = args.__dict__.get('whitelist_profiles', None)
         blacklist_from_parameters = args.__dict__.get('blacklist_profiles', None)
 
@@ -159,7 +159,7 @@ class Storage:
 
     @database_api
     def start_session(self, app_id, app_version, args, followers_count, following_count):
-        session_id = self.profile.start_session(app_id, app_version, args, ProfileStatus.VALID,
+        session_id = self.profile.start_session(app_id, app_version, args, ProfileStatus.VALID.value,
                                                 followers_count, following_count)
         return session_id
 
@@ -203,8 +203,8 @@ class Storage:
         return self.profile.is_follow_me(username, hours=self.recheck_follow_status_after) is True
 
     @database_api
-    def is_new_follower(self, username):
-        return self.profile.is_follow_me(username) is None
+    def is_dm_sent_to(self, username):
+        return self.profile.is_dm_sent_to(username)
 
     @database_api
     def update_follow_status(self, username, is_follow_me=None, do_i_follow_him=None):
@@ -218,44 +218,44 @@ class Storage:
         self.profile.update_follow_status(username, is_follow_me, do_i_follow_him)
 
     @database_api
-    def log_get_profile_action(self, session_id, username):
-        self.profile.log_get_profile_action(session_id, username)
+    def log_get_profile_action(self, session_id, phase, username):
+        self.profile.log_get_profile_action(session_id, phase.value, username, insomniac_globals.task_id, insomniac_globals.execution_id)
 
     @database_api
-    def log_like_action(self, session_id, username, source_type, source_name):
-        self.profile.log_like_action(session_id, username, source_type, source_name)
+    def log_like_action(self, session_id, phase, username, source_type, source_name):
+        self.profile.log_like_action(session_id, phase.value, username, source_type, source_name, insomniac_globals.task_id, insomniac_globals.execution_id)
 
     @database_api
-    def log_follow_action(self, session_id, username, source_type, source_name):
-        self.profile.log_follow_action(session_id, username, source_type, source_name)
+    def log_follow_action(self, session_id, phase, username, source_type, source_name):
+        self.profile.log_follow_action(session_id, phase.value, username, source_type, source_name, insomniac_globals.task_id, insomniac_globals.execution_id)
 
     @database_api
-    def log_story_watch_action(self, session_id, username, source_type, source_name):
-        self.profile.log_story_watch_action(session_id, username, source_type, source_name)
+    def log_story_watch_action(self, session_id, phase, username, source_type, source_name):
+        self.profile.log_story_watch_action(session_id, phase.value, username, source_type, source_name, insomniac_globals.task_id, insomniac_globals.execution_id)
 
     @database_api
-    def log_comment_action(self, session_id, username, comment, source_type, source_name):
-        self.profile.log_comment_action(session_id, username, comment, source_type, source_name)
+    def log_comment_action(self, session_id, phase, username, comment, source_type, source_name):
+        self.profile.log_comment_action(session_id, phase.value, username, comment, source_type, source_name, insomniac_globals.task_id, insomniac_globals.execution_id)
 
     @database_api
-    def log_direct_message_action(self, session_id, username, message):
-        self.profile.log_direct_message_action(session_id, username, message)
+    def log_direct_message_action(self, session_id, phase, username, message):
+        self.profile.log_direct_message_action(session_id, phase.value, username, message, insomniac_globals.task_id, insomniac_globals.execution_id)
 
     @database_api
-    def log_unfollow_action(self, session_id, username):
-        self.profile.log_unfollow_action(session_id, username)
+    def log_unfollow_action(self, session_id, phase, username):
+        self.profile.log_unfollow_action(session_id, phase.value, username, insomniac_globals.task_id, insomniac_globals.execution_id)
 
     @database_api
-    def log_scrape_action(self, session_id, username, source_type, source_name):
-        self.profile.log_scrape_action(session_id, username, source_type, source_name)
+    def log_scrape_action(self, session_id, phase, username, source_type, source_name):
+        self.profile.log_scrape_action(session_id, phase.value, username, source_type, source_name, insomniac_globals.task_id, insomniac_globals.execution_id)
 
     @database_api
-    def log_filter_action(self, session_id, username):
-        self.profile.log_filter_action(session_id, username)
+    def log_filter_action(self, session_id, phase, username):
+        self.profile.log_filter_action(session_id, phase.value, username, insomniac_globals.task_id, insomniac_globals.execution_id)
 
     @database_api
-    def log_change_profile_info_action(self, session_id, profile_pic_url, name, description):
-        self.profile.log_change_profile_info_action(session_id, profile_pic_url, name, description)
+    def log_change_profile_info_action(self, session_id, phase, profile_pic_url, name, description):
+        self.profile.log_change_profile_info_action(session_id, phase.value, profile_pic_url, name, description, insomniac_globals.task_id, insomniac_globals.execution_id)
 
     @database_api
     def publish_scrapped_account(self, username):
@@ -264,6 +264,14 @@ class Storage:
     @database_api
     def get_actions_count_within_hours(self, action_type, hours):
         return self.profile.get_actions_count_within_hours(ACTION_TYPES_MAPPING[action_type], hours)
+
+    @database_api
+    def get_session_time_in_seconds_within_minutes(self, minutes):
+        return self.profile.get_session_time_in_seconds_within_minutes(minutes)
+
+    @database_api
+    def get_sessions_count_within_hours(self, hours):
+        return self.profile.get_session_count_within_hours(hours)
 
     def get_target(self, session_id):
         """
@@ -277,18 +285,21 @@ class Storage:
 
         :returns: target and type
         """
+        dropped_targets_count = 0
         target, target_type = self._get_target()
         while target is not None:
             if self.profile.name == target \
                     or self.is_user_in_blacklist(target) \
                     or self.check_user_was_filtered(target) \
                     or self.check_user_was_interacted(target):
-                print(COLOR_OKGREEN + f"Target @{target} is dropped, going to the next target" + COLOR_ENDC)
+                dropped_targets_count += 1
                 # Mark this target as filtered,
                 # so that profile.get_scrapped_profile_for_interaction() won't return it again.
-                self.log_filter_action(session_id, target)
+                self.log_filter_action(session_id, SessionPhase.TASK_LOGIC, target)
                 target, target_type = self._get_target()
                 continue
+            if dropped_targets_count > 0:
+                print(COLOR_OKGREEN + f"Dropped {dropped_targets_count} target(s)" + COLOR_ENDC)
             return target, target_type
         return None, None
 
@@ -387,3 +398,16 @@ class FollowingStatus(Enum):
     NONE = 0
     FOLLOWED = 1
     UNFOLLOWED = 2
+
+
+@unique
+class ProfileStatus(Enum):
+    VALID = "valid"
+    UNKNOWN = "unknown"
+    # TODO: request list of possible statuses from Jey
+
+
+@unique
+class SessionPhase(Enum):
+    WARMUP = "warmup"
+    TASK_LOGIC = "task"

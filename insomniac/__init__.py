@@ -9,31 +9,31 @@ from insomniac.params import parse_arguments
 from insomniac.utils import *
 
 
+ACTIVATION_CODE_ARG_NAME = 'activation_code'
+
+
 def run(activation_code="", starter_conf_file_path=None):
     if not __version__.__debug_mode__:
         print_timeless(COLOR_OKGREEN + __version__.__logo__ + COLOR_ENDC)
         print_version()
 
-    activation_code_from_args = _get_activation_code_from_args()
+    activation_code_from_args = get_arg_value(ACTIVATION_CODE_ARG_NAME)
     if activation_code_from_args is not None:
         activation_code = activation_code_from_args
 
     activation_controller.validate(activation_code)
     if not activation_controller.is_activated:
-        from insomniac.session import InsomniacSession
+        from insomniac.session import get_insomniac_session
         print_timeless("Using insomniac session-manager without extra-features")
-        insomniac_session = InsomniacSession(starter_conf_file_path)
+        insomniac_session = get_insomniac_session(starter_conf_file_path)
     else:
-        from insomniac.extra_features.session import ExtendedInsomniacSession
-        insomniac_session = ExtendedInsomniacSession(starter_conf_file_path)
+        from insomniac.extra_features.session import get_insomniac_extended_features_session
+        insomniac_session = get_insomniac_extended_features_session(starter_conf_file_path)
 
     insomniac_session.run()
 
 
 def is_newer_version_available():
-    def versiontuple(v):
-        return tuple(map(int, (v.split("."))))
-
     current_version = __version__.__version__
     latest_version = _get_latest_version('insomniac')
     if latest_version is not None and versiontuple(latest_version) > versiontuple(current_version):
@@ -60,14 +60,14 @@ def _get_latest_version(package):
     return latest_version
 
 
-def _get_activation_code_from_args():
+def get_arg_value(arg_name):
     parser = ArgumentParser(add_help=False)
-    parser.add_argument('--activation-code')
+    parser.add_argument(f'--{arg_name.replace("_", "-")}')
     try:
         args, _ = parser.parse_known_args()
     except (argparse.ArgumentError, TypeError):
         return None
-    return args.activation_code
+    return getattr(args, arg_name)
 
 
 class ArgumentParser(argparse.ArgumentParser):

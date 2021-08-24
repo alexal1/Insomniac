@@ -1,17 +1,15 @@
 import uuid
 from collections import defaultdict
-from datetime import timedelta
-from enum import Enum, unique
 from typing import Optional
 
 from peewee import *
 from playhouse.migrate import SqliteMigrator, migrate
 
 from insomniac.utils import *
-from insomniac.globals import db_name
+from insomniac.globals import executable_name
 
-DATABASE_NAME = db_name
-DATABASE_VERSION = 2
+DATABASE_NAME = f'{executable_name}.db'
+DATABASE_VERSION = 3
 
 db = SqliteDatabase(DATABASE_NAME, autoconnect=False)
 
@@ -84,7 +82,7 @@ class InstagramProfile(InsomniacModel):
                                         followers=followers_count,
                                         following=following_count)
 
-    def log_get_profile_action(self, session_id, username, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
+    def log_get_profile_action(self, session_id, phase, username, task_id='', execution_id='', timestamp=None):
         """
         Create InsomniacAction record
         Create GetProfileAction record
@@ -96,11 +94,12 @@ class InstagramProfile(InsomniacModel):
                                             task_id=task_id,
                                             execution_id=execution_id,
                                             session=session,
+                                            phase=phase,
                                             timestamp=(timestamp if timestamp is not None else datetime.now()))
             GetProfileAction.create(action=action,
                                     target_user=username)
 
-    def log_like_action(self, session_id, username, source_type, source_name, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
+    def log_like_action(self, session_id, phase, username, source_type, source_name, task_id='', execution_id='', timestamp=None):
         """
         Create InsomniacAction record
         Create LikeAction record
@@ -113,6 +112,7 @@ class InstagramProfile(InsomniacModel):
                                             task_id=task_id,
                                             execution_id=execution_id,
                                             session=session,
+                                            phase=phase,
                                             timestamp=(timestamp if timestamp is not None else datetime.now()))
             LikeAction.create(action=action,
                               target_user=username)
@@ -121,7 +121,7 @@ class InstagramProfile(InsomniacModel):
                                              type=source_type,
                                              name=source_name)
 
-    def log_follow_action(self, session_id, username, source_type, source_name, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
+    def log_follow_action(self, session_id, phase, username, source_type, source_name, task_id='', execution_id='', timestamp=None):
         """
         Create InsomniacAction record
         Create FollowAction record
@@ -134,6 +134,7 @@ class InstagramProfile(InsomniacModel):
                                             task_id=task_id,
                                             execution_id=execution_id,
                                             session=session,
+                                            phase=phase,
                                             timestamp=(timestamp if timestamp is not None else datetime.now()))
             FollowAction.create(action=action,
                                 target_user=username)
@@ -142,7 +143,7 @@ class InstagramProfile(InsomniacModel):
                                              type=source_type,
                                              name=source_name)
 
-    def log_story_watch_action(self, session_id, username, source_type, source_name, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
+    def log_story_watch_action(self, session_id, phase, username, source_type, source_name, task_id='', execution_id='', timestamp=None):
         """
         Create InsomniacAction record
         Create StoryWatchAction record
@@ -155,6 +156,7 @@ class InstagramProfile(InsomniacModel):
                                             task_id=task_id,
                                             execution_id=execution_id,
                                             session=session,
+                                            phase=phase,
                                             timestamp=(timestamp if timestamp is not None else datetime.now()))
             StoryWatchAction.create(action=action,
                                     target_user=username)
@@ -163,7 +165,7 @@ class InstagramProfile(InsomniacModel):
                                              type=source_type,
                                              name=source_name)
 
-    def log_comment_action(self, session_id, username, comment, source_type, source_name, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
+    def log_comment_action(self, session_id, phase, username, comment, source_type, source_name, task_id='', execution_id='', timestamp=None):
         """
         Create InsomniacAction record
         Create CommentAction record
@@ -176,6 +178,7 @@ class InstagramProfile(InsomniacModel):
                                             task_id=task_id,
                                             execution_id=execution_id,
                                             session=session,
+                                            phase=phase,
                                             timestamp=(timestamp if timestamp is not None else datetime.now()))
             CommentAction.create(action=action,
                                  target_user=username,
@@ -185,7 +188,7 @@ class InstagramProfile(InsomniacModel):
                                              type=source_type,
                                              name=source_name)
 
-    def log_direct_message_action(self, session_id, username, message, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
+    def log_direct_message_action(self, session_id, phase, username, message, task_id='', execution_id='', timestamp=None):
         """
         Create InsomniacAction record
         Create DirectMessageAction record
@@ -197,12 +200,13 @@ class InstagramProfile(InsomniacModel):
                                             task_id=task_id,
                                             execution_id=execution_id,
                                             session=session,
+                                            phase=phase,
                                             timestamp=(timestamp if timestamp is not None else datetime.now()))
             DirectMessageAction.create(action=action,
                                        target_user=username,
                                        message=message)
 
-    def log_unfollow_action(self, session_id, username, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
+    def log_unfollow_action(self, session_id, phase, username, task_id='', execution_id='', timestamp=None):
         """
         Create InsomniacAction record
         Create UnfollowAction record
@@ -214,11 +218,12 @@ class InstagramProfile(InsomniacModel):
                                             task_id=task_id,
                                             execution_id=execution_id,
                                             session=session,
+                                            phase=phase,
                                             timestamp=(timestamp if timestamp is not None else datetime.now()))
             UnfollowAction.create(action=action,
                                   target_user=username)
 
-    def log_scrape_action(self, session_id, username, source_type, source_name, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
+    def log_scrape_action(self, session_id, phase, username, source_type, source_name, task_id='', execution_id='', timestamp=None):
         """
         Create InsomniacAction record
         Create ScrapeAction record
@@ -231,6 +236,7 @@ class InstagramProfile(InsomniacModel):
                                             task_id=task_id,
                                             execution_id=execution_id,
                                             session=session,
+                                            phase=phase,
                                             timestamp=(timestamp if timestamp is not None else datetime.now()))
             ScrapeAction.create(action=action,
                                 target_user=username)
@@ -239,7 +245,7 @@ class InstagramProfile(InsomniacModel):
                                              type=(source_type if source_type is not None else None),
                                              name=source_name)
 
-    def log_filter_action(self, session_id, username, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
+    def log_filter_action(self, session_id, phase, username, task_id='', execution_id='', timestamp=None):
         """
         Create InsomniacAction record
         Create FilterAction record
@@ -251,11 +257,12 @@ class InstagramProfile(InsomniacModel):
                                             task_id=task_id,
                                             execution_id=execution_id,
                                             session=session,
+                                            phase=phase,
                                             timestamp=(timestamp if timestamp is not None else datetime.now()))
             FilterAction.create(action=action,
                                 target_user=username)
 
-    def log_change_profile_info_action(self, session_id, profile_pic_url, name, description, task_id=insomniac_globals.task_id, execution_id=insomniac_globals.execution_id, timestamp=None):
+    def log_change_profile_info_action(self, session_id, phase, profile_pic_url, name, description, task_id='', execution_id='', timestamp=None):
         """
         Create InsomniacAction record
         Create ChangeProfileInfoAction record
@@ -267,6 +274,7 @@ class InstagramProfile(InsomniacModel):
                                             task_id=task_id,
                                             execution_id=execution_id,
                                             session=session,
+                                            phase=phase,
                                             timestamp=(timestamp if timestamp is not None else datetime.now()))
             ChangeProfileInfoAction.create(action=action,
                                            profile_pic_url=profile_pic_url,
@@ -307,6 +315,16 @@ class InstagramProfile(InsomniacModel):
     def is_follow_me(self, username, hours=None):
         follow_status = self._get_follow_status(username, hours)
         return follow_status.is_follow_me if follow_status is not None else None
+
+    def is_dm_sent_to(self, username):
+        with db.connection_context():
+            if len(DirectMessageAction.select()
+                   .join(InsomniacAction, join_type=JOIN.LEFT_OUTER)
+                   .where((DirectMessageAction.target_user == username)
+                          & (InsomniacAction.actor_profile == self))
+                   .limit(1)) > 0:
+                return True
+        return False
 
     def do_i_follow(self, username, hours=None):
         follow_status = self._get_follow_status(username, hours)
@@ -394,12 +412,21 @@ class InstagramProfile(InsomniacModel):
         Returns the amount of actions by 'action_type', within the last 'hours'
         """
         with db.connection_context():
-            actions_count = len(InsomniacAction.select(InsomniacAction.id)
-                                               .where((InsomniacAction.type == action_type.__name__) &
-                                                      (InsomniacAction.actor_profile == self) &
-                                                      ((datetime.now().timestamp() - InsomniacAction.timestamp <=
-                                                       timedelta(hours=hours).total_seconds()) if hours is not None else True)))
-            return actions_count
+            return get_actions_count_within_hours(action_type, hours, profile=self)
+
+    def get_session_time_in_seconds_within_minutes(self, minutes) -> int:
+        """
+        Returns the amount of active-session-seconds, within the last 'minutes'
+        """
+        with db.connection_context():
+            return get_session_time_in_seconds_within_minutes_for_profile(minutes, profile=self)
+
+    def get_session_count_within_hours(self, hours) -> int:
+        """
+        Returns the amount of sessions, within the last 'hours'
+        """
+        with db.connection_context():
+            return get_session_count_within_hours_for_profile(hours, profile=self)
 
     def _get_scrapped_profiles_query(self):
         def get_profiles_reached_by_action(action):
@@ -468,6 +495,7 @@ class InsomniacAction(InsomniacModel):
     task_id = UUIDField()
     execution_id = UUIDField()
     session = ForeignKeyField(SessionInfo, backref='session_actions')
+    phase = TextField(default='task')
 
     class Meta:
         db_table = 'actions_log'
@@ -596,12 +624,6 @@ class SchemaVersion(InsomniacModel):
         db_table = 'schema_version'
 
 
-@unique
-class ProfileStatus(Enum):
-    VALID = "valid"
-    # TODO: request list of possible statuses from Jey
-
-
 MODELS = [
     SchemaVersion,
     InstagramProfile,
@@ -659,34 +681,162 @@ def get_ig_profile_by_profile_name(profile_name) -> InstagramProfile:
     return profile
 
 
+def get_ig_profiles_by_profiles_names(profiles_names) -> dict:
+    profiles_names_to_objects = {}
+
+    with db.connection_context():
+        for name in profiles_names:
+            profile_obj, _ = InstagramProfile.get_or_create(name=name)
+            profiles_names_to_objects[name] = profile_obj
+    return profiles_names_to_objects
+
+
 def is_ig_profile_exists(profile_name) -> bool:
     with db.connection_context():
         is_exists = InstagramProfile.select().where(InstagramProfile.name == profile_name).exists()
     return is_exists
 
 
-def get_ig_profiles_actions_by_task_id(actions_task_id, action_types_list) -> dict:
-    """Returns a dict of ig_profile_name -> list of InsomniacAction objects"""
-    ig_profiles_to_actions = defaultdict(list)
-    requested_actions_types = list(map(lambda action_type: action_type.__name__, action_types_list))
+def get_session_time_in_seconds_within_minutes_for_profile(minutes=None, profile=None) -> int:
+    """Returns the amount of session time in seconds per profile, on the last 'minutes' for 'profiles'"""
 
-    with db.connection_context():
-        actions_by_task_id = InsomniacAction.select(InsomniacAction.id, InsomniacAction.actor_profile,
-                                                    InsomniacAction.timestamp, InsomniacAction.type) \
-                                            .where((InsomniacAction.task_id == actions_task_id) &
-                                                   (InsomniacAction.type.in_(requested_actions_types)))
+    total_session_time_by_profile_name = get_session_time_in_seconds_within_minutes(minutes, [profile] if profile is not None else None)
 
-        for action in actions_by_task_id:
-            ig_profiles_to_actions[action.actor_profile_id].append(action)
+    session_time_secs = sum(total_session_time_by_profile_name.values())
 
-        ig_profiles_names_in_task = InstagramProfile.select(InstagramProfile.id, InstagramProfile.name) \
-            .where(InstagramProfile.id.in_(list(ig_profiles_to_actions.keys()))) \
-            .distinct()
+    return session_time_secs
 
-        for profile in ig_profiles_names_in_task:
-            ig_profiles_to_actions[profile.name] = ig_profiles_to_actions.pop(profile.id)
 
-    return ig_profiles_to_actions
+def get_session_time_in_seconds_within_minutes(minutes=None, profiles=None) -> dict:
+    """Returns the amount of session time in seconds per profile, on the last 'minutes' for 'profiles'"""
+
+    timestamp_from, timestamp_to = None, None
+    if minutes is not None:
+        timestamp_from, timestamp_to = get_from_to_timestamps_by_minutes(minutes)
+
+    return get_session_time_in_seconds_from_to(timestamp_from, timestamp_to, profiles)
+
+
+def get_session_time_in_seconds_from_to(timestamp_from=None, timestamp_to=None, profiles=None) -> dict:
+    """Returns the amount of session time in seconds per profile, from 'timestamp_from' to 'timestamp_to' for 'profiles'"""
+
+    # Taking every session that started during the specified time
+    profiles_sessions = InstagramProfile.select(InstagramProfile.name, SessionInfo.start.alias('start'), SessionInfo.end.alias('end')) \
+                                        .join(InstagramProfileInfo, join_type=JOIN.LEFT_OUTER) \
+                                        .where(InstagramProfileInfo.profile.in_(profiles) if profiles else True) \
+                                        .join(SessionInfo, join_type=JOIN.LEFT_OUTER) \
+                                        .where((SessionInfo.start >= timestamp_from if timestamp_from else True) &
+                                               (SessionInfo.start <= timestamp_to if timestamp_to else True))
+
+    total_session_time_by_profile_name = defaultdict(int)
+
+    for session in profiles_sessions.dicts():
+        if not session['start'] or not session['end']:
+            # Not counting sessions that stopped without a end_session function call
+            continue
+
+        session_time = session['end'] - session['start']
+
+        total_session_time_by_profile_name[session['name']] += session_time.total_seconds()
+
+    return total_session_time_by_profile_name
+
+
+def get_session_count_within_hours_for_profile(hours=None, profile=None) -> int:
+    """Returns the amount of session time in seconds per profile, on the last 'minutes' for 'profiles'"""
+
+    session_count_by_profile_name = get_session_count_within_hours(hours, [profile] if profile is not None else None)
+
+    session_count = sum(session_count_by_profile_name.values())
+
+    return session_count
+
+
+def get_session_count_within_hours(hours=None, profiles=None) -> dict:
+    """
+    Returns the amount of session, within the last 'hours' for 'profiles'
+    """
+    timestamp_from, timestamp_to = None, None
+    if hours is not None:
+        timestamp_from, timestamp_to = get_from_to_timestamps_by_hours(hours)
+
+    return get_session_count_from_to(timestamp_from, timestamp_to, profiles)
+
+
+def get_session_count_from_to(timestamp_from=None, timestamp_to=None, profiles=None) -> dict:
+    """
+    Returns the amount of session, from 'timestamp_from' to 'timestamp_to' for 'profiles'
+    """
+    # Taking every session that started during the specified time
+    profiles_sessions = InstagramProfile.select(InstagramProfile.name) \
+                                        .join(InstagramProfileInfo, join_type=JOIN.LEFT_OUTER) \
+                                        .where(InstagramProfileInfo.profile.in_(profiles) if profiles else True) \
+                                        .join(SessionInfo, join_type=JOIN.LEFT_OUTER) \
+                                        .where((SessionInfo.start >= timestamp_from if timestamp_from else True) &
+                                               (SessionInfo.start <= timestamp_to if timestamp_to else True))
+
+    total_session_count_by_profile_name = defaultdict(int)
+
+    for session in profiles_sessions.dicts():
+        total_session_count_by_profile_name[session['name']] += 1
+
+    return total_session_count_by_profile_name
+
+
+def get_actions_count_within_hours(action_type=None, hours=None, profile=None, task_id=None) -> int:
+    """
+    Returns the amount of actions by 'action_type', within the last 'hours'
+    """
+    actions_count = 0
+    actions_per_profile = get_actions_count_within_hours_for_profiles(action_types=[action_type] if action_type else None,
+                                                                      hours=hours if hours else None,
+                                                                      profiles=[profile] if profile else None,
+                                                                      task_ids=[task_id] if task_id else None)
+
+    for actions in actions_per_profile.values():
+        for count in actions.values():
+            actions_count += count
+
+    return actions_count
+
+
+def get_actions_count_within_hours_for_profiles(action_types=None, hours=None,
+                                                profiles=None, task_ids=None, session_phases=None) -> dict:
+    timestamp_from, timestamp_to = None, None
+    if hours is not None:
+        timestamp_from, timestamp_to = get_from_to_timestamps_by_hours(hours)
+
+    return get_actions_count_for_profiles(action_types=action_types,
+                                          timestamp_from=timestamp_from,
+                                          timestamp_to=timestamp_to,
+                                          profiles=profiles,
+                                          task_ids=task_ids,
+                                          session_phases=session_phases)
+
+
+def get_actions_count_for_profiles(action_types=None, timestamp_from=None, timestamp_to=None,
+                                   profiles=None, task_ids=None, session_phases=None) -> dict:
+    """
+    Returns the amount of actions by 'action_type', within the last 'hours', that been done by 'profiles'
+    """
+    action_types_names = [at.__name__ for at in action_types] if action_types else None
+    session_phases_values = [sp.value for sp in session_phases] if session_phases else None
+
+    profiles_actions = defaultdict(dict)
+
+    query = InsomniacAction.select(InsomniacAction.actor_profile, InsomniacAction.type, fn.COUNT(InsomniacAction.id).alias('ct'))\
+                           .where((InsomniacAction.actor_profile.in_(profiles) if profiles else True) &
+                                  (InsomniacAction.task_id.in_(task_ids) if task_ids else True) &
+                                  (InsomniacAction.phase.in_(session_phases_values) if session_phases_values else True) &
+                                  (InsomniacAction.type.in_(action_types_names) if action_types_names else True) &
+                                  (InsomniacAction.timestamp >= timestamp_from if timestamp_from else True) &
+                                  (InsomniacAction.timestamp <= timestamp_to if timestamp_to else True))\
+                           .group_by(InsomniacAction.actor_profile, InsomniacAction.type)
+
+    for obj in query:
+        profiles_actions[obj.actor_profile.name][obj.type] = obj.ct
+
+    return profiles_actions
 
 
 def _get_db_version() -> Optional[int]:
@@ -711,6 +861,17 @@ def _migrate_db_from_version_1_to_2(migrator):
     )
 
 
+def _migrate_db_from_version_2_to_3(migrator):
+    """
+    Changes added on DB version 3:
+
+        * Added InsomniacAction.phase field
+    """
+    migrate(
+        migrator.add_column('actions_log', 'phase', TextField(default='task')),
+    )
+
+
 def _migrate(curr_version, migrator):
     print(f"[Database] Going to run database migration from version {curr_version} to {curr_version+1}")
     migration_method = database_migrations[f"{curr_version}->{curr_version + 1}"]
@@ -722,5 +883,6 @@ def _migrate(curr_version, migrator):
 
 
 database_migrations = {
-    "1->2": _migrate_db_from_version_1_to_2
+    "1->2": _migrate_db_from_version_1_to_2,
+    "2->3": _migrate_db_from_version_2_to_3
 }

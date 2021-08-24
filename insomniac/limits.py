@@ -105,18 +105,25 @@ class TotalLikesLimit(CoreLimit):
     LIMIT_TYPE = LimitType.SESSION
     LIMIT_ARGS = {
         "total_likes_limit": {
-            "help": "limit on total amount of likes during the session, 300 by default. "
+            "help": "deprecated - use likes_session_limit instead. "
+                    "limit on total amount of likes during the session, 300 by default. "
                     "It can be a number presenting specific limit (e.g. 300) or a range (e.g. 100-120)",
             "metavar": "300",
             "default": "1000"
+        },
+        "likes_session_limit": {
+            "help": "limit on total amount of likes during the session, disabled by default. "
+                    "It can be a number presenting specific limit (e.g. 300) or a range (e.g. 100-120)",
+            "metavar": "150",
+            "default": None
         }
     }
 
     total_likes_limit = 1000
 
     def set_limit_values(self, args):
-        if args.total_likes_limit is not None:
-            self.total_likes_limit = get_value(args.total_likes_limit, "Total likes limit: {}", 1000)
+        if args.likes_session_limit is not None or args.total_likes_limit is not None:
+            self.total_likes_limit = get_value(args.likes_session_limit or args.total_likes_limit, "Total likes limit: {}", 1000)
 
     def is_reached_for_action(self, action, session_state):
         if not type(action) == LikeAction:
@@ -139,26 +146,41 @@ class TotalInteractionsLimit(CoreLimit):
             "help": "number of total interactions (successful & unsuccessful) per session, disabled by default. "
                     "It can be a number (e.g. 70) or a range (e.g. 60-80)",
             "metavar": '60-80'
+        },
+        "interaction_session_limit": {
+            "help": "number of total interactions (successful & unsuccessful) per session, disabled by default. "
+                    "It can be a number (e.g. 70) or a range (e.g. 60-80)",
+            "metavar": "150"
         }
     }
 
     total_interactions_limit = None
+    interaction_session_limit = None
 
     def set_limit_values(self, args):
         if args.total_interactions_limit is not None:
             self.total_interactions_limit = get_value(args.total_interactions_limit, "Total interactions limit: {}", 1000)
 
-    def is_reached_for_action(self, action, session_state):
-        if self.total_interactions_limit is None:
-            return False
+        if args.interaction_session_limit is not None:
+            self.interaction_session_limit = get_value(args.interaction_session_limit, "Interactions session limit: {}", 1000)
 
+    def is_reached_for_action(self, action, session_state):
         if not type(action) == InteractAction:
             return False
 
-        return sum(session_state.totalInteractions.values()) >= self.total_interactions_limit
+        if self.total_interactions_limit is not None:
+            if sum(session_state.totalInteractions.values()) >= self.total_interactions_limit:
+                return True
+
+        if self.interaction_session_limit is not None:
+            if sum(session_state.totalInteractions.values()) >= self.interaction_session_limit:
+                return True
+
+        return False
 
     def reset(self):
         self.total_interactions_limit = None
+        self.interaction_session_limit = None
 
     def update_state(self, action):
         pass
@@ -172,27 +194,43 @@ class TotalSuccessfulInteractionsLimit(CoreLimit):
             "help": "number of total successful interactions per session, disabled by default. "
                     "It can be a number (e.g. 70) or a range (e.g. 60-80)",
             "metavar": '60-80'
+        },
+        "successful_interaction_session_limit": {
+            "help": "number of total successful interactions per session, disabled by default. "
+                    "It can be a number (e.g. 70) or a range (e.g. 60-80)",
+            "metavar": "150"
         }
     }
 
     total_successful_interactions_limit = None
+    successful_interaction_session_limit = None
 
     def set_limit_values(self, args):
         if args.total_successful_interactions_limit is not None:
             self.total_successful_interactions_limit = get_value(args.total_successful_interactions_limit,
                                                                  "Total successful-interactions limit: {}", 1000)
 
-    def is_reached_for_action(self, action, session_state):
-        if self.total_successful_interactions_limit is None:
-            return False
+        if args.successful_interaction_session_limit is not None:
+            self.successful_interaction_session_limit = get_value(args.successful_interaction_session_limit,
+                                                                  "Successful-interactions session limit: {}", 1000)
 
+    def is_reached_for_action(self, action, session_state):
         if not type(action) == InteractAction:
             return False
 
-        return sum(session_state.successfulInteractions.values()) >= self.total_successful_interactions_limit
+        if self.total_successful_interactions_limit is not None:
+            if sum(session_state.successfulInteractions.values()) >= self.total_successful_interactions_limit:
+                return True
+
+        if self.successful_interaction_session_limit is not None:
+            if sum(session_state.successfulInteractions.values()) >= self.successful_interaction_session_limit:
+                return True
+
+        return False
 
     def reset(self):
         self.total_successful_interactions_limit = None
+        self.successful_interaction_session_limit = None
 
     def update_state(self, action):
         pass
@@ -203,6 +241,12 @@ class TotalFollowLimit(CoreLimit):
     LIMIT_TYPE = LimitType.SESSION
     LIMIT_ARGS = {
         "total_follow_limit": {
+            "help": "deprecated - use follow_session_limit instead. "
+                    "limit on total amount of follows during the session, disabled by default. "
+                    "It can be a number (e.g. 27) or a range (e.g. 20-30)",
+            "metavar": "50"
+        },
+        "follow_session_limit": {
             "help": "limit on total amount of follows during the session, disabled by default. "
                     "It can be a number (e.g. 27) or a range (e.g. 20-30)",
             "metavar": "50"
@@ -212,8 +256,8 @@ class TotalFollowLimit(CoreLimit):
     total_follow_limit = None
 
     def set_limit_values(self, args):
-        if args.total_follow_limit is not None:
-            self.total_follow_limit = get_value(args.total_follow_limit, "Total follow limit: {}", 70)
+        if args.total_follow_limit is not None or args.follow_session_limit is not None:
+            self.total_follow_limit = get_value(args.follow_session_limit or args.total_follow_limit, "Total follow limit: {}", 70)
 
     def is_reached_for_action(self, action, session_state):
         if self.total_follow_limit is None:
@@ -236,6 +280,12 @@ class TotalStoryWatchLimit(CoreLimit):
     LIMIT_TYPE = LimitType.SESSION
     LIMIT_ARGS = {
         "total_story_limit": {
+            "help": "deprecated - use story_session_limit instead. "
+                    "limit on total amount of stories watches during the session, disabled by default. "
+                    "It can be a number (e.g. 27) or a range (e.g. 20-30)",
+            "metavar": "300",
+        },
+        "story_session_limit": {
             "help": "limit on total amount of stories watches during the session, disabled by default. "
                     "It can be a number (e.g. 27) or a range (e.g. 20-30)",
             "metavar": "300",
@@ -245,8 +295,8 @@ class TotalStoryWatchLimit(CoreLimit):
     total_story_limit = None
 
     def set_limit_values(self, args):
-        if args.total_story_limit is not None:
-            self.total_story_limit = get_value(args.total_story_limit, "Total story-watches limit: {}", 1000)
+        if args.total_story_limit is not None or args.story_session_limit is not None:
+            self.total_story_limit = get_value(args.story_session_limit or args.total_story_limit, "Total story-watches limit: {}", 1000)
 
     def is_reached_for_action(self, action, session_state):
         if self.total_story_limit is None:
@@ -269,6 +319,13 @@ class TotalCommentsLimit(CoreLimit):
     LIMIT_TYPE = LimitType.SESSION
     LIMIT_ARGS = {
         "total_comments_limit": {
+            "help": "deprecated - use comment_session_limit instead. "
+                    "limit on total amount of comments during the session, 50 by default. "
+                    "It can be a number presenting specific limit (e.g. 300) or a range (e.g. 100-120)",
+            "metavar": "300",
+            "default": "50"
+        },
+        "comment_session_limit": {
             "help": "limit on total amount of comments during the session, 50 by default. "
                     "It can be a number presenting specific limit (e.g. 300) or a range (e.g. 100-120)",
             "metavar": "300",
@@ -279,8 +336,8 @@ class TotalCommentsLimit(CoreLimit):
     total_comments_limit = 50
 
     def set_limit_values(self, args):
-        if args.total_comments_limit is not None:
-            self.total_comments_limit = get_value(args.total_comments_limit, "Total comments limit: {}", 50)
+        if args.total_comments_limit is not None or args.comment_session_limit is not None:
+            self.total_comments_limit = get_value(args.comment_session_limit or args.total_comments_limit, "Total comments limit: {}", 50)
 
     def is_reached_for_action(self, action, session_state):
         if not type(action) == CommentAction:
@@ -470,25 +527,41 @@ class FollowLimitPerSource(CoreLimit):
 class UnfollowingLimit(CoreLimit):
     LIMIT_ID = "unfollowing_limit"
     LIMIT_TYPE = LimitType.SESSION
-    LIMIT_ARGS = {}
+    LIMIT_ARGS = {
+        "unfollow_session_limit": {
+            "help": "limit on total amount of unfollow-actions during the current session, disabled by default. "
+                    "It can be a number (e.g. 100) or a range (e.g. 90-120)",
+            "metavar": "150"
+        }
+    }
 
-    unfollow_limit = None
+    unfollow_config_limit = None
+    unfollow_session_limit = None
 
     def set_limit_values(self, args):
         if args.unfollow is not None:
-            self.unfollow_limit = get_value(args.unfollow, "Unfollow: {}", 100)
+            self.unfollow_config_limit = get_value(args.unfollow, "Unfollow: {}", 100)
+
+        if args.unfollow_session_limit is not None:
+            self.unfollow_session_limit = get_value(args.unfollow_session_limit, "Unfollow session limit: {}", 100)
 
     def is_reached_for_action(self, action, session_state):
-        if self.unfollow_limit is None:
-            return False
-
         if not type(action) == UnfollowAction:
             return False
 
-        return session_state.totalUnfollowed >= self.unfollow_limit
+        if self.unfollow_config_limit is not None:
+            if session_state.totalUnfollowed >= self.unfollow_config_limit:
+                return True
+
+        if self.unfollow_session_limit is not None:
+            if session_state.totalUnfollowed >= self.unfollow_session_limit:
+                return True
+
+        return False
 
     def reset(self):
-        self.unfollow_limit = None
+        self.unfollow_config_limit = None
+        self.unfollow_session_limit = None
 
     def update_state(self, action):
         pass
@@ -567,17 +640,23 @@ class TotalGetProfileLimit(CoreLimit):
     LIMIT_TYPE = LimitType.SESSION
     LIMIT_ARGS = {
         "total_get_profile_limit": {
+            "help": "deprecated - use get_profile_session_limit instead. "
+                    "limit on total amount of get-profile actions during the session, disabled by default. "
+                    "It can be a number (e.g. 600) or a range (e.g. 500-700)",
+            "metavar": "1500"
+        },
+        "get_profile_session_limit": {
             "help": "limit on total amount of get-profile actions during the session, disabled by default. "
                     "It can be a number (e.g. 600) or a range (e.g. 500-700)",
             "metavar": "1500"
-        }
+        },
     }
 
     total_get_profile_limit = None
 
     def set_limit_values(self, args):
-        if args.total_get_profile_limit is not None:
-            self.total_get_profile_limit = get_value(args.total_get_profile_limit, "Total get-profile limit: {}", 1000)
+        if args.total_get_profile_limit is not None or args.get_profile_session_limit is not None:
+            self.total_get_profile_limit = get_value(args.get_profile_session_limit or args.total_get_profile_limit, "Total get-profile limit: {}", 1000)
 
     def is_reached_for_action(self, action, session_state):
         if self.total_get_profile_limit is None:

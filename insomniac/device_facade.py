@@ -68,12 +68,14 @@ class DeviceFacade:
                 raise DeviceFacade.JsonRpcError(e)
             return DeviceFacade.View(is_old=False, view=view, device=self)
 
-    def back(self):
+    def back(self) -> bool:
         """
         Press back and check that UI hierarchy was changed. If it didn't change, it means that back press didn't work.
         So, we try to press back several times until it is finally changed.
+
+        :return: whether backpress succeed
         """
-        max_attempts = 5
+        max_attempts = 2
 
         def normalize(hierarchy):
             """
@@ -96,6 +98,7 @@ class DeviceFacade:
                 print(COLOR_OKGREEN + "Pressed back but nothing changed on the screen. Will try again." + COLOR_ENDC)
                 sleeper.random_sleep()
             attempts += 1
+        return succeed
 
     def _press_back(self):
         if self.deviceV1 is not None:
@@ -268,7 +271,7 @@ class DeviceFacade:
                 swipe_dir = "down"
             self.deviceV2.swipe_ext(swipe_dir, scale=scale)
 
-    def swipe_points(self, sx, sy, ex, ey):
+    def swipe_points(self, sx, sy, ex, ey, duration=None):
         if self.deviceV1 is not None:
             import uiautomator
             try:
@@ -278,7 +281,10 @@ class DeviceFacade:
         else:
             import uiautomator2
             try:
-                self.deviceV2.swipe_points([[sx, sy], [ex, ey]], uniform(0.2, 0.6))
+                if duration:
+                    self.deviceV2.swipe_points([[sx, sy], [ex, ey]], duration)
+                else:
+                    self.deviceV2.swipe_points([[sx, sy], [ex, ey]], uniform(0.2, 0.6))
             except uiautomator2.JSONRPCError as e:
                 raise DeviceFacade.JsonRpcError(e)
 
@@ -665,7 +671,7 @@ class DeviceFacade:
                     raise DeviceFacade.JsonRpcError(e)
 
         def set_text(self, text):
-            if self.device.typewriter.write(self, text):
+            if self.device.typewriter is not None and self.device.typewriter.write(self, text):
                 return
             if self.viewV1 is not None:
                 import uiautomator

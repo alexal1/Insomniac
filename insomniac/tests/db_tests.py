@@ -1,11 +1,11 @@
 import unittest
-from datetime import timedelta
 
 from peewee import SqliteDatabase
 
 from insomniac import db_models
 from insomniac.actions_types import SourceType
-from insomniac.db_models import get_ig_profile_by_profile_name, ProfileStatus, MODELS
+from insomniac.db_models import get_ig_profile_by_profile_name, MODELS
+from insomniac.storage import ProfileStatus, SessionPhase
 from insomniac.utils import *
 
 TEST_DATABASE_FILE = 'test.db'
@@ -39,30 +39,30 @@ class DatabaseTests(unittest.TestCase):
             assert profile.used_to_follow(username1) is False
 
             print(COLOR_BOLD + f"Check interaction counted for {username1} after a \"get profile\"" + COLOR_ENDC)
-            profile.log_get_profile_action(session_id, username1)
+            profile.log_get_profile_action(session_id, SessionPhase.TASK_LOGIC.value, username1)
             assert profile.is_interacted(username1) is True
 
             print(COLOR_BOLD + f"Check interaction counted for {username2} after a like" + COLOR_ENDC)
-            profile.log_like_action(session_id, username2, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, username2, SourceType.BLOGGER.name, "some_blogger")
             assert profile.is_interacted(username2) is True
 
             print(COLOR_BOLD + f"Check interaction counted for {username3} after a comment" + COLOR_ENDC)
-            profile.log_comment_action(session_id, username3, "Wow!", SourceType.BLOGGER.name, "some_blogger")
+            profile.log_comment_action(session_id, SessionPhase.TASK_LOGIC.value, username3, "Wow!", SourceType.BLOGGER.name, "some_blogger")
             assert profile.is_interacted(username3) is True
 
             print(COLOR_BOLD + f"Check interaction counted for {username4} after multiple actions" + COLOR_ENDC)
-            profile.log_get_profile_action(session_id, username4)
-            profile.log_like_action(session_id, username4, SourceType.BLOGGER.name, "some_blogger")
-            profile.log_like_action(session_id, username4, SourceType.HASHTAG.name, "some_hashtag")
-            profile.log_comment_action(session_id, username4, "Wow!", SourceType.PLACE.name, "some_place")
+            profile.log_get_profile_action(session_id, SessionPhase.TASK_LOGIC.value, username4)
+            profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, username4, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, username4, SourceType.HASHTAG.name, "some_hashtag")
+            profile.log_comment_action(session_id, SessionPhase.TASK_LOGIC.value, username4, "Wow!", SourceType.PLACE.name, "some_place")
             assert profile.is_interacted(username4) is True
 
             print(COLOR_BOLD + f"Check interaction is NOT counted for {username5} after "
                                f"follow / story watch / unfollow / filter actions" + COLOR_ENDC)
-            profile.log_follow_action(session_id, username5, None, None)
-            profile.log_story_watch_action(session_id, username5, None, None)
-            profile.log_unfollow_action(session_id, username5)
-            profile.log_filter_action(session_id, username5)
+            profile.log_follow_action(session_id, SessionPhase.TASK_LOGIC.value, username5, None, None)
+            profile.log_story_watch_action(session_id, SessionPhase.TASK_LOGIC.value, username5, None, None)
+            profile.log_unfollow_action(session_id, SessionPhase.TASK_LOGIC.value, username5)
+            profile.log_filter_action(session_id, SessionPhase.TASK_LOGIC.value, username5)
             assert profile.is_interacted(username5) is False
 
             print(COLOR_BOLD + f"Check \"used to follow\" is True after following" + COLOR_ENDC)
@@ -88,7 +88,7 @@ class DatabaseTests(unittest.TestCase):
 
         def job_interact(profile, session_id):
             print(COLOR_BOLD + f"Check interaction is not counted for {username1} if was too long ago" + COLOR_ENDC)
-            profile.log_like_action(session_id, username1, SourceType.BLOGGER.name, "some_blogger", timestamp=datetime.now()-timedelta(hours=48))
+            profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, username1, SourceType.BLOGGER.name, "some_blogger", timestamp=datetime.now()-timedelta(hours=48))
             assert profile.is_interacted(username1) is True
             assert profile.is_interacted(username1, hours=24) is False
         self._run_inside_session(my_account2, job_interact)
@@ -104,11 +104,11 @@ class DatabaseTests(unittest.TestCase):
             assert profile.is_filtered(username1) is False
 
             print(COLOR_BOLD + f"Check that filter works" + COLOR_ENDC)
-            profile.log_filter_action(session_id, username1)
+            profile.log_filter_action(session_id, SessionPhase.TASK_LOGIC.value, username1)
             assert profile.is_filtered(username1) is True
 
             print(COLOR_BOLD + f"Check that filter NOT works if filtered too long ago" + COLOR_ENDC)
-            profile.log_filter_action(session_id, username2, timestamp=datetime.now()-timedelta(hours=48))
+            profile.log_filter_action(session_id, SessionPhase.TASK_LOGIC.value, username2, timestamp=datetime.now()-timedelta(hours=48))
             assert profile.is_filtered(username2) is True
             assert profile.is_filtered(username2, hours=24) is False
         self._run_inside_session(my_account1, job_interact)
@@ -189,43 +189,43 @@ class DatabaseTests(unittest.TestCase):
             assert username == username1
 
             print(COLOR_BOLD + "Real: check account is excluded after \"get profile action\"" + COLOR_ENDC)
-            profile.log_get_profile_action(session_id, username1)
+            profile.log_get_profile_action(session_id, SessionPhase.TASK_LOGIC.value, username1)
             username = profile.get_scrapped_profile_for_interaction()
             assert username == username2
 
             print(COLOR_BOLD + "Real: check account is excluded after like-interaction" + COLOR_ENDC)
-            profile.log_like_action(session_id, username2, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, username2, SourceType.BLOGGER.name, "some_blogger")
             username = profile.get_scrapped_profile_for_interaction()
             assert username == username3
 
             print(COLOR_BOLD + "Real: check account is excluded after follow-interaction" + COLOR_ENDC)
-            profile.log_follow_action(session_id, username3, SourceType.HASHTAG.name, "some_hashtag")
+            profile.log_follow_action(session_id, SessionPhase.TASK_LOGIC.value, username3, SourceType.HASHTAG.name, "some_hashtag")
             username = profile.get_scrapped_profile_for_interaction()
             assert username == username4
 
             print(COLOR_BOLD + "Real: check account is excluded after story-watch-interaction" + COLOR_ENDC)
-            profile.log_story_watch_action(session_id, username4, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_story_watch_action(session_id, SessionPhase.TASK_LOGIC.value, username4, SourceType.BLOGGER.name, "some_blogger")
             username = profile.get_scrapped_profile_for_interaction()
             assert username == username5
 
             print(COLOR_BOLD + "Real: check account is excluded after comment-interaction" + COLOR_ENDC)
-            profile.log_comment_action(session_id, username5, "Wow!", SourceType.PLACE.name, "some_place")
+            profile.log_comment_action(session_id, SessionPhase.TASK_LOGIC.value, username5, "Wow!", SourceType.PLACE.name, "some_place")
             username = profile.get_scrapped_profile_for_interaction()
             assert username == username6
 
             print(COLOR_BOLD + "Real: check account is excluded after being filtered" + COLOR_ENDC)
-            profile.log_filter_action(session_id, username6)
+            profile.log_filter_action(session_id, SessionPhase.TASK_LOGIC.value, username6)
             username = profile.get_scrapped_profile_for_interaction()
             assert username == username7
 
             print(COLOR_BOLD + "Real: check account is NOT excluded after unfollow / change profile info actions" + COLOR_ENDC)
-            profile.log_unfollow_action(session_id, username4)
-            profile.log_change_profile_info_action(session_id, "some_url", "some_name", "some_description")
+            profile.log_unfollow_action(session_id, SessionPhase.TASK_LOGIC.value, username4)
+            profile.log_change_profile_info_action(session_id, SessionPhase.TASK_LOGIC.value, "some_url", "some_name", "some_description")
             username = profile.get_scrapped_profile_for_interaction()
             assert username == username7
 
-            profile.log_like_action(session_id, username7, SourceType.BLOGGER.name, "some_blogger")
-            profile.log_like_action(session_id, username7, SourceType.BLOGGER.name, "some_blogger")  # double action check
+            profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, username7, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, username7, SourceType.BLOGGER.name, "some_blogger")  # double action check
 
             print(COLOR_BOLD + "Real: check scraped accounts count is correct AFTER interaction" + COLOR_ENDC)
             assert profile.count_scrapped_profiles_for_interaction() == 0
@@ -266,11 +266,11 @@ class DatabaseTests(unittest.TestCase):
 
         def job_real(profile, session_id):
             print(f"Real: interact with {username8} from another account")
-            profile.log_get_profile_action(session_id, username8)
-            profile.log_like_action(session_id, username8, SourceType.BLOGGER.name, "some_blogger")
-            profile.log_follow_action(session_id, username8, SourceType.HASHTAG.name, "some_hashtag")
-            profile.log_story_watch_action(session_id, username8, SourceType.BLOGGER.name, "some_blogger")
-            profile.log_comment_action(session_id, username8, "Wow!", SourceType.PLACE.name, "some_place")
+            profile.log_get_profile_action(session_id, SessionPhase.TASK_LOGIC.value, username8)
+            profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, username8, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_follow_action(session_id, SessionPhase.TASK_LOGIC.value, username8, SourceType.HASHTAG.name, "some_hashtag")
+            profile.log_story_watch_action(session_id, SessionPhase.TASK_LOGIC.value, username8, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_comment_action(session_id, SessionPhase.TASK_LOGIC.value, username8, "Wow!", SourceType.PLACE.name, "some_place")
         self._run_inside_session("some_another_account", job_real)
 
         def job_real(profile, _):
@@ -286,7 +286,7 @@ class DatabaseTests(unittest.TestCase):
     def _run_inside_session(self, username, action):
         print(f"Starting session for {username}")
         profile = get_ig_profile_by_profile_name(username)
-        session_id = profile.start_session(None, "", "", ProfileStatus.VALID, 2200, 500)
+        session_id = profile.start_session(None, "", "", ProfileStatus.VALID.value, 2200, 500)
         print(f"session_id = {session_id}")
         action(profile, session_id)
         print(f"Ending session for {username}")

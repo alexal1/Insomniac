@@ -2,7 +2,8 @@
 is_ui_process = False
 execution_id = ''
 task_id = ''
-db_name = 'insomniac.db'
+executable_name = 'insomniac'
+do_location_permission_dialog_checks = True  # no need in these checks if location permission is denied beforehand
 
 
 def is_insomniac():

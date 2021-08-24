@@ -24,7 +24,7 @@ def get_my_profile_info(device, username):
     except UserSwitchFailedException as e:
         raise e
     except Exception as e:
-        print(COLOR_FAIL + f"Exception: {e}" + COLOR_ENDC)
+        print(COLOR_FAIL + describe_exception(e) + COLOR_ENDC)
         save_crash(device, e)
         switch_to_english(device)
 
