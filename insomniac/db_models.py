@@ -9,7 +9,7 @@ from insomniac.utils import *
 from insomniac.globals import executable_name
 
 DATABASE_NAME = f'{executable_name}.db'
-DATABASE_VERSION = 3
+DATABASE_VERSION = 4
 
 db = SqliteDatabase(DATABASE_NAME, autoconnect=False)
 
@@ -72,15 +72,24 @@ class InstagramProfile(InsomniacModel):
     def update_profile_info(self, profile_status, followers_count, following_count):
         """
         Create a new InstagramProfileInfo record
-
-        Can't see any usage for that right now, maybe we will use it later just in order to update profile info without
-        running an insomniac-session.
         """
         with db.connection_context():
             InstagramProfileInfo.create(profile=self,
-                                        status=profile_status,
+                                        status=profile_status.value,
                                         followers=followers_count,
                                         following=following_count)
+
+    def get_latsest_profile_info(self) -> Optional['InstagramProfileInfo']:
+        with db.connection_context():
+            query = InstagramProfileInfo.select() \
+                                        .where(InstagramProfileInfo.profile == self) \
+                                        .group_by(InstagramProfileInfo.profile) \
+                                        .having(InstagramProfileInfo.timestamp == fn.MAX(InstagramProfileInfo.timestamp))
+
+            for obj in query:
+                return obj
+
+            return None
 
     def log_get_profile_action(self, session_id, phase, username, task_id='', execution_id='', timestamp=None):
         """
@@ -280,6 +289,20 @@ class InstagramProfile(InsomniacModel):
                                            profile_pic_url=profile_pic_url,
                                            name=name,
                                            description=description)
+
+    def log_management_action(self, session_id, management_action_type, management_action_params, phase, task_id='', execution_id='', timestamp=None):
+        with db.connection_context():
+            session = SessionInfo.get(SessionInfo.id == session_id)
+            action = InsomniacAction.create(actor_profile=self,
+                                            type=management_action_type.__name__,
+                                            task_id=task_id,
+                                            execution_id=execution_id,
+                                            session=session,
+                                            phase=phase,
+                                            timestamp=(timestamp if timestamp is not None else datetime.now()))
+
+            params = {**management_action_params, **{'action': action}}
+            management_action_type.create(**params)
 
     def publish_scrapped_account(self, username, scrape_for_account_list):
         """
@@ -492,8 +515,8 @@ class InsomniacAction(InsomniacModel):
     actor_profile = ForeignKeyField(InstagramProfile, backref='actions')
     type = TextField()
     timestamp = TimestampField(default=datetime.now)
-    task_id = UUIDField()
-    execution_id = UUIDField()
+    task_id = TextField()
+    execution_id = TextField()
     session = ForeignKeyField(SessionInfo, backref='session_actions')
     phase = TextField(default='task')
 
@@ -616,6 +639,51 @@ class FollowStatus(InsomniacModel):
         db_table = 'follow_status'
 
 
+class CloneCreationAction(InsomniacModel):
+    action = ForeignKeyField(InsomniacAction, backref='clone_creation_action_info')
+    username = TextField()
+    device = TextField()
+
+    class Meta:
+        db_table = 'clone_creation_actions'
+
+
+class CloneInstallationAction(InsomniacModel):
+    action = ForeignKeyField(InsomniacAction, backref='clone_installation_action_info')
+    username = TextField()
+    device = TextField()
+
+    class Meta:
+        db_table = 'clone_installation_actions'
+
+
+class CloneRemovalAction(InsomniacModel):
+    action = ForeignKeyField(InsomniacAction, backref='clone_removal_action_info')
+    username = TextField()
+    device = TextField()
+
+    class Meta:
+        db_table = 'clone_removal_actions'
+
+
+class AppDataCleanupAction(InsomniacModel):
+    action = ForeignKeyField(InsomniacAction, backref='app_data_cleanup_action_info')
+    username = TextField()
+    device = TextField()
+
+    class Meta:
+        db_table = 'app_data_cleanup_actions'
+
+
+class ProfileRegistrationAction(InsomniacModel):
+    action = ForeignKeyField(InsomniacAction, backref='profile_registration_action_info')
+    username = TextField()
+    device = TextField()
+
+    class Meta:
+        db_table = 'profile_registration_actions'
+
+
 class SchemaVersion(InsomniacModel):
     version = SmallIntegerField(default=DATABASE_VERSION)
     updated_at = TimestampField(default=datetime.now)
@@ -642,7 +710,12 @@ MODELS = [
     FilterAction,
     ChangeProfileInfoAction,
     ScrappedProfile,
-    FollowStatus
+    FollowStatus,
+    CloneCreationAction,
+    CloneInstallationAction,
+    CloneRemovalAction,
+    AppDataCleanupAction,
+    ProfileRegistrationAction
 ]
 
 
@@ -872,6 +945,18 @@ def _migrate_db_from_version_2_to_3(migrator):
     )
 
 
+def _migrate_db_from_version_3_to_4(migrator):
+    """
+    Changes added on DB version 4:
+        * Added tables: CloneCreationAction, CloneInstallationAction,
+                        CloneRemovalAction, AppDataCleanupAction, ProfileRegistrationAction
+    """
+    new_tables = [CloneCreationAction, CloneInstallationAction, CloneRemovalAction,
+                  AppDataCleanupAction, ProfileRegistrationAction]
+    
+    db.create_tables(new_tables)
+
+
 def _migrate(curr_version, migrator):
     print(f"[Database] Going to run database migration from version {curr_version} to {curr_version+1}")
     migration_method = database_migrations[f"{curr_version}->{curr_version + 1}"]
@@ -884,5 +969,10 @@ def _migrate(curr_version, migrator):
 
 database_migrations = {
     "1->2": _migrate_db_from_version_1_to_2,
-    "2->3": _migrate_db_from_version_2_to_3
+    "2->3": _migrate_db_from_version_2_to_3,
+    "3->4": _migrate_db_from_version_3_to_4
 }
+
+
+class QueryIsNotAllowedException(Exception):
+    pass

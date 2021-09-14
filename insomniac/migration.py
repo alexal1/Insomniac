@@ -1,7 +1,7 @@
 import json
 
 from insomniac.db_models import DATABASE_NAME, is_ig_profile_exists
-from insomniac.session_state import SessionState
+from insomniac.session_state import InsomniacSessionState
 from insomniac.sessions import FILENAME_SESSIONS, Sessions
 from insomniac.storage import *
 from insomniac.utils import *
@@ -115,7 +115,7 @@ def migrate_from_json_to_sql(my_username):
             with open(sessions_path, encoding="utf-8") as json_file:
                 sessions = json.load(json_file)
                 for session in sessions:
-                    session_state = SessionState()
+                    session_state = InsomniacSessionState()
                     session_state.id = session["id"]
                     session_state.args = str(session["args"])
                     session_state.app_version = session.get("app_version", "")

@@ -6,7 +6,7 @@ from insomniac.actions_types import LikeAction, FollowAction, InteractAction, Ge
     CommentAction, TargetType, FilterAction
 from insomniac.limits import process_limits
 from insomniac.report import print_short_report, print_interaction_types
-from insomniac.session_state import SessionState
+from insomniac.session_state import InsomniacSessionState
 from insomniac.sleeper import sleeper
 from insomniac.storage import FollowingStatus
 from insomniac.utils import *
@@ -134,7 +134,7 @@ def handle_target(device,
             is_liked, is_followed, is_watch, is_commented = interaction(username=target_name, interaction_strategy=interaction_strategy)
             if is_liked or is_followed or is_watch or is_commented:
                 on_action(InteractAction(source_name=target, source_type=source_type, user=target_name, succeed=True))
-                print_short_report(SessionState.SOURCE_NAME_TARGETS, session_state)
+                print_short_report(InsomniacSessionState.SOURCE_NAME_TARGETS, session_state)
             else:
                 on_action(InteractAction(source_name=target, source_type=source_type, user=target_name, succeed=False))
 
@@ -181,7 +181,7 @@ def handle_target(device,
             print(COLOR_OKGREEN + f"@{target_username} - {target_post} - photo been liked." + COLOR_ENDC)
             on_action(LikeAction(source_name=target_username, source_type=source_type, user=target_username))
             on_action(InteractAction(source_name=target_username, source_type=source_type, user=target_username, succeed=True))
-            print_short_report(SessionState.SOURCE_NAME_TARGETS, session_state)
+            print_short_report(InsomniacSessionState.SOURCE_NAME_TARGETS, session_state)
 
         if is_like_limit_reached:
             # If one of the limits reached for source-limit, move to next source

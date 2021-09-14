@@ -8,16 +8,17 @@ from insomniac import network, HTTP_OK
 from insomniac.action_get_my_profile_info import get_my_profile_info
 from insomniac.action_runners.actions_runners_manager import CoreActionRunnersManager
 from insomniac.device import DeviceWrapper
+from insomniac.hardban_indicator import HardBanError, hardban_indicator
 from insomniac.limits import LimitsManager
 from insomniac.migration import migrate_from_json_to_sql, migrate_from_sql_to_peewee
 from insomniac.navigation import close_instagram_and_system_dialogs
 from insomniac.params import parse_arguments, refresh_args_by_conf_file, load_app_id
 from insomniac.report import print_full_report
-from insomniac.session_state import SessionState
+from insomniac.session_state import InsomniacSessionState
 from insomniac.sessions import Sessions
 from insomniac.sleeper import sleeper
 from insomniac.softban_indicator import ActionBlockedError
-from insomniac.storage import STORAGE_ARGS, Storage, DatabaseMigrationFailedException
+from insomniac.storage import STORAGE_ARGS, InsomniacStorage, DatabaseMigrationFailedException
 from insomniac.utils import *
 from insomniac.views import UserSwitchFailedException
 
@@ -30,6 +31,10 @@ def get_insomniac_session(starter_conf_file_path):
 
 class Session(ABC):
     SESSION_ARGS = {
+        "device": {
+            "help": 'device identifier. Should be used only when multiple devices are connected at once',
+            "metavar": '2443de990e017ece'
+        },
         "repeat": {
             "help": 'repeat the same session again after N minutes after completion, disabled by default. '
                     'It can be a number of minutes (e.g. 180) or a range (e.g. 120-180)',
@@ -37,11 +42,6 @@ class Session(ABC):
         },
         "no_typing": {
             'help': 'disable "typing" feature (typing symbols one-by-one as a human)',
-            'action': 'store_true'
-        },
-        "old": {
-            'help': 'add this flag to use an old version of uiautomator. Use it only if you experience '
-                    'problems with the default version',
             'action': 'store_true'
         },
         "debug": {
@@ -62,12 +62,17 @@ class Session(ABC):
             'metavar': '1-4',
             'type': int,
             'choices': range(1, 5)
+        },
+        "no_speed_check": {
+            'help': 'skip internet speed check at start',
+            'action': 'store_true'
         }
     }
 
+    device = None
     repeat = None
-    old = None
     next_config_file = None
+    print_full_report_fn = print_full_report
 
     def __init__(self, starter_conf_file_path=None):
         self.starter_conf_file_path = starter_conf_file_path
@@ -115,7 +120,7 @@ class Session(ABC):
             sleep(60 * self.repeat)
             return refresh_args_by_conf_file(args, self.next_config_file)
         except KeyboardInterrupt:
-            print_full_report(self.sessions)
+            self.print_full_report_fn(self.sessions)
             sys.exit(0)
 
     @staticmethod
@@ -128,8 +133,19 @@ class Session(ABC):
             sleeper.update_random_sleep_range()
 
     @staticmethod
+    def should_close_app_after_session(args, device_wrapper):
+        if args.repeat is None:
+            return True
+        if float(args.repeat) > 0:
+            return True
+        return not Session.is_next_app_id_same(args, device_wrapper)
+
+    @staticmethod
     def is_next_app_id_same(args, device_wrapper):
-        return args.next_config_file is not None and load_app_id(args.next_config_file) == device_wrapper.app_id
+        if args.next_config_file is None:
+            # No config file => we'll use same app_id
+            return True
+        return load_app_id(args.next_config_file) == device_wrapper.app_id
 
     def run(self):
         raise NotImplementedError
@@ -137,19 +153,11 @@ class Session(ABC):
 
 class InsomniacSession(Session):
     INSOMNIAC_SESSION_ARGS = {
-        "device": {
-            "help": 'device identifier. Should be used only when multiple devices are connected at once',
-            "metavar": '2443de990e017ece'
-        },
         "wait_for_device": {
             'help': 'keep waiting for ADB-device to be ready for connection (if no device-id is provided using '
                     '--device flag, will wait for any available device)',
             'action': 'store_true',
             "default": False
-        },
-        "no_speed_check": {
-            'help': 'skip internet speed check at start',
-            'action': 'store_true'
         },
         "app_id": {
             "help": 'apk package identifier. Should be used only if you are using cloned-app. '
@@ -159,6 +167,11 @@ class InsomniacSession(Session):
         },
         "app_name": {
             "default": None
+        },
+        "old": {
+            'help': 'add this flag to use an old version of uiautomator. Use it only if you experience '
+                    'problems with the default version',
+            'action': 'store_true'
         },
         "dont_indicate_softban": {
             "help": "by default Insomniac tries to indicate if there is a softban on your acoount. Set this flag in "
@@ -182,7 +195,6 @@ class InsomniacSession(Session):
         }
     }
 
-    device = None
     username = None
 
     def __init__(self, starter_conf_file_path=None):
@@ -233,23 +245,26 @@ class InsomniacSession(Session):
         return device_wrapper, app_version
 
     def prepare_session_state(self, args, device_wrapper, app_version, save_profile_info=True):
-        self.session_state = SessionState()
+        self.session_state = InsomniacSessionState()
         self.session_state.args = args.__dict__
         self.session_state.app_id = args.app_id
         self.session_state.app_version = app_version
         self.sessions.append(self.session_state)
 
-        device_wrapper.get().wake_up()
+        device = device_wrapper.get()
+        device.wake_up()
 
         print_timeless(COLOR_REPORT + "\n-------- START: " + str(self.session_state.startTime) + " --------" + COLOR_ENDC)
 
         if __version__.__debug_mode__:
-            device_wrapper.get().start_screen_record()
-        open_instagram(device_wrapper.device_id, device_wrapper.app_id)
+            device.start_screen_record()
+        if open_instagram(device_wrapper.device_id, device_wrapper.app_id):
+            # IG was just opened, check that we are not hard banned
+            hardban_indicator.detect_webview(device)
         if save_profile_info:
             self.session_state.my_username, \
                 self.session_state.my_followers_count, \
-                self.session_state.my_following_count = get_my_profile_info(device_wrapper.get(), self.username)
+                self.session_state.my_following_count = get_my_profile_info(device, self.username)
 
         return self.session_state
 
@@ -298,7 +313,7 @@ class InsomniacSession(Session):
                 self.prepare_session_state(args, device_wrapper, app_version, save_profile_info=True)
                 migrate_from_json_to_sql(self.session_state.my_username)
                 migrate_from_sql_to_peewee(self.session_state.my_username)
-                self.storage = Storage(self.session_state.my_username, args)
+                self.storage = InsomniacStorage(self.session_state.my_username, args)
                 self.session_state.set_storage_layer(self.storage)
                 self.session_state.start_session()
 
@@ -310,7 +325,13 @@ class InsomniacSession(Session):
             except (KeyboardInterrupt, UserSwitchFailedException, DatabaseMigrationFailedException):
                 self.end_session(device_wrapper)
                 return
-            except ActionBlockedError as ex:
+            except (ActionBlockedError, HardBanError) as ex:
+                if type(ex) is ActionBlockedError:
+                    self.storage.log_softban()
+
+                if type(ex) is HardBanError and args.app_name is not None:
+                    InsomniacStorage.log_hardban(args.app_name)
+
                 print_timeless("")
                 print(COLOR_FAIL + describe_exception(ex, with_stacktrace=False) + COLOR_ENDC)
                 save_crash(device_wrapper.get())
@@ -324,7 +345,7 @@ class InsomniacSession(Session):
                     print(COLOR_FAIL + describe_exception(ex) + COLOR_ENDC)
                     save_crash(device_wrapper.get(), ex)
 
-            self.end_session(device_wrapper, with_app_closing=(not self.is_next_app_id_same(args, device_wrapper)))
+            self.end_session(device_wrapper, with_app_closing=self.should_close_app_after_session(args, device_wrapper))
             if self.repeat is not None:
                 if not self.repeat_session(args):
                     break

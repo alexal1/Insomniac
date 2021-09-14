@@ -29,7 +29,7 @@ class ActionStatus(object):
         return self.limit_state
 
 
-class ActionsRunner(object):
+class ActionsRunner(ABC):
     """An interface for actions-runner object"""
 
     ACTION_ID = "OVERRIDE"
@@ -46,9 +46,13 @@ class ActionsRunner(object):
     def reset_params(self):
         raise NotImplementedError()
 
+
+class InsomniacActionsRunner(ActionsRunner, ABC):
+    """An interface for extra-actions-runner object"""
+
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
         raise NotImplementedError()
 
 
-class CoreActionsRunner(ActionsRunner, ABC):
-    """An interface for extra-actions-runner object"""
+class CoreActionsRunner(InsomniacActionsRunner, ABC):
+    """An interface for core-actions-runner object"""

@@ -5,7 +5,7 @@ import insomniac.__version__ as __version__
 from insomniac import network
 from insomniac.activation import activation_controller
 from insomniac.network import HTTP_OK
-from insomniac.params import parse_arguments
+from insomniac.params import parse_arguments, load_param
 from insomniac.utils import *
 
 
@@ -17,7 +17,7 @@ def run(activation_code="", starter_conf_file_path=None):
         print_timeless(COLOR_OKGREEN + __version__.__logo__ + COLOR_ENDC)
         print_version()
 
-    activation_code_from_args = get_arg_value(ACTIVATION_CODE_ARG_NAME)
+    activation_code_from_args = get_arg_value(ACTIVATION_CODE_ARG_NAME, starter_conf_file_path)
     if activation_code_from_args is not None:
         activation_code = activation_code_from_args
 
@@ -60,7 +60,16 @@ def _get_latest_version(package):
     return latest_version
 
 
-def get_arg_value(arg_name):
+def get_arg_value(arg_name, conf_path):
+    arg_from_cli = get_arg_value_from_cli(arg_name)
+
+    if arg_from_cli is not None:
+        return arg_from_cli
+
+    return get_arg_value_from_config_file(arg_name, conf_path)
+
+
+def get_arg_value_from_cli(arg_name):
     parser = ArgumentParser(add_help=False)
     parser.add_argument(f'--{arg_name.replace("_", "-")}')
     try:
@@ -68,6 +77,13 @@ def get_arg_value(arg_name):
     except (argparse.ArgumentError, TypeError):
         return None
     return getattr(args, arg_name)
+
+
+def get_arg_value_from_config_file(arg_name, conf_file_path):
+    if conf_file_path is None:
+        return None
+
+    return load_param(conf_file_path, arg_name)
 
 
 class ArgumentParser(argparse.ArgumentParser):

@@ -53,7 +53,7 @@ class SoftBanIndicator:
         is_list_empty_from_profiles = list_view.is_list_empty()
         if is_list_empty_from_profiles:
             print(COLOR_FAIL + "List of followers seems to be empty. "
-                               "Counting that as a soft-ban indicator!." + COLOR_ENDC)
+                               "Counting that as a soft-ban indicator!" + COLOR_ENDC)
             self.indications[IndicationType.EMPTY_LISTS]["curr"] += 1
             self.indicate_block()
 
@@ -66,7 +66,7 @@ class SoftBanIndicator:
         is_profile_empty = followers_count is None
         if is_profile_empty:
             print(COLOR_FAIL + "A profile-page seems to be empty. "
-                               "Counting that as a soft-ban indicator!." + COLOR_ENDC)
+                               "Counting that as a soft-ban indicator!" + COLOR_ENDC)
             self.indications[IndicationType.EMPTY_PROFILES]["curr"] += 1
             self.indicate_block()
 
@@ -77,7 +77,7 @@ class SoftBanIndicator:
         is_blocked = DialogView(device).is_visible()
         if is_blocked:
             print(COLOR_FAIL + "Probably block dialog is shown. "
-                               "Counting that as a soft-ban indicator!." + COLOR_ENDC)
+                               "Counting that as a soft-ban indicator!" + COLOR_ENDC)
             self.indications[IndicationType.ACTION_BLOCKED_DIALOGS]["curr"] += 1
             self.indicate_block()
 

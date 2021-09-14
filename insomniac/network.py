@@ -1,6 +1,8 @@
 import socket
 import ssl
 import urllib.request
+import urllib.parse
+import json
 from urllib.error import HTTPError, URLError
 
 import insomniac.__version__ as __version__
@@ -22,6 +24,29 @@ PUBLIC_USER_AGENTS = [
 ]
 
 
+def post(url, data, user_agent=INSOMNIAC_USER_AGENT):
+    """
+    Perform HTTP POST request.
+
+    :param url: URL to request for
+    :param data: data to send as the request body
+    :param user_agent: optional custom user-agent
+    :return: tuple of: response code, body (if response has one), and fail reason which is None if code is 200
+    """
+
+    # parsed_data = urllib.parse.urlencode(data).encode()
+    json_data = json.dumps(data)
+    json_data_as_bytes = json_data.encode('utf-8')
+
+    headers = {
+        'User-Agent': user_agent,
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Length': len(json_data_as_bytes)
+    }
+
+    return _request(url=url, data=json_data_as_bytes, headers=headers)
+
+
 def get(url, user_agent=INSOMNIAC_USER_AGENT):
     """
     Perform HTTP GET request.
@@ -33,7 +58,20 @@ def get(url, user_agent=INSOMNIAC_USER_AGENT):
     headers = {
         'User-Agent': user_agent
     }
-    request = urllib.request.Request(url, headers=headers)
+
+    return _request(url=url, data=None, headers=headers)
+
+
+def _request(url, data, headers):
+    """
+    Perform HTTP GET request.
+
+    :param url: URL to request for
+    :param user_agent: optional custom user-agent
+    :return: tuple of: response code, body (if response has one), and fail reason which is None if code is 200
+    """
+
+    request = urllib.request.Request(url=url, data=data, headers=headers)
     body = None
     attempt = 0
     while True:

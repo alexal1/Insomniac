@@ -1,16 +1,54 @@
+from abc import ABC
 from datetime import datetime
 from typing import Optional
 
 from insomniac.actions_types import LikeAction, InteractAction, FollowAction, GetProfileAction, ScrapeAction, \
     UnfollowAction, RemoveMassFollowerAction, StoryWatchAction, CommentAction, DirectMessageAction, FilterAction
-from insomniac.storage import Storage, SessionPhase
+from insomniac.storage import Storage, InsomniacStorage, SessionPhase
 
 
-class SessionState:
-    SOURCE_NAME_TARGETS = "targets"
-
+class SessionState(ABC):
     id = None
     args = {}
+    startTime = None
+    finishTime = None
+    storage: Optional[Storage] = None
+    is_started = False
+
+    def __init__(self):
+        self.id = None
+        self.args = {}
+        self.startTime = datetime.now()
+        self.finishTime = None
+        self.storage = None
+        self.is_started = False
+
+    def set_storage_layer(self, storage_instance):
+        self.storage = storage_instance
+
+    def start_session(self):
+        self.is_started = True
+        self.start_session_impl()
+
+    def start_session_impl(self):
+        raise NotImplementedError
+
+    def end_session(self):
+        if not self.is_started:
+            return
+
+        self.finishTime = datetime.now()  # For metadata-in-memory only
+        if self.storage is not None:
+            self.storage.end_session(self.id)
+
+    def is_finished(self):
+        return self.finishTime is not None
+
+
+class InsomniacSessionState(SessionState):
+    SOURCE_NAME_TARGETS = "targets"
+
+    storage: Optional[InsomniacStorage] = None
     app_id = None
     app_version = None
     my_username = None
@@ -25,15 +63,10 @@ class SessionState:
     totalUnfollowed = 0
     totalStoriesWatched = 0
     removedMassFollowers = []
-    startTime = None
-    finishTime = None
-    storage: Optional[Storage] = None
     session_phase = SessionPhase.TASK_LOGIC
-    is_started = False
 
     def __init__(self):
-        self.id = None
-        self.args = {}
+        super().__init__()
         self.app_id = None
         self.app_version = None
         self.my_username = None
@@ -50,30 +83,13 @@ class SessionState:
         self.totalUnfollowed = 0
         self.totalStoriesWatched = 0
         self.removedMassFollowers = []
-        self.startTime = datetime.now()
-        self.finishTime = None
-        self.storage = None
         self.session_phase = SessionPhase.TASK_LOGIC
-        self.is_started = False
 
-    def set_storage_layer(self, storage_instance):
-        self.storage = storage_instance
-
-    def start_session(self):
-        self.is_started = True
-
-        session_id = self.storage.start_session(self.app_id, self.app_version, self.args,
+    def start_session_impl(self):
+        session_id = self.storage.start_session(self.args, self.app_id, self.app_version,
                                                 self.my_followers_count, self.my_following_count)
         if session_id is not None:
             self.id = session_id
-
-    def end_session(self):
-        if not self.is_started:
-            return
-
-        self.finishTime = datetime.now()  # For metadata-in-memory only
-        if self.storage is not None:
-            self.storage.end_session(self.id)
 
     def start_warmap(self):
         self.session_phase = SessionPhase.WARMUP
@@ -144,6 +160,3 @@ class SessionState:
 
         if type(action) == RemoveMassFollowerAction:
             self.removedMassFollowers.append(action.user)
-
-    def is_finished(self):
-        return self.finishTime is not None

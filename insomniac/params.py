@@ -61,10 +61,18 @@ def parse_arguments(all_args_dict, starter_conf_file_path):
     return True, args
 
 
-def refresh_args_by_conf_file(args, conf_file_name=None):
+def refresh_args_by_conf_file(args, conf_file_name=None) -> bool:
+    """
+    Set new args taken from the config file.
+
+    :return: true if setting of new args succeeded or args remained the same, false in case of some error
+    """
     config_file = conf_file_name
     if config_file is None:
         config_file = args.config_file
+    if config_file is None:
+        # No config file neither in parameters nor in args, so just leave args the same
+        return True
 
     params = _load_params(config_file)
     if params is None:
@@ -108,12 +116,24 @@ def load_app_id(config_file):
     return resolve_app_id(app_id, device_id, app_name)
 
 
+def load_param(config_file, params_name):
+    params = _load_params(config_file)
+    if params is None:
+        return None
+
+    for param in params:
+        if param.get(CONFIG_PARAMETER_NAME) == params_name and param.get(CONFIG_PARAMETER_ENABLED):
+            return param.get(CONFIG_PARAMETER_VALUE)
+
+    return None
+
+
 def resolve_app_id(app_id, device_id, app_name):
     if app_name is not None:
         from insomniac.extra_features.utils import get_package_by_name
         app_id_by_name = get_package_by_name(device_id, app_name)
         if app_id_by_name is not None:
-            print(f"Found app id by app name: {app_id_by_name}")
+            print(f"Found app id by app name {app_name}: {app_id_by_name}")
             return app_id_by_name
         else:
             print(COLOR_FAIL + f"You provided app name \"{app_name}\" but there's no app with such name" + COLOR_ENDC)

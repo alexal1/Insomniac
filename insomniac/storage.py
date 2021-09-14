@@ -33,9 +33,6 @@ STORAGE_ARGS = {
 }
 
 
-IS_USING_DATABASE = False
-
-
 ACTION_TYPES_MAPPING = {
     insomniac_actions_types.GetProfileAction: insomniac_db.GetProfileAction,
     insomniac_actions_types.LikeAction: insomniac_db.LikeAction,
@@ -48,18 +45,36 @@ ACTION_TYPES_MAPPING = {
 }
 
 
-def database_api(func):
-    def wrap(*args, **kwargs):
-        if IS_USING_DATABASE:
-            return func(*args, **kwargs)
-
-        return None
-    return wrap
-
-
 class Storage:
     my_username = None
     profile = None
+
+    def _reset_state(self):
+        self.my_username = None
+        self.profile = None
+
+    def __init__(self, my_username):
+        db_models.init()
+
+        self._reset_state()
+
+        if my_username is None:
+            print(COLOR_OKGREEN + "No username, so the script won't read/write from the database" + COLOR_ENDC)
+            return
+
+        self.my_username = my_username
+        self.profile = get_ig_profile_by_profile_name(my_username)
+
+    def start_session(self, args, app_id=None, app_version=None, followers_count=None, following_count=None):
+        session_id = self.profile.start_session(app_id, app_version, args, ProfileStatus.VALID.value,
+                                                followers_count, following_count)
+        return session_id
+
+    def end_session(self, session_id):
+        self.profile.end_session(session_id)
+
+
+class InsomniacStorage(Storage):
     scrape_for_account_list = []
     recheck_follow_status_after = None
     whitelist = []
@@ -70,10 +85,8 @@ class Storage:
     url_targets_list_from_parameters = []
 
     def _reset_state(self):
-        global IS_USING_DATABASE
-        IS_USING_DATABASE = False
-        self.my_username = None
-        self.profile = None
+        super()._reset_state()
+
         self.scrape_for_account_list = []
         self.recheck_follow_status_after = None
         self.whitelist = []
@@ -84,19 +97,8 @@ class Storage:
         self.url_targets_list_from_parameters = []
 
     def __init__(self, my_username, args):
-        db_models.init()
+        super().__init__(my_username)
 
-        self._reset_state()
-
-        if my_username is None:
-            print(COLOR_OKGREEN + "No username, so the script won't read/write from the database" + COLOR_ENDC)
-            return
-
-        global IS_USING_DATABASE
-        IS_USING_DATABASE = True
-
-        self.my_username = my_username
-        self.profile = get_ig_profile_by_profile_name(my_username)
         scrape_for_account = args.__dict__.get('scrape_for_account', [])
         self.scrape_for_account_list = scrape_for_account if isinstance(scrape_for_account, list) else [scrape_for_account]
         if args.reinteract_after is not None:
@@ -157,33 +159,15 @@ class Storage:
         if count_from_scrapping > 0:
             print(f"Profiles to interact from scrapping: {count_from_scrapping}")
 
-    @database_api
-    def start_session(self, app_id, app_version, args, followers_count, following_count):
-        session_id = self.profile.start_session(app_id, app_version, args, ProfileStatus.VALID.value,
-                                                followers_count, following_count)
-        return session_id
-
-    @database_api
-    def end_session(self, session_id):
-        self.profile.end_session(session_id)
-
-    @database_api
     def check_user_was_interacted(self, username):
         return self.profile.is_interacted(username, hours=self.reinteract_after)
 
-    @database_api
-    def check_user_was_interacted(self, username):
-        return self.profile.is_interacted(username, hours=72)
-
-    @database_api
     def check_user_was_scrapped(self, username):
         return self.profile.is_scrapped(username, self.scrape_for_account_list)
 
-    @database_api
     def check_user_was_filtered(self, username):
         return self.profile.is_filtered(username, hours=self.refilter_after)
 
-    @database_api
     def get_following_status(self, username):
         if not self.profile.used_to_follow(username):
             return FollowingStatus.NONE
@@ -192,7 +176,6 @@ class Storage:
             return FollowingStatus.NONE
         return FollowingStatus.FOLLOWED if do_i_follow else FollowingStatus.UNFOLLOWED
 
-    @database_api
     def is_profile_follows_me_by_cache(self, username):
         """
         Return True if and only if "username" follows me and the last check was within
@@ -202,11 +185,9 @@ class Storage:
             return False
         return self.profile.is_follow_me(username, hours=self.recheck_follow_status_after) is True
 
-    @database_api
     def is_dm_sent_to(self, username):
         return self.profile.is_dm_sent_to(username)
 
-    @database_api
     def update_follow_status(self, username, is_follow_me=None, do_i_follow_him=None):
         if is_follow_me is None and do_i_follow_him is None:
             print(COLOR_FAIL + "Provide either is_follow_me or do_i_follow_him or both in update_follow_status()!")
@@ -217,61 +198,65 @@ class Storage:
             do_i_follow_him = self.profile.do_i_follow(username)
         self.profile.update_follow_status(username, is_follow_me, do_i_follow_him)
 
-    @database_api
     def log_get_profile_action(self, session_id, phase, username):
         self.profile.log_get_profile_action(session_id, phase.value, username, insomniac_globals.task_id, insomniac_globals.execution_id)
 
-    @database_api
     def log_like_action(self, session_id, phase, username, source_type, source_name):
         self.profile.log_like_action(session_id, phase.value, username, source_type, source_name, insomniac_globals.task_id, insomniac_globals.execution_id)
 
-    @database_api
     def log_follow_action(self, session_id, phase, username, source_type, source_name):
         self.profile.log_follow_action(session_id, phase.value, username, source_type, source_name, insomniac_globals.task_id, insomniac_globals.execution_id)
 
-    @database_api
     def log_story_watch_action(self, session_id, phase, username, source_type, source_name):
         self.profile.log_story_watch_action(session_id, phase.value, username, source_type, source_name, insomniac_globals.task_id, insomniac_globals.execution_id)
 
-    @database_api
     def log_comment_action(self, session_id, phase, username, comment, source_type, source_name):
         self.profile.log_comment_action(session_id, phase.value, username, comment, source_type, source_name, insomniac_globals.task_id, insomniac_globals.execution_id)
 
-    @database_api
     def log_direct_message_action(self, session_id, phase, username, message):
         self.profile.log_direct_message_action(session_id, phase.value, username, message, insomniac_globals.task_id, insomniac_globals.execution_id)
 
-    @database_api
     def log_unfollow_action(self, session_id, phase, username):
         self.profile.log_unfollow_action(session_id, phase.value, username, insomniac_globals.task_id, insomniac_globals.execution_id)
 
-    @database_api
     def log_scrape_action(self, session_id, phase, username, source_type, source_name):
         self.profile.log_scrape_action(session_id, phase.value, username, source_type, source_name, insomniac_globals.task_id, insomniac_globals.execution_id)
 
-    @database_api
     def log_filter_action(self, session_id, phase, username):
         self.profile.log_filter_action(session_id, phase.value, username, insomniac_globals.task_id, insomniac_globals.execution_id)
 
-    @database_api
     def log_change_profile_info_action(self, session_id, phase, profile_pic_url, name, description):
         self.profile.log_change_profile_info_action(session_id, phase.value, profile_pic_url, name, description, insomniac_globals.task_id, insomniac_globals.execution_id)
 
-    @database_api
     def publish_scrapped_account(self, username):
         self.profile.publish_scrapped_account(username, self.scrape_for_account_list)
 
-    @database_api
     def get_actions_count_within_hours(self, action_type, hours):
         return self.profile.get_actions_count_within_hours(ACTION_TYPES_MAPPING[action_type], hours)
 
-    @database_api
     def get_session_time_in_seconds_within_minutes(self, minutes):
         return self.profile.get_session_time_in_seconds_within_minutes(minutes)
 
-    @database_api
     def get_sessions_count_within_hours(self, hours):
         return self.profile.get_session_count_within_hours(hours)
+
+    def log_softban(self):
+        InsomniacStorage._update_profile_status(self.profile, ProfileStatus.SOFT_BAN)
+
+    @staticmethod
+    def log_hardban(username):
+        profile = get_ig_profile_by_profile_name(username)
+        InsomniacStorage._update_profile_status(profile, ProfileStatus.HARD_BAN)
+
+    @staticmethod
+    def _update_profile_status(profile, status):
+        followers_count = 0
+        following_count = 0
+        latest_profile_info = profile.get_latsest_profile_info()
+        if latest_profile_info is not None:
+            followers_count = latest_profile_info.followers
+            following_count = latest_profile_info.following
+        profile.update_profile_info(status, followers_count, following_count)
 
     def get_target(self, session_id):
         """
@@ -404,7 +389,9 @@ class FollowingStatus(Enum):
 class ProfileStatus(Enum):
     VALID = "valid"
     UNKNOWN = "unknown"
-    # TODO: request list of possible statuses from Jey
+    SOFT_BAN = "soft-ban"
+    HARD_BAN = "hard-ban"
+    CANT_LOGIN = "cant-login"
 
 
 @unique

@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from random import randint
 from subprocess import PIPE
 from time import sleep
+from typing import Optional
 
 import colorama
 from colorama import Fore, Style, AnsiToWin32
@@ -64,10 +65,10 @@ def get_connected_devices_adb_ids():
     if devices_count == 0:
         return []
 
-    devices = []
+    devices = set()
     for line in output.split('\n'):
         if '\tdevice' in line:
-            devices.append(line.split('\t')[0])
+            devices.add(line.split('\t')[0])
 
     return devices
 
@@ -120,15 +121,22 @@ def check_adb_connection(device_id, wait_for_device):
     return is_ok
 
 
-def open_instagram(device_id, app_id):
+def open_instagram(device_id, app_id) -> bool:
+    """
+    :return: true if IG app was opened, false if it was already opened
+    """
     print("Open Instagram app")
     cmd = ("adb" + ("" if device_id is None else " -s " + device_id) +
            f" shell am start -n {app_id}/com.instagram.mainactivity.MainActivity")
 
     cmd_res = subprocess.run(cmd, stdout=PIPE, stderr=PIPE, shell=True, encoding="utf8")
     err = cmd_res.stderr.strip()
-    if err and err != APP_REOPEN_WARNING:
-        print(COLOR_FAIL + err + COLOR_ENDC)
+    if err:
+        if err == APP_REOPEN_WARNING:
+            return False
+        else:
+            print(COLOR_FAIL + err + COLOR_ENDC)
+    return True
 
 
 def open_instagram_with_url(device_id, app_id, url):
@@ -146,7 +154,7 @@ def open_instagram_with_url(device_id, app_id, url):
 
 
 def close_instagram(device_id, app_id):
-    print("Close Instagram app")
+    print(f"Close Instagram app {app_id}")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              f" shell am force-stop {app_id}").close()
     # Press HOME to leave a possible state of opened system dialog(s)
@@ -158,6 +166,15 @@ def clear_instagram_data(device_id, app_id):
     print("Clear Instagram data")
     os.popen("adb" + ("" if device_id is None else " -s " + device_id) +
              f" shell pm clear {app_id}").close()
+
+
+def execute_command(cmd) -> Optional[str]:
+    cmd_res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
+    err = cmd_res.stderr.strip()
+    if err:
+        print(COLOR_FAIL + err + COLOR_ENDC)
+        return None
+    return cmd_res.stdout.strip()
 
 
 def save_crash(device, ex=None):
@@ -329,9 +346,10 @@ def get_random_string(length):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 
-def describe_exception(ex, with_stacktrace=True):
+def describe_exception(ex, with_stacktrace=True, context=None):
+    exception_context = f'({context}): ' if context is not None else ''
     trace = ''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)) if with_stacktrace else ''
-    description = f"Error - {str(ex)}\n{trace}"
+    description = f"{exception_context}Error - {str(ex)}\n{trace}"
 
     return description
 
