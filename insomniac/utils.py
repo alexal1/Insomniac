@@ -169,7 +169,11 @@ def clear_instagram_data(device_id, app_id):
 
 
 def execute_command(cmd) -> Optional[str]:
-    cmd_res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
+    try:
+        cmd_res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
+    except IndexError:
+        # There's a bug in some Python versions that raises this error https://github.com/python/cpython/pull/24777
+        return None
     err = cmd_res.stderr.strip()
     if err:
         print(COLOR_FAIL + err + COLOR_ENDC)
