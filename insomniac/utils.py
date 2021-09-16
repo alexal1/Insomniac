@@ -174,11 +174,16 @@ def execute_command(cmd) -> Optional[str]:
     except IndexError:
         # There's a bug in some Python versions that raises this error https://github.com/python/cpython/pull/24777
         return None
-    err = cmd_res.stderr.strip()
-    if err:
-        print(COLOR_FAIL + err + COLOR_ENDC)
+    err = cmd_res.stderr
+    out = cmd_res.stdout
+    if err is not None:
+        err = err.strip()
+        if len(err) > 0:
+            print(COLOR_FAIL + err.strip() + COLOR_ENDC)
         return None
-    return cmd_res.stdout.strip()
+    if out is not None:
+        return out.strip()
+    return None
 
 
 def save_crash(device, ex=None):
@@ -291,6 +296,16 @@ def _get_value(count, name, default, max_count, is_float):
         print(COLOR_FAIL + name.format(max_count) + f". This is max value." + COLOR_ENDC)
         value = max_count
     return value
+
+
+def is_zero_value(count: str) -> bool:
+    parts = count.split("-")
+    if len(parts) == 1:
+        try:
+            return float(count) == 0
+        except ValueError:
+            pass
+    return False
 
 
 def get_left_right_values(left_right_str, name, default):

@@ -136,7 +136,7 @@ class Session(ABC):
     def should_close_app_after_session(args, device_wrapper):
         if args.repeat is None:
             return True
-        if float(args.repeat) > 0:
+        if not is_zero_value(args.repeat):
             return True
         return not Session.is_next_app_id_same(args, device_wrapper)
 
