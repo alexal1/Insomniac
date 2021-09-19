@@ -297,10 +297,18 @@ limit on total amount of profiles-scrapping during the
 session, disabled by default. It can be a number (e.g.
 100) or a range (e.g. 90-120)
 
-#### --working-hours 9-21  set working hours to the script, disabled by default.
+#### --working-hours 9-21
+set working hours to the script, disabled by default. 
 It can be a number presenting specific hour (e.g. 13)
 or a range (e.g. 9-21). Notice that right value must
 be higher than the left value.
+
+#### --working-hours-without-sleep 9-21
+if you use flow, you maybe don't want to wait for 
+working-hours on a specific session, because the 
+following session in the flow might be in the working 
+hours and you dont want to stop the flow. If that's the 
+case, use this parameter
 
 ### Advanced
 More options for savvy users!
