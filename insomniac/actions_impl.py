@@ -801,7 +801,7 @@ def do_unfollow(device, my_username, username, storage, check_if_is_follower, us
         print(f"Unfollowing @{username}...")
         unfollow_button.click()
         sleeper.random_sleep()
-    breakpoint()
+
     unfollow_confirmed = False
     dialog_view = DialogView(device)
     if dialog_view.is_visible():
