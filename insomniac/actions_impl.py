@@ -801,7 +801,7 @@ def do_unfollow(device, my_username, username, storage, check_if_is_follower, us
         print(f"Unfollowing @{username}...")
         unfollow_button.click()
         sleeper.random_sleep()
-
+    breakpoint()
     unfollow_confirmed = False
     dialog_view = DialogView(device)
     if dialog_view.is_visible():
@@ -809,16 +809,20 @@ def do_unfollow(device, my_username, username, storage, check_if_is_follower, us
         unfollow_confirmed = dialog_view.click_unfollow()
 
     if unfollow_confirmed:
-        # If the account is private, another popup is shown
-        confirm_button = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
-                                     clickable=True,
-                                     text='Unfollow')
-        # If it exists, click unfollow
-        if confirm_button.exists():
-            print("Private account, confirming unfollow...")
-            confirm_button.click()
-        # Either way, sleep
-        sleeper.random_sleep()
+        try:
+            # If the account is private, another popup is shown
+            confirm_button = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
+                                         clickable=True,
+                                         text='Unfollow')
+            # If it exists, click unfollow
+            if confirm_button.exists():
+                print("Private account, confirming unfollow...")
+                confirm_button.click()
+            # Either way, sleep
+        except:
+            pass
+        finally:
+            sleeper.random_sleep()
     else:
         softban_indicator.detect_action_blocked_dialog(device)
 
