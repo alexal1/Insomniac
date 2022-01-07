@@ -209,7 +209,7 @@ class DeviceFacade:
         if self.deviceV1 is not None:
             return self.deviceV1.server.alive
         else:
-            return self.deviceV2._is_alive()
+            return self.deviceV2.server.alive
 
     def wake_up(self):
         """ Make sure agent is alive or bring it back up before starting. """
