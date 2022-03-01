@@ -26,7 +26,7 @@ class Typewriter:
     def set_adb_keyboard(self):
         if not self._is_adb_ime_existing():
             print("Installing ADB Keyboard to enable typewriting...")
-            apk_path = os.path.join(os.path.dirname(os.path.abspath(insomniac.__file__)), "assets", ADB_KEYBOARD_APK)
+            apk_path = os.path.join(os.path.dirname("os.path.abspath(insomniac.__file__)"), "assets", ADB_KEYBOARD_APK)
             os.popen("adb" + ("" if self.device_id is None else " -s " + self.device_id)
                      + f" install {apk_path}").close()
         self.is_adb_keyboard_set = self._set_adb_ime()
