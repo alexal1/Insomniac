@@ -156,6 +156,9 @@ default uses the same config file as been loaded for
 the first session. Note that you must use "--repeat"
 with this argument!
 
+#### --send-stats
+add this flag to send your anonymous statistics to the Telegram bot @your_insomniac_bot. This is useful when insomniac runs infinitely and you want to be able to track progress remotely 
+
 ### Advanced
 Options for savvy users.
 

@@ -4,8 +4,10 @@ from insomniac.utils import *
 # Typewriter uses Android application (apk file) built from this repo: https://github.com/alexal1/InsomniacAutomator
 # It provides IME (Input Method Editor) that replaces virtual keyboard with it's own one, which listens to specific
 # broadcast messages and simulates key presses.
+ADB_KEYBOARD_PKG = "com.alexal1.adbkeyboard"
 ADB_KEYBOARD_IME = "com.alexal1.adbkeyboard/.AdbIME"
 ADB_KEYBOARD_APK = "ADBKeyboard.apk"
+ADB_KEYBOARD_VERSION = versiontuple("3.0.1")
 DELAY_MEAN = 200
 DELAY_DEVIATION = 100
 IME_MESSAGE_B64 = "ADB_INPUT_B64"
@@ -24,7 +26,22 @@ class Typewriter:
         self.device_id = device_id
 
     def set_adb_keyboard(self):
-        if not self._is_adb_ime_existing():
+        need_to_install_apk = False
+        if self._is_adb_ime_existing():
+            # Check version and update if needed
+            stream = os.popen("adb" + ("" if self.device_id is None else " -s " + self.device_id) +
+                              f" shell dumpsys package {ADB_KEYBOARD_PKG} | grep 'versionName'")
+            output = stream.read()
+            version_match = re.findall('versionName=(\\S+)', output)
+            stream.close()
+            if len(version_match) == 1 and versiontuple(version_match[0]) >= ADB_KEYBOARD_VERSION:
+                print_debug("ADB Keyboard version is good")
+            else:
+                need_to_install_apk = True
+        else:
+            need_to_install_apk = True
+
+        if need_to_install_apk:
             print("Installing ADB Keyboard to enable typewriting...")
             apk_path = os.path.join(os.path.dirname(os.path.abspath(insomniac.__file__)), "assets", ADB_KEYBOARD_APK)
             os.popen("adb" + ("" if self.device_id is None else " -s " + self.device_id)

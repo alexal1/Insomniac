@@ -24,13 +24,14 @@ PUBLIC_USER_AGENTS = [
 ]
 
 
-def post(url, data, user_agent=INSOMNIAC_USER_AGENT):
+def post(url, data, user_agent=INSOMNIAC_USER_AGENT, initial_timeout=INITIAL_TIMEOUT):
     """
     Perform HTTP POST request.
 
     :param url: URL to request for
     :param data: data to send as the request body
     :param user_agent: optional custom user-agent
+    :param initial_timeout: http timeout, increases exponentially on each socket.timeout error
     :return: tuple of: response code, body (if response has one), and fail reason which is None if code is 200
     """
 
@@ -44,30 +45,32 @@ def post(url, data, user_agent=INSOMNIAC_USER_AGENT):
         'Content-Length': len(json_data_as_bytes)
     }
 
-    return _request(url=url, data=json_data_as_bytes, headers=headers)
+    return _request(url=url, data=json_data_as_bytes, headers=headers, initial_timeout=initial_timeout)
 
 
-def get(url, user_agent=INSOMNIAC_USER_AGENT):
+def get(url, user_agent=INSOMNIAC_USER_AGENT, initial_timeout=INITIAL_TIMEOUT):
     """
     Perform HTTP GET request.
 
     :param url: URL to request for
     :param user_agent: optional custom user-agent
+    :param initial_timeout: http timeout, increases exponentially on each socket.timeout error
     :return: tuple of: response code, body (if response has one), and fail reason which is None if code is 200
     """
     headers = {
         'User-Agent': user_agent
     }
 
-    return _request(url=url, data=None, headers=headers)
+    return _request(url=url, data=None, headers=headers, initial_timeout=initial_timeout)
 
 
-def _request(url, data, headers):
+def _request(url, data, headers, initial_timeout):
     """
     Perform HTTP GET request.
 
     :param url: URL to request for
-    :param user_agent: optional custom user-agent
+    :param headers: http headers
+    :param initial_timeout: http timeout, increases exponentially on each socket.timeout error
     :return: tuple of: response code, body (if response has one), and fail reason which is None if code is 200
     """
 
@@ -76,7 +79,7 @@ def _request(url, data, headers):
     attempt = 0
     while True:
         attempt += 1
-        timeout = INITIAL_TIMEOUT ** attempt
+        timeout = initial_timeout ** attempt
         try:
             with urllib.request.urlopen(request, timeout=timeout, context=ssl.SSLContext()) as response:
                 code = response.code

@@ -15,7 +15,7 @@ PARAMETER_APP_NAME = "app_name"
 
 
 def parse_arguments(all_args_dict, starter_conf_file_path):
-    parser = argparse.ArgumentParser(
+    parser = CustomArgumentParser(
         description='Instagram bot for automated Instagram interaction using Android device via ADB',
         add_help=False
     )
@@ -151,3 +151,14 @@ def _load_params(config_file):
 
     with open(config_file, encoding="utf-8") as json_file:
         return json.load(json_file)
+
+
+class CustomArgumentParser(argparse.ArgumentParser):
+
+    def print_help(self, file=None):
+        new_optional_arguments = f"Please visit {COLOR_BOLD}https://insomniac-bot.com/docs/{COLOR_ENDC} " \
+                                 f"to see descriptions of all arguments.\n"
+        if file is None:
+            file = sys.stdout
+        message = re.sub('optional arguments:.*', new_optional_arguments, self.format_help(), flags=re.S)
+        file.write(message)

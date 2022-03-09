@@ -7,6 +7,10 @@ def print_full_report(sessions):
     completed_sessions = [session for session in sessions if session.is_finished()]
     print_timeless(COLOR_REPORT + "Completed sessions: " + str(len(completed_sessions)) + COLOR_ENDC)
 
+    last_session = sessions[-1]
+    last_duration = last_session.finishTime or datetime.now() - last_session.startTime
+    print_timeless(COLOR_REPORT + "Last duration: " + str(last_duration) + COLOR_ENDC)
+
     duration = timedelta(0)
     for session in sessions:
         finish_time = session.finishTime or datetime.now()

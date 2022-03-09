@@ -661,20 +661,31 @@ def iterate_over_my_followers(device, iteration_callback, iteration_callback_pre
     _iterate_over_my_followers_or_followings(device,
                                              iteration_callback,
                                              iteration_callback_pre_conditions,
-                                             is_followers=True)
+                                             is_followers=True,
+                                             is_swipes_allowed=True)
+
+
+def iterate_over_my_followers_no_swipes(device, iteration_callback, iteration_callback_pre_conditions):
+    _iterate_over_my_followers_or_followings(device,
+                                             iteration_callback,
+                                             iteration_callback_pre_conditions,
+                                             is_followers=True,
+                                             is_swipes_allowed=False)
 
 
 def iterate_over_my_followings(device, iteration_callback, iteration_callback_pre_conditions):
     _iterate_over_my_followers_or_followings(device,
                                              iteration_callback,
                                              iteration_callback_pre_conditions,
-                                             is_followers=False)
+                                             is_followers=False,
+                                             is_swipes_allowed=True)
 
 
 def _iterate_over_my_followers_or_followings(device,
                                              iteration_callback,
                                              iteration_callback_pre_conditions,
-                                             is_followers):
+                                             is_followers,
+                                             is_swipes_allowed):
     entities_name = "followers" if is_followers else "followings"
 
     # Wait until list is rendered
@@ -685,6 +696,7 @@ def _iterate_over_my_followers_or_followings(device,
         print(f"Iterate over visible {entities_name}")
         sleeper.random_sleep()
         screen_iterated_followings = 0
+        screen_skipped_followings = 0
 
         for item in device.find(resourceId=f'{device.app_id}:id/follow_list_container',
                                 className='android.widget.LinearLayout'):
@@ -702,6 +714,7 @@ def _iterate_over_my_followers_or_followings(device,
             screen_iterated_followings += 1
 
             if not iteration_callback_pre_conditions(username, user_name_view, follow_status_button_view):
+                screen_skipped_followings += 1
                 continue
 
             to_continue = iteration_callback(username, user_name_view, follow_status_button_view)
@@ -711,10 +724,15 @@ def _iterate_over_my_followers_or_followings(device,
                 print(COLOR_OKBLUE + f"Stopping iteration over {entities_name}" + COLOR_ENDC)
                 return
 
-        if screen_iterated_followings > 0:
+        list_view = device.find(resourceId='android:id/list',
+                                className='android.widget.ListView')
+
+        if screen_skipped_followings == screen_iterated_followings > 0 and is_swipes_allowed:
+            print(COLOR_OKGREEN + "All followings skipped, let's do a swipe" + COLOR_ENDC)
+            list_view.swipe(DeviceFacade.Direction.BOTTOM)
+            sleeper.random_sleep(multiplier=2.0)
+        elif screen_iterated_followings > 0:
             print(COLOR_OKGREEN + "Need to scroll now" + COLOR_ENDC)
-            list_view = device.find(resourceId='android:id/list',
-                                    className='android.widget.ListView')
             list_view.scroll(DeviceFacade.Direction.BOTTOM)
         else:
             print(COLOR_OKGREEN + f"No {entities_name} were iterated, finish." + COLOR_ENDC)
@@ -809,20 +827,11 @@ def do_unfollow(device, my_username, username, storage, check_if_is_follower, us
         unfollow_confirmed = dialog_view.click_unfollow()
 
     if unfollow_confirmed:
-        try:
-            # If the account is private, another popup is shown
-            confirm_button = device.find(classNameMatches=TEXTVIEW_OR_BUTTON_REGEX,
-                                         clickable=True,
-                                         text='Unfollow')
-            # If it exists, click unfollow
-            if confirm_button.exists():
-                print("Private account, confirming unfollow...")
-                confirm_button.click()
-            # Either way, sleep
-        except:
-            pass
-        finally:
-            sleeper.random_sleep()
+        sleeper.random_sleep()
+        if dialog_view.is_visible():
+            print("Confirming unfollow again...")
+            if dialog_view.click_unfollow():
+                sleeper.random_sleep()
     else:
         softban_indicator.detect_action_blocked_dialog(device)
 

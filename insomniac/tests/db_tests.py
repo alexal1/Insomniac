@@ -3,13 +3,18 @@ import unittest
 from peewee import SqliteDatabase
 
 from insomniac import db_models
-from insomniac.actions_types import SourceType
-from insomniac.db_models import get_ig_profile_by_profile_name, MODELS
+from insomniac.actions_types import SourceType, LikeAction, FollowAction
+from insomniac.db_models import get_ig_profile_by_profile_name, MODELS, get_actions_count_for_profiles, \
+    get_session_count_from_to, get_ig_profiles_by_profiles_names, get_actions_count_within_hours_for_profiles
 from insomniac.storage import ProfileStatus, SessionPhase
 from insomniac.utils import *
 
 TEST_DATABASE_FILE = 'test.db'
 test_db = SqliteDatabase(TEST_DATABASE_FILE, autoconnect=False)
+
+# Uncomment to test on PostgreSQL:
+# from peewee import PostgresqlDatabase
+# test_db = PostgresqlDatabase('your_database_name', user='your_username', password='your_password', host='localhost', port=5432, autoconnect=False)
 
 
 class DatabaseTests(unittest.TestCase):
@@ -21,6 +26,21 @@ class DatabaseTests(unittest.TestCase):
         test_db.connect()
         test_db.create_tables(MODELS)
         test_db.close()
+
+    def test_validate_profile_info(self):
+        my_account = "my_account"
+        start_time1 = (datetime.now() - timedelta(hours=1)).replace(microsecond=0)
+        start_time2 = datetime.now().replace(microsecond=0)
+
+        def job_interact(profile, session_id):
+            pass  # just empty job to make a "profile info" record
+        self._run_inside_session(my_account, job_interact, start_time=start_time1)
+
+        def job_interact(profile, session_id):
+            print(COLOR_BOLD + f"Validate last profile info's timestamp " + COLOR_ENDC)
+            profile_info = profile.get_latsest_profile_info()
+            assert profile_info.timestamp == start_time2
+        self._run_inside_session(my_account, job_interact, start_time=start_time2)
 
     def test_is_interacted(self):
         my_account1 = "my_account1"
@@ -279,16 +299,90 @@ class DatabaseTests(unittest.TestCase):
             assert username == username8
         self._run_inside_session(real_account_username, job_real)
 
+    def test_statistics(self):
+        my_account1 = "my_account1"
+        my_account2 = "my_account2"
+        username1 = "username1"
+        username2 = "username2"
+        profiles = list(get_ig_profiles_by_profiles_names([my_account1, my_account2]).values())
+
+        def job_interact(profile, session_id):
+            profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, username1, SourceType.BLOGGER.name, "some_blogger")
+            profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, username2, SourceType.BLOGGER.name, "some_blogger", timestamp=datetime.now()-timedelta(hours=2))
+            profile.log_follow_action(session_id, SessionPhase.TASK_LOGIC.value, username2, None, None)
+        self._run_inside_session(my_account1, job_interact)
+
+        def job_interact(profile, session_id):
+            profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, username1, SourceType.BLOGGER.name, "some_blogger")
+        self._run_inside_session(my_account2, job_interact)
+
+        with test_db.connection_context():
+            stats = get_actions_count_for_profiles(profiles=profiles)
+            stats_1_hour = get_actions_count_within_hours_for_profiles(profiles=profiles, hours=1)
+            stats_24_hours = get_actions_count_within_hours_for_profiles(profiles=profiles, hours=24)
+            sessions = get_session_count_from_to(profiles=profiles)
+
+        assert stats[my_account1][LikeAction.__name__] == 2
+        assert stats[my_account1][FollowAction.__name__] == 1
+
+        assert stats_1_hour[my_account1][LikeAction.__name__] == 1
+        assert stats_1_hour[my_account1][FollowAction.__name__] == 1
+
+        assert stats_24_hours[my_account1][LikeAction.__name__] == 2
+        assert stats_24_hours[my_account1][FollowAction.__name__] == 1
+
+        assert sum(sessions.values()) == 2
+
+    def test_session_time(self):
+        my_account1 = "my_account1"
+        my_account2 = "my_account2"
+        username = "username"
+
+        def job_interact(profile, session_id):
+            profile.log_get_profile_action(session_id, SessionPhase.TASK_LOGIC.value, username)
+            profile.log_like_action(session_id, SessionPhase.TASK_LOGIC.value, username, SourceType.BLOGGER.name, "some_blogger")
+
+        # Account 1: interact yesterday (10 hour)
+        start_time = datetime.now() - timedelta(hours=34)
+        end_time = datetime.now() - timedelta(hours=24)
+        self._run_inside_session(my_account1, job_interact, start_time, end_time)
+
+        # Account 1: interact today (1 hour)
+        start_time = datetime.now() - timedelta(hours=3)
+        end_time = datetime.now() - timedelta(hours=2)
+        self._run_inside_session(my_account1, job_interact, start_time, end_time)
+
+        # Account 1: interact today (1 hour)
+        start_time = datetime.now() - timedelta(hours=2)
+        end_time = datetime.now() - timedelta(hours=1)
+        self._run_inside_session(my_account1, job_interact, start_time, end_time)
+
+        # Account 2: interact today (10 hours)
+        start_time = datetime.now() - timedelta(hours=11)
+        end_time = datetime.now() - timedelta(hours=1)
+        self._run_inside_session(my_account2, job_interact, start_time, end_time)
+
+        def job_get_session_time(profile, session_id):
+            print(COLOR_BOLD + f"Check session time for last 24 hours" + COLOR_ENDC)
+            assert profile.get_session_time_in_seconds_within_minutes(60 * 24) == 3 * 60 * 60
+        start_time = datetime.now() - timedelta(hours=1)
+        self._run_inside_session(my_account1, job_get_session_time, start_time)
+
     def tearDown(self):
         print("Deleting test database")
-        os.remove(TEST_DATABASE_FILE)
+        with test_db.connection_context():
+            test_db.drop_tables(MODELS)
+        try:
+            os.remove(TEST_DATABASE_FILE)
+        except FileNotFoundError:
+            pass
 
-    def _run_inside_session(self, username, action):
+    def _run_inside_session(self, username, action, start_time=None, end_time=None):
         print(f"Starting session for {username}")
         profile = get_ig_profile_by_profile_name(username)
-        session_id = profile.start_session(None, "", "", ProfileStatus.VALID.value, 2200, 500)
+        session_id = profile.start_session(None, "", "", ProfileStatus.VALID.value, 2200, 500, start_time)
         print(f"session_id = {session_id}")
         action(profile, session_id)
         print(f"Ending session for {username}")
-        profile.end_session(session_id)
+        profile.end_session(session_id, end_time)
 

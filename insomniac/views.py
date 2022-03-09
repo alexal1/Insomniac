@@ -1,11 +1,11 @@
 import datetime
 from enum import Enum, unique
-from typing import Optional
 
 from insomniac.actions_types import GetProfileAction
 from insomniac.counters_parser import parse
 from insomniac.device_facade import DeviceFacade
 from insomniac.globals import do_location_permission_dialog_checks
+from insomniac.hardban_indicator import hardban_indicator
 from insomniac.scroll_end_detector import ScrollEndDetector
 from insomniac.sleeper import sleeper
 from insomniac.utils import *
@@ -146,8 +146,11 @@ class TabBarView(InstagramView):
         button = None
         tab_bar_view = self._get_tab_bar()
 
-        # There may be no TabBarView if Instagram was opened via a deeplink. Then we have to clear the backstack.
-        self._clear_backstack()
+        if not self.is_visible():
+            # There may be no TabBarView if Instagram was opened via a deeplink. Then we have to clear the backstack.
+            is_backstack_cleared = self._clear_backstack()
+            if not is_backstack_cleared:
+                raise RuntimeError("Unexpected app state: cannot clear back stack")
 
         if tab == TabBarTabs.HOME:
             button = tab_bar_view.child(
@@ -195,7 +198,8 @@ class TabBarView(InstagramView):
                 seconds_left = timer.get_seconds_left()
                 if seconds_left > 0:
                     print(COLOR_OKGREEN + f"Opening {tab_name}, {seconds_left} seconds left..." + COLOR_ENDC)
-                    sleep(2)
+                    # Maybe we are banned?
+                    hardban_indicator.detect_webview(self.device)
 
         print(COLOR_FAIL + f"Didn't find tab {tab_name} in the tab bar... "
                            f"Maybe English language is not set!?" + COLOR_ENDC)
@@ -203,14 +207,22 @@ class TabBarView(InstagramView):
         raise LanguageNotEnglishException()
 
     def _clear_backstack(self):
+        attempt = 0
+        max_attempts = 10
         is_message_printed = False
         while not self.is_visible():
             if not is_message_printed:
                 print(COLOR_OKGREEN + "Clearing the back stack..." + COLOR_ENDC)
                 is_message_printed = True
+            if attempt > 0 and attempt % 2 == 0:
+                hardban_indicator.detect_webview(self.device)
+            if attempt >= max_attempts:
+                return False
             self.press_back_arrow()
             # On fresh apps there may be a location request window after a backpress
             DialogView(self.device).close_location_access_dialog_if_visible()
+            attempt += 1
+        return True
 
     def _is_correct_tab_opened(self, tab: TabBarTabs) -> bool:
         if tab == TabBarTabs.HOME:
@@ -432,6 +444,30 @@ class SearchView(InstagramView):
         save_crash(self.device)
         return None
 
+    def find_username(self, username) -> bool:
+        search_edit_text = self._get_search_edit_text()
+        search_edit_text.click()
+        self._handle_permission_request()
+
+        username_view_recent = self._get_username_row(username)
+        if username_view_recent.exists(quick=True):
+            return True
+        print(f"@{username} is not in recent searching history...")
+
+        search_edit_text.set_text(username)
+        search_text = self.device.find(resourceId=self.SEARCH_TEXT_ID.format(self.device.app_id),
+                                       className=self.SEARCH_TEXT_CLASSNAME)
+        search_text.click(ignore_if_missing=True)
+
+        accounts_tab = self._get_tab_view(SearchTabs.ACCOUNTS)
+        if accounts_tab is not None:
+            accounts_tab.click()
+        else:
+            return False
+
+        username_view = self._get_username_row(username)
+        return username_view.exists()
+
     def navigate_to_username(self, username, on_action):
         print_debug(f"Navigate to profile @{username}")
 
@@ -544,6 +580,8 @@ class SearchView(InstagramView):
 
 
 class PostsViewList(InstagramView):
+    LOAD_MORE_ROW_ID_REGEX = '{0}:id/row_load_more_button'
+    RETRY_BUTTON_CLASS_NAME = 'android.widget.ImageView'
 
     def is_visible(self):
         # We suppose that at least one post must be visible
@@ -560,6 +598,14 @@ class PostsViewList(InstagramView):
             return False
 
     def scroll_down(self):
+        # Check if retry button is shown
+        load_more_row = self.device.find(resourceId=self.LOAD_MORE_ROW_ID_REGEX.format(self.device.app_id))
+        if load_more_row.exists(quick=True):
+            print("Press \"Load\" button")
+            retry_button = load_more_row.child(className=self.RETRY_BUTTON_CLASS_NAME)
+            retry_button.click()
+            sleeper.random_sleep()
+
         recycler_view = self.device.find(resourceId='android:id/list',
                                          className='androidx.recyclerview.widget.RecyclerView')
         recycler_view.scroll(DeviceFacade.Direction.BOTTOM)
@@ -640,6 +686,7 @@ class AccountView(InstagramView):
             continue_button = self.device.find(textMatches=case_insensitive_re("Continue"))
             continue_button.click()
         radio_button.click()
+        sleeper.random_sleep(multiplier=2.0)
         done_button = self.device.find(textMatches=case_insensitive_re("Done"))
         done_button.click()
         sleeper.random_sleep(multiplier=2.0)
@@ -1497,7 +1544,7 @@ class DialogView(InstagramView):
             save_crash(self.device)
 
     def _click_close_app(self) -> bool:
-        close_app_button = self.device.find(resourceId=self.CLOSE_APP_ID.format(self.device.app_id),
+        close_app_button = self.device.find(resourceId=self.CLOSE_APP_ID,
                                             className=self.CLOSE_APP_CLASS_NAME,
                                             textMatches=self.CLOSE_APP_TEXT_REGEX)
         if close_app_button.exists():

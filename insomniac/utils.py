@@ -36,6 +36,7 @@ COLOR_BOLD = Style.BRIGHT
 ENGINE_LOGS_DIR_NAME = 'logs'
 UI_LOGS_DIR_NAME = 'ui-logs'
 
+INSTAGRAM_MAIN_ACTIVITY = "{0}/com.instagram.mainactivity.MainActivity"
 APP_REOPEN_WARNING = "Warning: Activity not started, intent has been delivered to currently running top-most instance."
 
 
@@ -127,7 +128,7 @@ def open_instagram(device_id, app_id) -> bool:
     """
     print("Open Instagram app")
     cmd = ("adb" + ("" if device_id is None else " -s " + device_id) +
-           f" shell am start -n {app_id}/com.instagram.mainactivity.MainActivity")
+           f" shell am start -n {INSTAGRAM_MAIN_ACTIVITY.format(app_id)}")
 
     cmd_res = subprocess.run(cmd, stdout=PIPE, stderr=PIPE, shell=True, encoding="utf8")
     err = cmd_res.stderr.strip()
@@ -180,7 +181,6 @@ def execute_command(cmd) -> Optional[str]:
         err = err.strip()
         if len(err) > 0:
             print(COLOR_FAIL + err.strip() + COLOR_ENDC)
-        return None
     if out is not None:
         return out.strip()
     return None
@@ -451,6 +451,8 @@ class Logger(object):
             self.is_log_initiated = True
 
     def write(self, message):
+        if not insomniac_globals.is_insomniac():
+            message = re.sub("(?i)insomniac", "nomix", message)
         self._init_log()
         self.terminal.write(message)
         self.terminal.flush()

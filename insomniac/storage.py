@@ -241,15 +241,15 @@ class InsomniacStorage(Storage):
         return self.profile.get_session_count_within_hours(hours)
 
     def log_softban(self):
-        InsomniacStorage._update_profile_status(self.profile, ProfileStatus.SOFT_BAN)
+        InsomniacStorage.update_profile_status(self.profile, ProfileStatus.SOFT_BAN)
 
     @staticmethod
     def log_hardban(username):
         profile = get_ig_profile_by_profile_name(username)
-        InsomniacStorage._update_profile_status(profile, ProfileStatus.HARD_BAN)
+        InsomniacStorage.update_profile_status(profile, ProfileStatus.HARD_BAN)
 
     @staticmethod
-    def _update_profile_status(profile, status):
+    def update_profile_status(profile, status):
         followers_count = 0
         following_count = 0
         latest_profile_info = profile.get_latsest_profile_info()

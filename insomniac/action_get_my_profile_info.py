@@ -1,5 +1,7 @@
+from insomniac.hardban_indicator import HardBanError
 from insomniac.navigation import switch_to_english
 from insomniac.sleeper import sleeper
+from insomniac.softban_indicator import ActionBlockedError
 from insomniac.utils import *
 from insomniac.views import TabBarView, ActionBarView, UserSwitchFailedException
 
@@ -21,7 +23,7 @@ def get_my_profile_info(device, username):
         profile_view.refresh()
         sleeper.random_sleep()
         username, followers, following = profile_view.get_profile_info(swipe_up_if_needed=True)
-    except UserSwitchFailedException as e:
+    except (UserSwitchFailedException, HardBanError, ActionBlockedError) as e:
         raise e
     except Exception as e:
         print(COLOR_FAIL + describe_exception(e) + COLOR_ENDC)

@@ -60,6 +60,12 @@
     "description" : "if you want to run multiple insomniac sessions one-by-one but with different parameters, for example - different action (interact and then unfollow), or same config but with different username, or any other variation of parameters you can think of, you can combine this parameter with the \"repeat\"-parameter, and after the sleep of the \"repeat\"-parameter, a new config file (referenced by this parameter) will be loaded. By default using the same config that been loaded in the first Insominac session. You must use \"repeat\"-parameter in order for that parameter take action!"
   },
   {
+    "parameter-name": "send_stats",
+    "enabled": true,
+    "value": "True",
+    "description" : "add this flag to send your anonymous statistics to the Telegram bot @your_insomniac_bot. This is useful when insomniac runs infinitely and you want to be able to track progress remotely"
+  },
+  {
     "parameter-name": "username",
     "enabled": false,
     "value": "my_username",

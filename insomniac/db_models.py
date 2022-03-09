@@ -1,17 +1,26 @@
 import uuid
 from collections import defaultdict
-from typing import Optional
+from typing import List
 
 from peewee import *
 from playhouse.migrate import SqliteMigrator, migrate
 
-from insomniac.utils import *
 from insomniac.globals import executable_name
+from insomniac.utils import *
 
 DATABASE_NAME = f'{executable_name}.db'
 DATABASE_VERSION = 4
 
 db = SqliteDatabase(DATABASE_NAME, autoconnect=False)
+
+# Uncomment the line below to use PostgreSQL database instead. You may want to use it if you have multiple engine
+# instances running at the same time and trying to write to the same database. SQLite is not good for this,
+# while PostgreSQL has client-server architecture and easily handles concurrent operations.
+#
+# Note that you'll have to install PostgreSQL (it's not included in Python distribution like SQLite), create scheme
+# and then replace "your_database_name", "your_username" and "your_password" parameters according to your setup.
+#
+# db = PostgresqlDatabase('your_database_name', user='your_username', password='your_password', host='localhost', port=5432, autoconnect=False)
 
 
 class InsomniacModel(Model):
@@ -25,7 +34,7 @@ class InstagramProfile(InsomniacModel):
     class Meta:
         db_table = 'instagram_profiles'
 
-    def start_session(self, app_id, app_version, args, profile_status, followers_count, following_count) -> uuid.UUID:
+    def start_session(self, app_id, app_version, args, profile_status, followers_count, following_count, start_time=None) -> uuid.UUID:
         """
         Create InstagramProfileInfo record
         Create SessionInfo record
@@ -35,21 +44,23 @@ class InstagramProfile(InsomniacModel):
             profile_info = InstagramProfileInfo.create(profile=self,
                                                        status=profile_status,
                                                        followers=followers_count,
-                                                       following=following_count)
+                                                       following=following_count,
+                                                       timestamp=(start_time or datetime.now()))
 
             session = SessionInfo.create(app_id=app_id,
                                          app_version=app_version,
+                                         start=(start_time or datetime.now()),
                                          args=args,
                                          profile_info=profile_info)
         return session.id
 
-    def end_session(self, session_id):
+    def end_session(self, session_id, end_time=None):
         """
         Add end-timestamp to the SessionInfo record
         """
         with db.connection_context():
             session_info = SessionInfo.get(SessionInfo.id == session_id)
-            session_info.end = datetime.now()
+            session_info.end = end_time or datetime.now()
             session_info.save()
 
     def add_session(self, app_id, app_version, args, profile_status, followers_count, following_count, start, end):
@@ -79,17 +90,17 @@ class InstagramProfile(InsomniacModel):
                                         followers=followers_count,
                                         following=following_count)
 
-    def get_latsest_profile_info(self) -> Optional['InstagramProfileInfo']:
+    def get_last_profile_infos(self, count) -> List['InstagramProfileInfo']:
         with db.connection_context():
             query = InstagramProfileInfo.select() \
                                         .where(InstagramProfileInfo.profile == self) \
-                                        .group_by(InstagramProfileInfo.profile) \
-                                        .having(InstagramProfileInfo.timestamp == fn.MAX(InstagramProfileInfo.timestamp))
+                                        .order_by(InstagramProfileInfo.timestamp.desc()) \
+                                        .limit(count)
+            return list(query)
 
-            for obj in query:
-                return obj
-
-            return None
+    def get_latsest_profile_info(self) -> Optional['InstagramProfileInfo']:
+        last_profile_infos = self.get_last_profile_infos(1)
+        return last_profile_infos[0] if last_profile_infos is not None else None
 
     def log_get_profile_action(self, session_id, phase, username, task_id='', execution_id='', timestamp=None):
         """
@@ -888,7 +899,7 @@ def get_actions_count_within_hours_for_profiles(action_types=None, hours=None,
 
 
 def get_actions_count_for_profiles(action_types=None, timestamp_from=None, timestamp_to=None,
-                                   profiles=None, task_ids=None, session_phases=None) -> dict:
+                                   profiles=None, task_ids=None, session_phases=None, execution_ids_to_exclude=None) -> dict:
     """
     Returns the amount of actions by 'action_type', within the last 'hours', that been done by 'profiles'
     """
@@ -900,6 +911,7 @@ def get_actions_count_for_profiles(action_types=None, timestamp_from=None, times
     query = InsomniacAction.select(InsomniacAction.actor_profile, InsomniacAction.type, fn.COUNT(InsomniacAction.id).alias('ct'))\
                            .where((InsomniacAction.actor_profile.in_(profiles) if profiles else True) &
                                   (InsomniacAction.task_id.in_(task_ids) if task_ids else True) &
+                                  (InsomniacAction.execution_id.not_in(execution_ids_to_exclude) if execution_ids_to_exclude else True) &
                                   (InsomniacAction.phase.in_(session_phases_values) if session_phases_values else True) &
                                   (InsomniacAction.type.in_(action_types_names) if action_types_names else True) &
                                   (InsomniacAction.timestamp >= timestamp_from if timestamp_from else True) &

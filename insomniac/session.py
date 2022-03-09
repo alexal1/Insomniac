@@ -11,7 +11,7 @@ from insomniac.device import DeviceWrapper
 from insomniac.hardban_indicator import HardBanError, hardban_indicator
 from insomniac.limits import LimitsManager
 from insomniac.migration import migrate_from_json_to_sql, migrate_from_sql_to_peewee
-from insomniac.navigation import close_instagram_and_system_dialogs
+from insomniac.navigation import close_instagram_and_system_dialogs, open_instagram_with_network_check
 from insomniac.params import parse_arguments, refresh_args_by_conf_file, load_app_id
 from insomniac.report import print_full_report
 from insomniac.session_state import InsomniacSessionState
@@ -258,9 +258,7 @@ class InsomniacSession(Session):
 
         if __version__.__debug_mode__:
             device.start_screen_record()
-        if open_instagram(device_wrapper.device_id, device_wrapper.app_id):
-            # IG was just opened, check that we are not hard banned
-            hardban_indicator.detect_webview(device)
+        open_instagram_with_network_check(device)
         if save_profile_info:
             self.session_state.my_username, \
                 self.session_state.my_followers_count, \
