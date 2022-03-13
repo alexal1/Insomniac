@@ -1,4 +1,5 @@
 import insomniac
+from insomniac.globals import is_insomniac
 from insomniac.utils import *
 
 # Typewriter uses Android application (apk file) built from this repo: https://github.com/alexal1/InsomniacAutomator
@@ -7,6 +8,7 @@ from insomniac.utils import *
 ADB_KEYBOARD_PKG = "com.alexal1.adbkeyboard"
 ADB_KEYBOARD_IME = "com.alexal1.adbkeyboard/.AdbIME"
 ADB_KEYBOARD_APK = "ADBKeyboard.apk"
+ADB_KEYBOARD_APK_NOMIX = "ADBKeyboard-nomix.apk"
 ADB_KEYBOARD_VERSION = versiontuple("3.0.1")
 DELAY_MEAN = 200
 DELAY_DEVIATION = 100
@@ -43,7 +45,8 @@ class Typewriter:
 
         if need_to_install_apk:
             print("Installing ADB Keyboard to enable typewriting...")
-            apk_path = os.path.join(os.path.dirname(os.path.abspath(insomniac.__file__)), "assets", ADB_KEYBOARD_APK)
+            adb_keybpard_apk = ADB_KEYBOARD_APK if is_insomniac() else ADB_KEYBOARD_APK_NOMIX
+            apk_path = os.path.join(os.path.dirname(os.path.abspath(insomniac.__file__)), "assets", adb_keybpard_apk)
             os.popen("adb" + ("" if self.device_id is None else " -s " + self.device_id)
                      + f" install {apk_path}").close()
         self.is_adb_keyboard_set = self._set_adb_ime()

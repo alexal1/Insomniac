@@ -65,7 +65,12 @@ def open_instagram_with_network_check(device) -> bool:
         sleep(5)
         attempt += 1
         resumed_activity_output = execute_command("adb" + ("" if device_id is None else " -s " + device_id) +
-                                                  f" shell dumpsys activity | grep 'mResumedActivity'")
+                                                  f" shell dumpsys activity | grep 'mResumedActivity'",
+                                                  error_allowed=False)
+        if resumed_activity_output is None:
+            # Fallback to standard way
+            print(COLOR_FAIL + "Didn't work :(" + COLOR_ENDC)
+            return open_instagram(device_id, app_id)
         if app_id in resumed_activity_output:
             break
 

@@ -169,7 +169,7 @@ def clear_instagram_data(device_id, app_id):
              f" shell pm clear {app_id}").close()
 
 
-def execute_command(cmd) -> Optional[str]:
+def execute_command(cmd, error_allowed=True) -> Optional[str]:
     try:
         cmd_res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
     except IndexError:
@@ -181,6 +181,8 @@ def execute_command(cmd) -> Optional[str]:
         err = err.strip()
         if len(err) > 0:
             print(COLOR_FAIL + err.strip() + COLOR_ENDC)
+            if not error_allowed:
+                return None
     if out is not None:
         return out.strip()
     return None
