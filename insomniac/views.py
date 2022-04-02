@@ -1,6 +1,8 @@
 import datetime
 from enum import Enum, unique
 
+from PIL.Image import Image
+
 from insomniac.actions_types import GetProfileAction
 from insomniac.counters_parser import parse
 from insomniac.device_facade import DeviceFacade
@@ -1281,6 +1283,16 @@ class ProfileView(InstagramView):
             message_button.click()
             return True
         return False
+
+    def get_profile_image(self) -> Optional[Image]:
+        profile_image_view = self.device.find(
+            resourceId=f"{self.device.app_id}:id/row_profile_header_imageview",
+            className="android.widget.ImageView",
+        )
+        if profile_image_view.exists(quick=True):
+            return profile_image_view.get_image()
+        else:
+            return None
 
 
 class ProfileActionsView(InstagramView):

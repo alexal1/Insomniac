@@ -213,8 +213,8 @@ class InsomniacStorage(Storage):
     def log_comment_action(self, session_id, phase, username, comment, source_type, source_name):
         self.profile.log_comment_action(session_id, phase.value, username, comment, source_type, source_name, insomniac_globals.task_id, insomniac_globals.execution_id)
 
-    def log_direct_message_action(self, session_id, phase, username, message):
-        self.profile.log_direct_message_action(session_id, phase.value, username, message, insomniac_globals.task_id, insomniac_globals.execution_id)
+    def log_direct_message_action(self, session_id, phase, username, message, timestamp=None):
+        self.profile.log_direct_message_action(session_id, phase.value, username, message, insomniac_globals.task_id, insomniac_globals.execution_id, timestamp)
 
     def log_unfollow_action(self, session_id, phase, username):
         self.profile.log_unfollow_action(session_id, phase.value, username, insomniac_globals.task_id, insomniac_globals.execution_id)

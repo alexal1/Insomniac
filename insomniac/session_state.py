@@ -3,7 +3,8 @@ from datetime import datetime
 from typing import Optional
 
 from insomniac.actions_types import LikeAction, InteractAction, FollowAction, GetProfileAction, ScrapeAction, \
-    UnfollowAction, RemoveMassFollowerAction, StoryWatchAction, CommentAction, DirectMessageAction, FilterAction
+    UnfollowAction, RemoveMassFollowerAction, StoryWatchAction, CommentAction, DirectMessageAction, FilterAction, \
+    DirectMessageBackdateAction
 from insomniac.storage import Storage, InsomniacStorage, SessionPhase
 
 
@@ -127,6 +128,10 @@ class InsomniacSessionState(SessionState):
         if type(action) == DirectMessageAction:
             self.totalDirectMessages += 1
             self.storage.log_direct_message_action(self.id, self.session_phase, action.user, action.message)
+
+        if type(action) == DirectMessageBackdateAction:
+            old_time_ago = datetime(2000, 1, 1, 0, 0, 0)
+            self.storage.log_direct_message_action(self.id, self.session_phase, action.user, action.message, old_time_ago)
 
         if type(action) == UnfollowAction:
             self.totalUnfollowed += 1

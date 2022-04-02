@@ -372,4 +372,5 @@ class InsomniacSession(Session):
             if insomniac_globals.is_insomniac():
                 print_timeless(COLOR_FAIL + "Please uninstall IG and download recommended apk from here:" + COLOR_ENDC)
                 print_timeless(COLOR_FAIL + COLOR_BOLD + "https://insomniac-bot.com/get_latest_supported_ig_apk/" + COLOR_ENDC)
+                input(COLOR_FAIL + "Press ENTER to continue anyway..." + COLOR_ENDC)
             print_timeless("")
