@@ -1,0 +1,7 @@
+# List of usernames to unfollow.
+# If you wish to create an unfollow file dedicated to a specific account, copy this file and name it
+# <PROFILE-NAME>-unfollow.txt (replace <PROFILE-NAME> with your profile-name).
+#
+# Example:
+# natgeo
+# raskalov

@@ -8,10 +8,10 @@ from insomniac import network, HTTP_OK
 from insomniac.action_get_my_profile_info import get_my_profile_info
 from insomniac.action_runners.actions_runners_manager import CoreActionRunnersManager
 from insomniac.device import DeviceWrapper
-from insomniac.hardban_indicator import HardBanError, hardban_indicator
+from insomniac.hardban_indicator import HardBanError
 from insomniac.limits import LimitsManager
 from insomniac.migration import migrate_from_json_to_sql, migrate_from_sql_to_peewee
-from insomniac.navigation import close_instagram_and_system_dialogs, open_instagram_with_network_check
+from insomniac.navigation import close_instagram_and_system_dialogs, InstagramOpener
 from insomniac.params import parse_arguments, refresh_args_by_conf_file, load_app_id
 from insomniac.report import print_full_report
 from insomniac.session_state import InsomniacSessionState
@@ -20,7 +20,7 @@ from insomniac.sleeper import sleeper
 from insomniac.softban_indicator import ActionBlockedError
 from insomniac.storage import STORAGE_ARGS, InsomniacStorage, DatabaseMigrationFailedException
 from insomniac.utils import *
-from insomniac.views import UserSwitchFailedException
+from insomniac.views import UserSwitchFailedException, DialogView
 
 sessions = Sessions()
 
@@ -58,13 +58,22 @@ class Session(ABC):
             "default": None
         },
         "speed": {
-            'help': 'manually specify the speed setting, from 1 (slowest) to 4 (fastest)',
-            'metavar': '1-4',
+            'help': "manually specify the speed setting, from 1 (slowest) to 4 (fastest). "
+                    "There's also 5 (superfast) but it's not recommended",
+            'metavar': '1-5',
             'type': int,
-            'choices': range(1, 5)
+            'choices': range(1, 6)
         },
         "no_speed_check": {
             'help': 'skip internet speed check at start',
+            'action': 'store_true'
+        },
+        "no_ig_connection_check": {
+            'help': 'skip Instagram connection check at start',
+            'action': 'store_true'
+        },
+        "no_ig_version_check": {
+            'help': 'skip Instagram version check at start',
             'action': 'store_true'
         }
     }
@@ -146,6 +155,35 @@ class Session(ABC):
             # No config file => we'll use same app_id
             return True
         return load_app_id(args.next_config_file) == device_wrapper.app_id
+
+    @staticmethod
+    def verify_instagram_version(args, installed_ig_version):
+        if args.no_ig_version_check:
+            return
+
+        code, body, _ = network.get(f"https://insomniac-bot.com/get_latest_supported_ig_version/")
+        if code == HTTP_OK and body is not None:
+            json_config = json.loads(body)
+            latest_supported_ig_version = json_config['message']
+        else:
+            return
+
+        try:
+            is_ok = versiontuple(installed_ig_version) <= versiontuple(latest_supported_ig_version)
+        except ValueError:
+            print_debug(COLOR_FAIL + "Cannot compare IG versions" + COLOR_ENDC)
+            return
+
+        if not is_ok:
+            print_timeless("")
+            print_timeless(COLOR_FAIL + f"IG version ({installed_ig_version}) is newer than "
+                                        f"latest supported ({latest_supported_ig_version})." + COLOR_ENDC)
+            if insomniac_globals.is_insomniac():
+                print_timeless(COLOR_FAIL + "Please uninstall IG and download recommended apk from here:" + COLOR_ENDC)
+                print_timeless(
+                    COLOR_FAIL + COLOR_BOLD + "https://insomniac-bot.com/get_latest_supported_ig_apk/" + COLOR_ENDC)
+                input(COLOR_FAIL + "Press ENTER to continue anyway..." + COLOR_ENDC)
+            print_timeless("")
 
     def run(self):
         raise NotImplementedError
@@ -240,9 +278,14 @@ class InsomniacSession(Session):
 
         app_version = get_instagram_version(device_wrapper.device_id, device_wrapper.app_id)
         print("Instagram version: " + app_version)
-        self.verify_instagram_version(app_version)
+        self.verify_instagram_version(args, app_version)
 
         return device_wrapper, app_version
+
+    @staticmethod
+    def create_instagram_opener(args, device):
+        InstagramOpener.INSTANCE = InstagramOpener(device=device,
+                                                   is_with_connection_check=(not args.no_ig_connection_check))
 
     def prepare_session_state(self, args, device_wrapper, app_version, save_profile_info=True):
         self.session_state = InsomniacSessionState()
@@ -254,11 +297,11 @@ class InsomniacSession(Session):
         device = device_wrapper.get()
         device.wake_up()
 
-        print_timeless(COLOR_REPORT + "\n-------- START: " + str(self.session_state.startTime) + " --------" + COLOR_ENDC)
-
         if __version__.__debug_mode__:
             device.start_screen_record()
-        open_instagram_with_network_check(device)
+
+        DialogView(device).close_update_dialog_if_visible()
+        InstagramOpener.INSTANCE.open_instagram()
         if save_profile_info:
             self.session_state.my_username, \
                 self.session_state.my_followers_count, \
@@ -273,8 +316,6 @@ class InsomniacSession(Session):
             device_wrapper.get().stop_screen_record()
         print_copyright()
         self.session_state.end_session()
-        print_timeless(COLOR_REPORT + "-------- FINISH: " + str(self.session_state.finishTime) + " --------" + COLOR_ENDC)
-
         print_full_report(self.sessions)
         print_timeless("")
 
@@ -295,6 +336,8 @@ class InsomniacSession(Session):
             device_wrapper, app_version = self.get_device_wrapper(args)
             if device_wrapper is None:
                 return
+
+            self.create_instagram_opener(args, device=device_wrapper.get())
 
             self.set_session_args(args)
 
@@ -349,28 +392,3 @@ class InsomniacSession(Session):
                     break
             else:
                 break
-
-    @staticmethod
-    def verify_instagram_version(installed_ig_version):
-        code, body, _ = network.get(f"https://insomniac-bot.com/get_latest_supported_ig_version/")
-        if code == HTTP_OK and body is not None:
-            json_config = json.loads(body)
-            latest_supported_ig_version = json_config['message']
-        else:
-            return
-
-        try:
-            is_ok = versiontuple(installed_ig_version) <= versiontuple(latest_supported_ig_version)
-        except ValueError:
-            print_debug(COLOR_FAIL + "Cannot compare IG versions" + COLOR_ENDC)
-            return
-
-        if not is_ok:
-            print_timeless("")
-            print_timeless(COLOR_FAIL + f"IG version ({installed_ig_version}) is newer than "
-                                        f"latest supported ({latest_supported_ig_version})." + COLOR_ENDC)
-            if insomniac_globals.is_insomniac():
-                print_timeless(COLOR_FAIL + "Please uninstall IG and download recommended apk from here:" + COLOR_ENDC)
-                print_timeless(COLOR_FAIL + COLOR_BOLD + "https://insomniac-bot.com/get_latest_supported_ig_apk/" + COLOR_ENDC)
-                input(COLOR_FAIL + "Press ENTER to continue anyway..." + COLOR_ENDC)
-            print_timeless("")

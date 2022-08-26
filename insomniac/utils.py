@@ -369,7 +369,7 @@ def get_random_string(length):
 
 def describe_exception(ex, with_stacktrace=True, context=None):
     exception_context = f'({context}): ' if context is not None else ''
-    trace = ''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)) if with_stacktrace else ''
+    trace = ''.join(traceback.format_exception(type(ex), value=ex, tb=ex.__traceback__)) if with_stacktrace else ''
     description = f"{exception_context}Error - {str(ex)}\n{trace}"
 
     return description

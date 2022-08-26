@@ -66,10 +66,7 @@ def handle_blogger(device,
     if blogger_profile_view is None:
         return
 
-    sleeper.random_sleep()
-    is_profile_empty = softban_indicator.detect_empty_profile(device)
-
-    if is_profile_empty:
+    if softban_indicator.detect_empty_profile(device):
         return
 
     followers_following_list_view = None
@@ -131,10 +128,7 @@ def handle_blogger(device,
         follower_name_view.click()
         on_action(GetProfileAction(user=follower_name))
 
-        sleeper.random_sleep()
-        is_profile_empty = softban_indicator.detect_empty_profile(device)
-
-        if is_profile_empty:
+        if softban_indicator.detect_empty_profile(device):
             print("Back to followers list")
             device.back()
             return True

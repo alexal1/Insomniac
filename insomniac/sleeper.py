@@ -3,6 +3,7 @@ from random import uniform
 from insomniac.utils import *
 
 MEGABIT = 1000000
+SPEED_SUPERFAST = 1000 * MEGABIT  # not recommended
 SPEED_GOOD = 25 * MEGABIT
 SPEED_BAD = 10 * MEGABIT
 SPEED_UGLY = 1 * MEGABIT
@@ -10,6 +11,7 @@ SPEED_ZERO = 0
 
 # Dict of sleep ranges by Internet speed
 SLEEP_RANGE_BY_SPEED = {
+    SPEED_SUPERFAST: (0, 1),
     SPEED_GOOD: (1, 3),
     SPEED_BAD: (2, 5),
     SPEED_UGLY: (4, 8),
@@ -39,23 +41,31 @@ class Sleeper:
 
         print(f"Sleep range will be from {self.sleep_range_start:.2f} to {self.sleep_range_end:.2f} seconds")
 
-    def set_random_sleep_range(self, speed_1_to_4):
-        if speed_1_to_4 == 1:
+    def set_random_sleep_range(self, speed_1_to_5):
+        if speed_1_to_5 == 1:
             s1 = SPEED_ZERO
             s2 = SPEED_UGLY
             speed = SPEED_ZERO
-        elif speed_1_to_4 == 2:
+        elif speed_1_to_5 == 2:
             s1 = SPEED_UGLY
             s2 = SPEED_BAD
             speed = SPEED_UGLY
-        elif speed_1_to_4 == 3:
+        elif speed_1_to_5 == 3:
             s1 = SPEED_BAD
             s2 = SPEED_GOOD
             speed = SPEED_BAD
-        else:
+        elif speed_1_to_5 == 4:
             s1 = SPEED_GOOD
             s2 = SPEED_GOOD
             speed = SPEED_GOOD
+        elif speed_1_to_5 == 5:
+            s1 = SPEED_SUPERFAST
+            s2 = SPEED_SUPERFAST
+            speed = SPEED_SUPERFAST
+        else:
+            print(COLOR_FAIL + f"Unexpected speed value: {speed_1_to_5}" + COLOR_ENDC)
+            self.set_random_sleep_range(4)
+            return
 
         self._set_random_sleep_range(speed, s1, s2)
 

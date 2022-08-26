@@ -102,3 +102,21 @@ def is_post_exists(device, post_link):
 
 class LanguageChangedException(Exception):
     pass
+
+
+class InstagramOpener:
+
+    INSTANCE = None
+
+    device = None
+    is_with_connection_check = False
+
+    def __init__(self, device, is_with_connection_check):
+        self.device = device
+        self.is_with_connection_check = is_with_connection_check
+
+    def open_instagram(self):
+        if self.is_with_connection_check:
+            open_instagram_with_network_check(self.device)
+        else:
+            open_instagram(self.device.device_id, self.device.app_id)

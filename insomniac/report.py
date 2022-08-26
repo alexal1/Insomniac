@@ -8,13 +8,17 @@ def print_full_report(sessions):
     print_timeless(COLOR_REPORT + "Completed sessions: " + str(len(completed_sessions)) + COLOR_ENDC)
 
     last_session = sessions[-1]
-    last_duration = last_session.finishTime or datetime.now() - last_session.startTime
-    print_timeless(COLOR_REPORT + "Last duration: " + str(last_duration) + COLOR_ENDC)
+    if last_session.is_started():
+        finish_time = last_session.finishTime or datetime.now()
+        last_duration = finish_time - last_session.startTime
+        print_timeless(COLOR_REPORT + f"Last duration: {str(last_duration)} "
+                                      f"(from {last_session.startTime} to {finish_time})" + COLOR_ENDC)
 
     duration = timedelta(0)
     for session in sessions:
-        finish_time = session.finishTime or datetime.now()
-        duration += finish_time - session.startTime
+        if session.is_started():
+            finish_time = session.finishTime or datetime.now()
+            duration += finish_time - session.startTime
     print_timeless(COLOR_REPORT + "Total duration: " + str(duration) + COLOR_ENDC)
 
     total_interactions = {}

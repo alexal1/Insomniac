@@ -695,6 +695,9 @@ class SessionTimeMaxLengthLimit(CoreLimit):
         if self.session_length_in_mins_limit is None:
             return False
 
+        if not session_state.is_started():
+            return False
+
         # Apply this limit for every action (no action-type condition)
 
         delta = datetime.now() - session_state.startTime

@@ -108,10 +108,7 @@ def handle_hashtag(device,
         liker_username_view.click()
         on_action(GetProfileAction(user=liker_username))
 
-        sleeper.random_sleep()
-        is_profile_empty = softban_indicator.detect_empty_profile(device)
-
-        if is_profile_empty:
+        if softban_indicator.detect_empty_profile(device):
             print("Back to likers list")
             device.back()
             return True

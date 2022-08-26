@@ -62,15 +62,14 @@ class SoftBanIndicator:
     @check_softban_feature_flag
     def detect_empty_profile(self, device):
         profile_view = ProfileView(device)
-        followers_count = profile_view.get_followers_count()
-        is_profile_empty = followers_count is None
-        if is_profile_empty:
+        is_loaded = profile_view.wait_until_visible()
+        if not is_loaded:
             print(COLOR_FAIL + "A profile-page seems to be empty. "
                                "Counting that as a soft-ban indicator!" + COLOR_ENDC)
             self.indications[IndicationType.EMPTY_PROFILES]["curr"] += 1
             self.indicate_block()
-
-        return is_profile_empty
+            return True
+        return False
 
     @check_softban_feature_flag
     def detect_action_blocked_dialog(self, device):

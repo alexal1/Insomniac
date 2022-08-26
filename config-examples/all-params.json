@@ -42,10 +42,22 @@
     "description" : "skip internet speed check at start"
   },
   {
-    "parameter-name": "speed",
+    "parameter-name": "no_ig_version_check",
     "enabled": false,
-    "value": "2",
-    "description" : "manually specify the speed setting, from 1 (slowest) to 4 (fastest)"
+    "value": "True",
+    "description" : "skip Instagram version check at start"
+  },
+  {
+    "parameter-name": "no_ig_connection_check",
+    "enabled": false,
+    "value": "True",
+    "description" : "skip Instagram connection check at start"
+  },
+  {
+    "parameter-name": "speed",
+    "enabled": true,
+    "value": "4",
+    "description" : "manually specify the speed setting, from 1 (slowest) to 4 (fastest). There's also 5 (superfast) but it's not recommended"
   },
   {
     "parameter-name": "no_typing",
@@ -162,6 +174,18 @@
     "enabled": false,
     "value": "20-40",
     "description" : "unfollow at most given number of users. Only users followed by this script will be unfollowed. The order is from oldest to newest followings. It can be a number (e.g. 100) or a range (e.g. 100-200)"
+  },
+  {
+    "parameter-name": "unfollow_source",
+    "enabled": false,
+    "value": "list",
+    "description" : "you can specify where to take the users to unfollow from. Can be one of the values: profile / list / database / database-global-search. \"profile\" means unfollowing your profile\\'s followings. \"list\" means unfollowing from the \"unfollow.txt\" file. \"database\" means unfollowing from the database sorted by date of following (older go first). \"database-global-search\" is the same as \"database\", but searches in global search. By default \"profile\" is used"
+  },
+  {
+    "parameter-name": "unfollow_older_than_days",
+    "enabled": false,
+    "value": "7",
+    "description" : "if using \"--unfollow-source database\", you can specify how long ago an account has to be followed, to unfollow it now. Specify number of days. 7 days by default"
   },
   {
     "parameter-name": "min_following",

@@ -5,9 +5,6 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/insomniac)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/insomniac)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)
-<a href="https://insomniac-bot.com/get_latest_supported_ig_apk/">
-	<img src="https://img.shields.io/endpoint?url=https://insomniac-bot.com/get_latest_supported_ig_version/">
-</a>
 
 [español](https://github.com/alexal1/Insomniac/blob/master/res/README_es.md) | [português](https://github.com/alexal1/Insomniac/blob/master/res/README_pt_BR.md)
 
@@ -151,6 +148,7 @@ You may want to ignore mass-followers (e.g. > 1000 followings) because they are 
 | `mandatory_words`                 | `["word1", "word2", "word3", ...]`                          | skip accounts that doesn't have one of the words in the list in the profile biography                        |
 | `specific_alphabet`               | `["LATIN", "ARABIC", "GREEK", "HEBREW", ...]`               | skip accounts that contains text in their biography/username which different than the provided alphabet list |
 | `skip_already_following_profiles` | `true/false`                                                | skip accounts that your profile already followed, even if not followed by the bot                            |
+| `only_profiles_with_faces`        | `"male"/"female"/"any"`                                     | analyze profile picture and leave only profiles with male/female/any face on the avatar                      |
 
 
 Please read detailed explanation and instructions how to use filter in [this Patreon post](https://www.patreon.com/posts/43362005).

@@ -3,7 +3,7 @@ from random import shuffle, choice, uniform
 
 from insomniac.actions_types import LikeAction, FollowAction, GetProfileAction, StoryWatchAction, CommentAction
 from insomniac.device_facade import DeviceFacade
-from insomniac.navigation import switch_to_english, search_for, LanguageChangedException
+from insomniac.navigation import switch_to_english, search_for
 from insomniac.scroll_end_detector import ScrollEndDetector
 from insomniac.sleeper import sleeper
 from insomniac.softban_indicator import softban_indicator
@@ -249,6 +249,8 @@ def interact_with_user(device,
     is_scrolled_down = False
     is_commented = False
 
+    profile_view = ProfileView(device)
+
     if username == my_username:
         print("It's you, skip.")
         return liked_count == interaction_strategy.likes_count, is_followed, is_watched, is_commented
@@ -260,6 +262,11 @@ def interact_with_user(device,
     def do_like_actions():
         global is_scrolled_down
         if interaction_strategy.do_like or interaction_strategy.do_comment:
+            posts_count = profile_view.get_posts_count()
+            if posts_count == 0:
+                print(COLOR_OKGREEN + "No posts in this profile." + COLOR_ENDC)
+                return
+
             # Close suggestions if they are opened (hack to fix a bug with opening menu while scrolling)
             suggestions_container = device.find(resourceId=f'{device.app_id}:id/similar_accounts_container',
                                                 className='android.widget.LinearLayout')
@@ -268,18 +275,22 @@ def interact_with_user(device,
                 arrow_button = device.find(resourceId=f'{device.app_id}:id/row_profile_header_button_chaining',
                                            className='android.widget.Button')
                 arrow_button.click(ignore_if_missing=True)
-                sleeper.random_sleep()
 
-            coordinator_layout = device.find(resourceId=f'{device.app_id}:id/coordinator_root_layout')
-            if coordinator_layout.exists():
-                print("Scroll down to see more photos.")
-                coordinator_layout.scroll(DeviceFacade.Direction.BOTTOM)
-                is_scrolled_down = True
+            likes_count = min(interaction_strategy.likes_count, posts_count)
 
-            number_of_rows_to_use = min((interaction_strategy.likes_count * 2) // 3 + 1, 4)
-            photos_indices = list(range(0, number_of_rows_to_use * 3))
+            number_of_rows_visible = profile_view.get_visible_posts_rows()
+            if likes_count > number_of_rows_visible * 3:
+                coordinator_layout = device.find(resourceId=f'{device.app_id}:id/coordinator_root_layout')
+                if coordinator_layout.exists():
+                    print("Scroll down to see more photos.")
+                    coordinator_layout.scroll(DeviceFacade.Direction.BOTTOM)
+                    is_scrolled_down = True
+            number_of_rows_visible = profile_view.get_visible_posts_rows()
+
+            posts_to_choose_from_count = min(likes_count * 2, posts_count, number_of_rows_visible * 3)
+            photos_indices = list(range(0, posts_to_choose_from_count))
             shuffle(photos_indices)
-            photos_indices = photos_indices[:interaction_strategy.likes_count]
+            photos_indices = photos_indices[:likes_count]
             photos_indices = sorted(photos_indices)
 
             def on_like():
@@ -299,15 +310,19 @@ def interact_with_user(device,
                 row = photo_index // 3
                 column = photo_index - row * 3
 
-                sleeper.random_sleep()
                 print("Open and like photo #" + str(i + 1) + " (" + str(row + 1) + " row, " + str(
                     column + 1) + " column)")
+
+                # First row in the grid is a simple View
+                if not is_scrolled_down:
+                    row += 1
+
                 if not _open_photo_and_like_and_comment(device, row, column,
                                                         interaction_strategy.do_like, interaction_strategy.do_comment,
                                                         interaction_strategy.like_percentage, on_like,
                                                         interaction_strategy.comment_percentage,
                                                         interaction_strategy.comments_list, my_username, on_comment):
-                    print(COLOR_OKGREEN + "Less than " + str(number_of_rows_to_use * 3) + " photos." + COLOR_ENDC)
+                    print(COLOR_FAIL + f"Couldn't open a post." + COLOR_ENDC)
                     break
 
     def do_follow_action():
@@ -340,11 +355,11 @@ def _open_photo_and_like_and_comment(device, row, column, do_like, do_comment, l
         # recycler_view has a className 'androidx.recyclerview.widget.RecyclerView' on modern Android versions and
         # 'android.view.View' on Android 5.0.1 and probably earlier versions
         recycler_view = device.find(resourceId='android:id/list')
-        row_view = recycler_view.child(index=row + 1)
-        if not row_view.exists():
+        row_view = recycler_view.child(index=row)
+        if not row_view.exists(quick=True):
             return False
         item_view = row_view.child(index=column)
-        if not item_view.exists():
+        if not item_view.exists(quick=True):
             return False
         item_view.click()
         if not OpenedPostView(device).is_visible():
@@ -357,8 +372,6 @@ def _open_photo_and_like_and_comment(device, row, column, do_like, do_comment, l
 
     if not open_photo():
         return False
-
-    sleeper.random_sleep()
 
     to_like = False
     to_comment = False
@@ -616,8 +629,6 @@ def _open_user(device, username, open_followers=False, open_followings=False,
             if not search_for(device, username=username, on_action=on_action):
                 return False
 
-            sleeper.random_sleep()
-
         is_profile_empty = softban_indicator.detect_empty_profile(device)
         if is_profile_empty:
             return False
@@ -746,6 +757,14 @@ class FollowingsSortOrder(Enum):
     EARLIEST = 'date: from oldest to newest'
 
 
+@unique
+class UnfollowSource(Enum):
+    PROFILE = 'profile'
+    LIST = 'list'
+    DATABASE = 'database'
+    DATABASE_GLOBAL_SEARCH = 'database-global-search'
+
+
 def sort_followings_by_date(device, sort_order):
     print(f"Sort followings by {sort_order.value}.")
     sort_button = device.find(resourceId=f'{device.app_id}:id/sorting_entry_row_icon',
@@ -774,6 +793,7 @@ def sort_followings_by_date(device, sort_order):
         return
     sort_item.click()
 
+
 def do_unfollow(device, my_username, username, storage, check_if_is_follower, username_view, follow_status_button_view, on_action):
     """
     :return: whether unfollow was successful
@@ -788,9 +808,10 @@ def do_unfollow(device, my_username, username, storage, check_if_is_follower, us
         follow_status_button_view.click()
     else:
         print("Unfollowing a profile from their profile page.")
-        username_view.click()
-        on_action(GetProfileAction(user=username))
-        sleeper.random_sleep()
+        if username_view is not None:
+            username_view.click()
+            on_action(GetProfileAction(user=username))
+            sleeper.random_sleep()
         if_profile_empty = softban_indicator.detect_empty_profile(device)
 
         if if_profile_empty:
@@ -811,10 +832,11 @@ def do_unfollow(device, my_username, username, storage, check_if_is_follower, us
                                       clickable=True,
                                       text='Following')
         if not unfollow_button.exists():
-            print(COLOR_FAIL + "Cannot find Following button. Maybe not English language is set?" + COLOR_ENDC)
-            save_crash(device)
-            switch_to_english(device)
-            raise LanguageChangedException()
+            print(COLOR_FAIL + f"Cannot find Following button. Seems that we're not following @{username}" + COLOR_ENDC)
+            storage.update_follow_status(username, do_i_follow_him=False)
+            print("Back to the followings list.")
+            device.back()
+            return False
 
         print(f"Unfollowing @{username}...")
         unfollow_button.click()

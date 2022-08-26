@@ -65,7 +65,7 @@ class DeviceFacade:
             import uiautomator2
             try:
                 view = self.deviceV2(*args, **kwargs)
-            except uiautomator2.JsonRpcError as e:
+            except uiautomator2.JSONRPCError as e:
                 raise DeviceFacade.JsonRpcError(e)
             return DeviceFacade.View(is_old=False, view=view, device=self)
 
@@ -222,6 +222,15 @@ class DeviceFacade:
             self.get_info()
             attempts += 1
 
+    def get_brand(self) -> Optional[str]:
+        brand_prop = execute_command("adb" + ("" if self.device_id is None else " -s " + self.device_id) + " shell getprop | grep ro.product.brand")
+        if brand_prop is not None:
+            brand_prop_regex = re.compile("\\[ro.product.brand]: \\[(\\S*)]")
+            match = brand_prop_regex.match(brand_prop)
+            if match:
+                return match.group(1)
+        return None
+
     def unlock(self):
         self.swipe(DeviceFacade.Direction.TOP, 0.8)
         if self.is_screen_locked():
@@ -289,7 +298,7 @@ class DeviceFacade:
                     self.deviceV2.swipe_points([[sx, sy], [ex, ey]], duration)
                 else:
                     self.deviceV2.swipe_points([[sx, sy], [ex, ey]], uniform(0.2, 0.6))
-            except uiautomator2.JsonRpcError as e:
+            except uiautomator2.JSONRPCError as e:
                 raise DeviceFacade.JsonRpcError(e)
 
     def get_info(self):
@@ -362,7 +371,7 @@ class DeviceFacade:
                 try:
                     for item in self.viewV2:
                         children.append(DeviceFacade.View(is_old=False, view=item, device=self.device))
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
             return iter(children)
 
@@ -378,7 +387,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     view = self.viewV2.child(*args, **kwargs)
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
                 return DeviceFacade.View(is_old=False, view=view, device=self.device)
 
@@ -394,7 +403,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     view = self.viewV2.right(*args, **kwargs)
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
                 return DeviceFacade.View(is_old=False, view=view, device=self.device)
 
@@ -410,7 +419,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     view = self.viewV2.left(*args, **kwargs)
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
                 return DeviceFacade.View(is_old=False, view=view, device=self.device)
 
@@ -426,7 +435,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     view = self.viewV2.up(*args, **kwargs)
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
                 return DeviceFacade.View(is_old=False, view=view, device=self.device)
 
@@ -442,7 +451,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     view = self.viewV2.down(*args, **kwargs)
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
                 return DeviceFacade.View(is_old=False, view=view, device=self.device)
 
@@ -481,7 +490,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     self.viewV2.click(UI_TIMEOUT_LONG, offset=(x_offset, y_offset))
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 
         def long_click(self):
@@ -495,7 +504,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     self.viewV2.long_click()
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 
         def double_click(self, padding=0.3):
@@ -526,7 +535,7 @@ class DeviceFacade:
                         self.viewV2.scroll.toBeginning(max_swipes=1)
                     else:
                         self.viewV2.scroll.toEnd(max_swipes=1)
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 
         def swipe(self, direction):
@@ -546,7 +555,7 @@ class DeviceFacade:
                         self.viewV2.fling.toBeginning(max_swipes=5)
                     else:
                         self.viewV2.fling.toEnd(max_swipes=5)
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 
         def exists(self, quick=False):
@@ -560,7 +569,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     return self.viewV2.exists(UI_TIMEOUT_SHORT if quick else UI_TIMEOUT_LONG)
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 
         def wait(self):
@@ -575,7 +584,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     return self.viewV2.wait(timeout=UI_TIMEOUT_LONG)
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 
         def get_bounds(self):
@@ -589,8 +598,14 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     return self.viewV2.info['bounds']
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
+
+        def get_width(self):
+            return self.get_bounds()["right"] - self.get_bounds()["left"]
+
+        def get_height(self):
+            return self.get_bounds()["bottom"] - self.get_bounds()["top"]
 
         def get_text(self, retry=True):
             max_attempts = 1 if not retry else 3
@@ -625,7 +640,7 @@ class DeviceFacade:
                                 continue
                         else:
                             return text
-                    except uiautomator2.JsonRpcError as e:
+                    except uiautomator2.JSONRPCError as e:
                         raise DeviceFacade.JsonRpcError(e)
 
             print(COLOR_FAIL + f"Attempted to get text {attempts} times. You may have a slow network or are "
@@ -643,7 +658,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     return self.viewV2.info["selected"]
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 
         def is_enabled(self) -> bool:
@@ -657,7 +672,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     return self.viewV2.info["enabled"]
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 
         def is_focused(self) -> bool:
@@ -671,7 +686,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     return self.viewV2.info["focused"]
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 
         def set_text(self, text):
@@ -687,7 +702,7 @@ class DeviceFacade:
                 import uiautomator2
                 try:
                     self.viewV2.set_text(text)
-                except uiautomator2.JsonRpcError as e:
+                except uiautomator2.JSONRPCError as e:
                     raise DeviceFacade.JsonRpcError(e)
 
         def get_image(self) -> Optional[Image]:
@@ -735,7 +750,7 @@ class DeviceFacade:
             time_between_clicks = uniform(0.050, 0.200)
             try:
                 self.device.deviceV2.double_click(random_x, random_y, duration=time_between_clicks)
-            except uiautomator2.JsonRpcError as e:
+            except uiautomator2.JSONRPCError as e:
                 raise DeviceFacade.JsonRpcError(e)
 
     @unique

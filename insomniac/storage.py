@@ -9,6 +9,7 @@ from insomniac.utils import *
 FILENAME_WHITELIST = "whitelist.txt"
 FILENAME_BLACKLIST = "blacklist.txt"
 FILENAME_TARGETS = "targets.txt"
+FILENAME_UNFOLLOW = "unfollow.txt"
 
 
 STORAGE_ARGS = {
@@ -258,6 +259,15 @@ class InsomniacStorage(Storage):
             following_count = latest_profile_info.following
         profile.update_profile_info(status, followers_count, following_count)
 
+    def get_unfollow_target(self) -> Optional[str]:
+        target = _get_next_line(f"{self.my_username}-{FILENAME_UNFOLLOW}")
+        if target is None:
+            target = _get_next_line(FILENAME_UNFOLLOW)
+        return target
+
+    def get_unfollow_target_from_database(self) -> (Optional[str], Optional['datetime']):
+        return self.profile.get_oldest_followed_username()
+
     def get_target(self, session_id):
         """
         Get a target from args (users/posts) -> OR from targets file (users/posts) -> OR from scrapping (only users).
@@ -305,37 +315,19 @@ class InsomniacStorage(Storage):
         except IndexError:
             pass
 
+        # From file
         targets_files = {
             FILENAME_TARGETS: "global-targets",
             f"{self.my_username}-{FILENAME_TARGETS}": "profile-targets"
         }
-
         for file_path, file_desc in targets_files.items():
-            try:
-                with open(file_path, "r+", encoding="utf-8") as file:
-                    lines = [line.rstrip() for line in file]
-
-                    for i, line in enumerate(lines):
-                        # Skip comments
-                        if line.startswith("#"):
-                            continue
-
-                        # Skip already interacted
-                        if "DONE" in line:
-                            continue
-
-                        data = line.strip()
-                        if data.startswith("https://"):
-                            target_type = TargetType.URL
-                        else:
-                            target_type = TargetType.USERNAME
-                        lines[i] += " - DONE"
-                        file.truncate(0)
-                        file.seek(0)
-                        file.write("\n".join(lines))
-                        return data, target_type
-            except FileNotFoundError:
-                pass
+            data = _get_next_line(file_path)
+            if data is not None:
+                if data.startswith("https://"):
+                    target_type = TargetType.URL
+                else:
+                    target_type = TargetType.USERNAME
+                return data, target_type
 
         # From scrapping
         scrapped_profile = self.profile.get_scrapped_profile_for_interaction()
@@ -359,23 +351,54 @@ class InsomniacStorage(Storage):
         }
 
         for file_path, file_desc in targets_files.items():
-            try:
-                with open(file_path, encoding="utf-8") as file:
-                    lines = [line.rstrip() for line in file]
-
-                    for i, line in enumerate(lines):
-                        # Skip comments
-                        if line.startswith("#"):
-                            continue
-
-                        # Skip already interacted
-                        if "DONE" in line:
-                            continue
-
-                        count += 1
-            except FileNotFoundError:
-                pass
+            count += _count_lines(file_path)
         return count
+
+
+def _count_lines(file_path) -> int:
+    count = 0
+    try:
+        with open(file_path, encoding="utf-8") as file:
+            lines = [line.rstrip() for line in file]
+
+            for line in lines:
+                # Skip comments
+                if line.startswith("#"):
+                    continue
+
+                # Skip already interacted
+                if "DONE" in line:
+                    continue
+
+                count += 1
+    except FileNotFoundError:
+        pass
+    return count
+
+
+def _get_next_line(file_path) -> Optional[str]:
+    try:
+        with open(file_path, "r+", encoding="utf-8") as file:
+            lines = [line.rstrip() for line in file]
+
+            for i, line in enumerate(lines):
+                # Skip comments
+                if line.startswith("#"):
+                    continue
+
+                # Skip already interacted
+                if "DONE" in line:
+                    continue
+
+                data = line.strip()
+                lines[i] += " - DONE"
+                file.truncate(0)
+                file.seek(0)
+                file.write("\n".join(lines))
+                return data
+    except FileNotFoundError:
+        pass
+    return None
 
 
 @unique

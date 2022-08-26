@@ -42,10 +42,22 @@
     "description" : "skip internet speed check at start"
   },
   {
-    "parameter-name": "speed",
+    "parameter-name": "no_ig_version_check",
     "enabled": false,
-    "value": "2",
-    "description" : "manually specify the speed setting, from 1 (slowest) to 4 (fastest)"
+    "value": "True",
+    "description" : "skip Instagram version check at start"
+  },
+  {
+    "parameter-name": "no_ig_connection_check",
+    "enabled": false,
+    "value": "True",
+    "description" : "skip Instagram connection check at start"
+  },
+  {
+    "parameter-name": "speed",
+    "enabled": true,
+    "value": "4",
+    "description" : "manually specify the speed setting, from 1 (slowest) to 4 (fastest). There's also 5 (superfast) but it's not recommended"
   },
   {
     "parameter-name": "no_typing",
@@ -230,6 +242,12 @@
     "description" : "unfollow only profiles that are not following you"
   },
   {
+    "parameter-name": "unfollow_source",
+    "enabled": false,
+    "value": "list",
+    "description" : "you can specify where to take the users to unfollow from. Can be one of the values: profile / list / database / database-global-search. \"profile\" means unfollowing your profile\\'s followings. \"list\" means unfollowing from the \"unfollow.txt\" file. \"database\" means unfollowing from the database sorted by date of following (older go first). \"database-global-search\" is the same as \"database\", but searches in global search. By default \"profile\" is used"
+  },
+  {
     "parameter-name": "following_sort_order",
     "enabled": false,
     "value": "latest",
@@ -375,7 +393,8 @@
       "blacklist_words": ["word1", "word2"],
       "mandatory_words": ["word1", "word2"],
       "specific_alphabet": ["LATIN", "ARABIC", "HEBREW"],
-      "skip_already_following_profiles": true
+      "skip_already_following_profiles": true,
+      "only_profiles_with_faces": "female"
     },
     "description" : "add this argument if you want to pass filters as an argument and not from filters.json file"
   }

@@ -8,7 +8,7 @@ from insomniac import __version__
 from insomniac.device_facade import DeviceFacade
 from insomniac.globals import is_insomniac
 from insomniac.navigation import LanguageChangedException, close_instagram_and_system_dialogs, \
-    open_instagram_with_network_check
+    InstagramOpener
 from insomniac.sleeper import sleeper
 from insomniac.utils import *
 
@@ -33,7 +33,7 @@ def run_safely(device_wrapper):
                 print("No idea what it was. Let's try again.")
                 # Hack for the case when IGTV was accidentally opened
                 close_instagram_and_system_dialogs(device_wrapper.get())
-                open_instagram_with_network_check(device_wrapper.get())
+                InstagramOpener.INSTANCE.open_instagram()
             except LanguageChangedException:
                 print_timeless("")
                 print("Language was changed. We'll have to start from the beginning.")
@@ -63,7 +63,7 @@ def run_registration_safely(device_wrapper):
                 sleeper.random_sleep(multiplier=2.0)
                 close_instagram_and_system_dialogs(device_wrapper.get())
                 airplane_mode_on_off(device_wrapper)
-                open_instagram_with_network_check(device_wrapper.get())
+                InstagramOpener.INSTANCE.open_instagram()
                 sleeper.random_sleep()
         return wrapper
     return actual_decorator

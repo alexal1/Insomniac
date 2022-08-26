@@ -368,6 +368,60 @@ class DatabaseTests(unittest.TestCase):
         start_time = datetime.now() - timedelta(hours=1)
         self._run_inside_session(my_account1, job_get_session_time, start_time)
 
+    def test_get_oldest_followed_username(self):
+        my_account1 = "my_account1"
+        my_account2 = "my_account2"
+        username1 = "username1"
+        username2 = "username2"
+        username3 = "username3"
+        username4 = "username4"
+        username5 = "username5"
+
+        # Test that initially returns nothing
+        def job_get_oldest_followed_username(profile, session_id):
+            oldest_followed_username, oldest_followed_date = profile.get_oldest_followed_username()
+            assert oldest_followed_username is None and oldest_followed_date is None
+        self._run_inside_session(my_account2, job_get_oldest_followed_username)
+
+        # Do some follow from my_account1 which shouldn't make any sense
+        def job_do_follow(profile, session_id):
+            # Follow username3
+            profile.log_follow_action(session_id, SessionPhase.TASK_LOGIC.value, username3, None, None)
+            profile.update_follow_status(username3, do_i_follow_him=True, is_follow_me=False)
+            sleep(1)
+        self._run_inside_session(my_account1, job_do_follow)
+
+        def job_do_follows_unfollows(profile, session_id):
+            # Fake follow username4
+            profile.update_follow_status(username4, do_i_follow_him=True, is_follow_me=False)
+            sleep(1)
+
+            # Follow username1
+            profile.log_follow_action(session_id, SessionPhase.TASK_LOGIC.value, username1, None, None)
+            profile.update_follow_status(username1, do_i_follow_him=True, is_follow_me=False)
+            sleep(1)
+
+            # Follow username2
+            profile.log_follow_action(session_id, SessionPhase.TASK_LOGIC.value, username2, None, None)
+            profile.update_follow_status(username2, do_i_follow_him=True, is_follow_me=False)
+            sleep(1)
+
+            # Unfollow username1
+            profile.log_unfollow_action(session_id, SessionPhase.TASK_LOGIC.value, username1)
+            profile.update_follow_status(username1, do_i_follow_him=False, is_follow_me=False)
+            sleep(1)
+
+            # Follow username5
+            profile.log_follow_action(session_id, SessionPhase.TASK_LOGIC.value, username5, None, None)
+            profile.update_follow_status(username5, do_i_follow_him=True, is_follow_me=False)
+            sleep(1)
+        self._run_inside_session(my_account2, job_do_follows_unfollows)
+
+        def job_get_oldest_followed_username(profile, session_id):
+            oldest_followed_username, _ = profile.get_oldest_followed_username()
+            assert oldest_followed_username == username2
+        self._run_inside_session(my_account2, job_get_oldest_followed_username)
+
     def tearDown(self):
         print("Deleting test database")
         with test_db.connection_context():

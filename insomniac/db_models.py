@@ -375,6 +375,33 @@ class InstagramProfile(InsomniacModel):
                               & (InsomniacAction.actor_profile == self))
                        .limit(1)) > 0
 
+    def get_oldest_followed_username(self) -> (Optional[str], Optional['datetime']):
+        """
+        Find all profiles on which FollowAction was made, leave only those which are followed right now,
+        sort by the date of this action and return the username of the oldest one.
+
+        @return username of a followed user and date of the FollowAction made on him
+        """
+        with db.connection_context():
+            latest_follow_statuses = FollowStatus.select(
+                FollowStatus.profile,
+                FollowStatus.actor_profile,
+                FollowStatus.do_i_follow_him,
+                fn.MAX(FollowStatus.updated_at)
+            ) \
+                .where(FollowStatus.actor_profile == self) \
+                .group_by(FollowStatus.profile)
+
+            oldest_followed_username = FollowAction.select() \
+                .join(InsomniacAction, join_type=JOIN.LEFT_OUTER) \
+                .join(latest_follow_statuses, join_type=JOIN.LEFT_OUTER,
+                      on=(FollowAction.target_user == latest_follow_statuses.c.profile)) \
+                .where((InsomniacAction.actor_profile == self) & (latest_follow_statuses.c.do_i_follow_him == True)) \
+                .order_by(InsomniacAction.timestamp.asc())
+
+            return (oldest_followed_username[0].target_user,
+                    oldest_followed_username[0].action.timestamp) if len(oldest_followed_username) > 0 else (None, None)
+
     def is_interacted(self, username, hours=None) -> bool:
         with db.connection_context():
             if len(GetProfileAction.select(GetProfileAction.target_user)
@@ -965,7 +992,7 @@ def _migrate_db_from_version_3_to_4(migrator):
     """
     new_tables = [CloneCreationAction, CloneInstallationAction, CloneRemovalAction,
                   AppDataCleanupAction, ProfileRegistrationAction]
-    
+
     db.create_tables(new_tables)
 
 

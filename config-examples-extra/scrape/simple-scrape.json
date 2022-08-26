@@ -42,10 +42,22 @@
     "description" : "skip internet speed check at start"
   },
   {
-    "parameter-name": "speed",
+    "parameter-name": "no_ig_version_check",
     "enabled": false,
-    "value": "2",
-    "description" : "manually specify the speed setting, from 1 (slowest) to 4 (fastest)"
+    "value": "True",
+    "description" : "skip Instagram version check at start"
+  },
+  {
+    "parameter-name": "no_ig_connection_check",
+    "enabled": false,
+    "value": "True",
+    "description" : "skip Instagram connection check at start"
+  },
+  {
+    "parameter-name": "speed",
+    "enabled": true,
+    "value": "4",
+    "description" : "manually specify the speed setting, from 1 (slowest) to 4 (fastest). There's also 5 (superfast) but it's not recommended"
   },
   {
     "parameter-name": "no_typing",
@@ -127,7 +139,8 @@
       "blacklist_words": ["word1", "word2"],
       "mandatory_words": ["word1", "word2"],
       "specific_alphabet": ["LATIN", "ARABIC", "HEBREW"],
-      "skip_already_following_profiles": true
+      "skip_already_following_profiles": true,
+      "only_profiles_with_faces": "female"
     },
     "description" : "add this argument if you want to pass filters as an argument and not from filters.json file"
   },

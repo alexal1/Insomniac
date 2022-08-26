@@ -59,6 +59,8 @@ unfollow at most given number of users. Only users followed by this script will 
 By default, only profiles that been followed by the bot will be unfollowed. Set this parameter if you want to unfollow any profile (even if not been followed by the bot)
 #### --unfollow-non-followers
 unfollow only profiles that are not following you
+#### --unfollow-source list
+you can specify where to take the users to unfollow from. Can be one of the values: profile / list. "profile" means unfollowing your profile\'s followings. "list" means unfollowing from the "unfollow.txt" file (**extra feature**). By default "profile" is used
 #### --following-sort-order latest
 sort the following-list when unfollowing users from the list. Can be one of values: default / latest / earliest. By default sorting by earliest                   
 #### --recheck-follow-status-after 150
@@ -174,6 +176,15 @@ devices are connected at once
 #### --no-speed-check
 skip internet speed check at start
 
+#### --no-ig-version-check
+skip Instagram version check at start
+
+#### --no-ig-connection-check
+skip Instagram connection check at start
+
+#### --speed
+manually specify the speed setting, from 1 (slowest) to 4 (fastest). There's also 5 (superfast) but it's not recommended
+
 #### --no-typing
 disable "typing" feature (typing symbols one-by-one as a human)
 
@@ -233,6 +244,7 @@ You can skip profiles that don't match your needs. E.g. ignore mass-followers (m
 | `mandatory_words`                 | `["word1", "word2", "word3", ...]`                          | skip accounts that doesn't have one of the words in the list in the profile biography                        |
 | `specific_alphabet`               | `["LATIN", "ARABIC", "GREEK", "HEBREW", ...]`               | skip accounts that contains text in their biography/username which different than the provided alphabet list |
 | `skip_already_following_profiles` | `true/false`                                                | skip accounts that your profile already followed, even if not followed by the bot                            |
+| `only_profiles_with_faces`        | `"male"/"female"/"any"`                                     | analyze profile picture and leave only profiles with male/female/any face on the avatar                      |
 
 Read how to use filters [in our blogpost](https://www.patreon.com/posts/43362005).
 
@@ -312,6 +324,21 @@ working-hours on a specific session, because the
 following session in the flow might be in the working 
 hours and you dont want to stop the flow. If that's the 
 case, use this parameter
+
+### Unfollowing
+More unfollowing options will be unblocked.
+
+#### --unfollow-source database
+you can specify where to take the users to unfollow from. Can be one of the values: profile / list / database. 
+"profile" means unfollowing your profile\'s followings. 
+"list" means unfollowing from the "unfollow.txt" file. 
+"database" means unfollowing from the database sorted by date of following (older go first). 
+"database-global-search" is the same as "database", but searches in global search. 
+By default "profile" is used
+
+#### --unfollow-older-than-days
+if using "--unfollow-source database", you can specify how long ago an account has to be followed, to unfollow it now. 
+Specify number of days. 7 days by default
 
 ### Advanced
 More options for savvy users!

@@ -9,7 +9,7 @@ from insomniac.views import TabBarView, ActionBarView, UserSwitchFailedException
 def get_my_profile_info(device, username):
     try:
         profile_view = TabBarView(device).navigate_to_profile()
-        sleeper.random_sleep()
+        profile_view.wait_until_visible()
 
         ActionBarView.create_instance(device)
 
@@ -32,7 +32,7 @@ def get_my_profile_info(device, username):
 
         # Try again on the correct language
         profile_view = TabBarView(device).navigate_to_profile()
-        sleeper.random_sleep()
+        profile_view.wait_until_visible()
 
         ActionBarView.create_instance(device)
 

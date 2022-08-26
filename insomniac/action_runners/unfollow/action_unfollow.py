@@ -1,7 +1,7 @@
 from enum import unique, Enum
 
 from insomniac.actions_impl import open_user_followings, sort_followings_by_date, iterate_over_my_followings, \
-    do_unfollow, FOLLOW_REGEX
+    do_unfollow, FOLLOW_REGEX, UnfollowSource
 from insomniac.actions_types import UnfollowAction, GetProfileAction
 from insomniac.limits import process_limits
 from insomniac.report import print_short_unfollow_report
@@ -10,13 +10,7 @@ from insomniac.storage import FollowingStatus
 from insomniac.utils import *
 
 
-def unfollow(device, on_action, storage, unfollow_restriction, sort_order, session_state, is_limit_reached, action_status):
-    if not open_user_followings(device=device, username=None, on_action=on_action):
-        return
-    sleeper.random_sleep()
-    sort_followings_by_date(device, sort_order)
-    sleeper.random_sleep()
-
+def unfollow(device, on_action, storage, unfollow_restriction, unfollow_source, unfollow_older_than_days, sort_order, session_state, is_limit_reached, action_status):
     # noinspection PyUnusedLocal
     # following_name_view is a standard callback argument
     def iteration_callback_pre_conditions(following_name, following_name_view, follow_status_button_view):
@@ -88,7 +82,37 @@ def unfollow(device, on_action, storage, unfollow_restriction, sort_order, sessi
 
         return True
 
-    iterate_over_my_followings(device, iteration_callback, iteration_callback_pre_conditions)
+    if unfollow_source == UnfollowSource.LIST:
+        print("Unfollowing from the list")
+        try:
+            from insomniac.extra_features.actions_impl import unfollow_from_list
+            unfollow_from_list(device, storage, on_action, iteration_callback, iteration_callback_pre_conditions)
+        except ImportError:
+            print_timeless(COLOR_FAIL + "Unfollowing from list is an extra feature." + COLOR_ENDC)
+            print_timeless(COLOR_FAIL + "Please enter your activation code in start.py" + COLOR_ENDC)
+    elif unfollow_source == UnfollowSource.DATABASE or unfollow_source == UnfollowSource.DATABASE_GLOBAL_SEARCH:
+        print("Unfollowing from the database")
+
+        is_using_global_search = unfollow_source == UnfollowSource.DATABASE_GLOBAL_SEARCH
+        if is_using_global_search:
+            print("Will use global search")
+        else:
+            print("Will search in the list of your followings")
+
+        try:
+            from insomniac.extra_features.actions_impl import unfollow_from_database
+            unfollow_from_database(device, storage, unfollow_older_than_days, is_using_global_search, on_action, iteration_callback, iteration_callback_pre_conditions)
+        except ImportError:
+            print_timeless(COLOR_FAIL + "Unfollowing from the database is an extra feature." + COLOR_ENDC)
+            print_timeless(COLOR_FAIL + "Please enter your activation code in start.py" + COLOR_ENDC)
+    else:
+        print("Unfollowing from the profile")
+        if not open_user_followings(device=device, username=None, on_action=on_action):
+            return
+        sleeper.random_sleep()
+        sort_followings_by_date(device, sort_order)
+        sleeper.random_sleep()
+        iterate_over_my_followings(device, iteration_callback, iteration_callback_pre_conditions)
 
 
 @unique

@@ -1,11 +1,10 @@
 from abc import ABC
-from datetime import datetime
-from typing import Optional
 
 from insomniac.actions_types import LikeAction, InteractAction, FollowAction, GetProfileAction, ScrapeAction, \
     UnfollowAction, RemoveMassFollowerAction, StoryWatchAction, CommentAction, DirectMessageAction, FilterAction, \
     DirectMessageBackdateAction
 from insomniac.storage import Storage, InsomniacStorage, SessionPhase
+from insomniac.utils import *
 
 
 class SessionState(ABC):
@@ -14,33 +13,37 @@ class SessionState(ABC):
     startTime = None
     finishTime = None
     storage: Optional[Storage] = None
-    is_started = False
 
     def __init__(self):
         self.id = None
         self.args = {}
-        self.startTime = datetime.now()
+        self.startTime = None
         self.finishTime = None
         self.storage = None
-        self.is_started = False
 
     def set_storage_layer(self, storage_instance):
         self.storage = storage_instance
 
     def start_session(self):
-        self.is_started = True
+        self.startTime = datetime.now()
         self.start_session_impl()
+        print_timeless(COLOR_REPORT + "\n-------- START: " + str(self.startTime) + " --------" + COLOR_ENDC)
 
     def start_session_impl(self):
         raise NotImplementedError
 
     def end_session(self):
-        if not self.is_started:
+        if not self.is_started():
             return
 
         self.finishTime = datetime.now()  # For metadata-in-memory only
         if self.storage is not None:
             self.storage.end_session(self.id)
+
+        print_timeless(COLOR_REPORT + "-------- FINISH: " + str(self.finishTime) + " --------" + COLOR_ENDC)
+
+    def is_started(self):
+        return self.startTime is not None
 
     def is_finished(self):
         return self.finishTime is not None

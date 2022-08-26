@@ -1,3 +1,4 @@
+from insomniac import activation_controller
 from insomniac.action_runners import *
 from insomniac.actions_types import TargetType
 from insomniac.navigation import navigate
@@ -310,16 +311,27 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
     def run(self, device_wrapper, storage, session_state, on_action, is_limit_reached, is_passed_filters=None):
         from insomniac.action_runners.interact.action_handle_target import handle_target
 
-        target, target_type = storage.get_target(session_state.id)
-        while target is not None:
-            self.action_status = ActionStatus(ActionState.PRE_RUN)
+        self.action_status = ActionStatus(ActionState.PRE_RUN)
 
-            print_timeless("")
-            print(COLOR_BOLD + f"Handle {'@' if target_type == TargetType.USERNAME else ''}" + target + COLOR_ENDC)
+        @run_safely(device_wrapper=device_wrapper)
+        def job():
+            target, target_type = storage.get_target(session_state.id)
 
-            @run_safely(device_wrapper=device_wrapper)
-            def job():
+            if target is None:
+                print("There are no more new targets to interact with in the database (all been already interacted / filtered).")
+                print("If you wish to continue interacting with targets, add new targets to the database using scrapping / targets.txt "
+                      "or use the reinteract-after & refilter-after parameters in order to interact with the targets that are already loaded "
+                      "in the database.")
+                if activation_controller.is_activated:
+                    from insomniac.extra_features.report_sender import notify_interaction_targets_finished
+                    notify_interaction_targets_finished(storage.my_username)
+
+                self.action_status.set(ActionState.DONE)
+            else:
+                print_timeless("")
+                print(COLOR_BOLD + f"Handle {'@' if target_type == TargetType.USERNAME else ''}" + target + COLOR_ENDC)
                 self.action_status.set(ActionState.RUNNING)
+
                 handle_target(device_wrapper.get(),
                               target,
                               target_type,
@@ -336,24 +348,8 @@ class InteractByTargetsActionRunner(CoreActionsRunner):
                               is_passed_filters,
                               self.action_status)
 
-                self.action_status.set(ActionState.DONE)
-
-            while not self.action_status.get() == ActionState.DONE:
-                job()
-                if self.action_status.get_limit() == ActionState.SOURCE_LIMIT_REACHED or \
-                        self.action_status.get_limit() == ActionState.SESSION_LIMIT_REACHED:
-                    break
-
-            if self.action_status.get_limit() == ActionState.SOURCE_LIMIT_REACHED:
-                continue
-
-            if self.action_status.get_limit() == ActionState.SESSION_LIMIT_REACHED:
+        while not self.action_status.get() == ActionState.DONE:
+            job()
+            if self.action_status.get_limit() == ActionState.SOURCE_LIMIT_REACHED or \
+                    self.action_status.get_limit() == ActionState.SESSION_LIMIT_REACHED:
                 break
-
-            target, target_type = storage.get_target(session_state.id)
-
-        if target is None:
-            print("There are no more new targets to interact with in the database (all been already interacted / filtered).")
-            print("If you wish to continue interacting with targets, add new targets to the database using scrapping / targets.txt "
-                  "or use the reinteract-after & refilter-after parameters in order to interact with the targets that are already loaded "
-                  "in the database.")

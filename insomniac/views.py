@@ -60,6 +60,15 @@ class InstagramView:
     def is_visible(self) -> bool:
         raise NotImplemented(f"is_visible() is not implemented for {self.__class__.__name__}")
 
+    def wait_until_visible(self, max_wait_seconds=5) -> bool:
+        start_time = datetime.now()
+        current_time = start_time
+        while current_time - start_time < timedelta(seconds=max_wait_seconds):
+            if self.is_visible():
+                return True
+            current_time = datetime.now()
+        return False
+
     def get_title(self) -> Optional[str]:
         action_bar_title = self.device.find(resourceId=f'{self.device.app_id}:id/action_bar_title',
                                             className='android.widget.TextView')
@@ -428,23 +437,37 @@ class SearchView(InstagramView):
                 textMatches = case_insensitive_re(place)
             )
 
-    def _get_tab_view(self, tab: SearchTabs):
+    def _open_tab(self, tab: SearchTabs) -> bool:
         tab_layout = self.device.find(resourceId=f"{self.device.app_id}:id/fixed_tabbar_tabs_container",
                                       className="android.widget.LinearLayout")
         tab_text_view = tab_layout.child(resourceId=f"{self.device.app_id}:id/tab_button_name_text",
                                          className="android.widget.TextView",
                                          textMatches=case_insensitive_re(tab.name))
-        if tab_text_view.exists():
-            return tab_text_view
+        if tab_text_view.exists(quick=True):
+            tab_text_view.click()
+            return True
 
-        print_debug(f"Cannot find tab with text {tab.name}. Fallback to opening by index.")
-        tab_image_view_container = tab_layout.child(index=tab.value)
-        if tab_image_view_container.exists():
-            return tab_image_view_container
+        print_debug(f"Cannot find tab with text {tab.name}. Fallback to opening by swiping.")
 
-        print(COLOR_FAIL + f"Cannot find tab: {tab.name}." + COLOR_ENDC)
-        save_crash(self.device)
-        return None
+        def check_hint_contains_tab_name() -> bool:
+            return self.device\
+                .find(resourceId=f"{self.device.app_id}:id/action_bar_search_hints_text_layout",
+                      className="android.widget.FrameLayout") \
+                .child(className="android.widget.TextView",
+                       textMatches=case_insensitive_re(f".*?{tab.name}.*?")) \
+                .exists(quick=True)
+
+        max_attempts = 10
+        attempt = 0
+        while not check_hint_contains_tab_name():
+            self.device.swipe(DeviceFacade.Direction.LEFT, scale=0.9)
+            attempt += 1
+            if attempt >= max_attempts:
+                print(COLOR_FAIL + f"Cannot find tab: {tab.name}." + COLOR_ENDC)
+                save_crash(self.device)
+                return False
+
+        return True
 
     def find_username(self, username) -> bool:
         search_edit_text = self._get_search_edit_text()
@@ -456,16 +479,13 @@ class SearchView(InstagramView):
             return True
         print(f"@{username} is not in recent searching history...")
 
+        if not self._open_tab(SearchTabs.ACCOUNTS):
+            return False
+
         search_edit_text.set_text(username)
         search_text = self.device.find(resourceId=self.SEARCH_TEXT_ID.format(self.device.app_id),
                                        className=self.SEARCH_TEXT_CLASSNAME)
         search_text.click(ignore_if_missing=True)
-
-        accounts_tab = self._get_tab_view(SearchTabs.ACCOUNTS)
-        if accounts_tab is not None:
-            accounts_tab.click()
-        else:
-            return False
 
         username_view = self._get_username_row(username)
         return username_view.exists()
@@ -485,16 +505,13 @@ class SearchView(InstagramView):
             return ProfileView(self.device, is_own_profile=False)
         print(f"@{username} is not in recent searching history...")
 
+        if not self._open_tab(SearchTabs.ACCOUNTS):
+            return None
+
         search_edit_text.set_text(username)
         search_text = self.device.find(resourceId=self.SEARCH_TEXT_ID.format(self.device.app_id),
                                        className=self.SEARCH_TEXT_CLASSNAME)
         search_text.click(ignore_if_missing=True)
-
-        accounts_tab = self._get_tab_view(SearchTabs.ACCOUNTS)
-        if accounts_tab is not None:
-            accounts_tab.click()
-        else:
-            return None
 
         username_view = self._get_username_row(username)
         if not username_view.exists():
@@ -522,16 +539,13 @@ class SearchView(InstagramView):
             return HashTagView(self.device)
         print(f"#{hashtag} is not in recent searching history...")
 
+        if not self._open_tab(SearchTabs.TAGS):
+            return None
+
         search_edit_text.set_text(hashtag)
         search_text = self.device.find(resourceId=self.SEARCH_TEXT_ID.format(self.device.app_id),
                                        className=self.SEARCH_TEXT_CLASSNAME)
         search_text.click(ignore_if_missing=True)
-
-        hashtag_tab = self._get_tab_view(SearchTabs.TAGS)
-        if hashtag_tab is not None:
-            hashtag_tab.click()
-        else:
-            return None
 
         hashtag_view = self._get_hashtag_row(hashtag)
         if not hashtag_view.exists():
@@ -557,16 +571,13 @@ class SearchView(InstagramView):
             return PlacesView(self.device)
         print(f"{place} is not in recent searching history...")
 
+        if not self._open_tab(SearchTabs.PLACES):
+            return None
+
         search_edit_text.set_text(place)
         search_text = self.device.find(resourceId=self.SEARCH_TEXT_ID.format(self.device.app_id),
                                        className=self.SEARCH_TEXT_CLASSNAME)
         search_text.click(ignore_if_missing=True)
-
-        places_tab = self._get_tab_view(SearchTabs.PLACES)
-        if places_tab is not None:
-            places_tab.click()
-        else:
-            return None
 
         place_view = self._get_place_row(None)  # just open first place we see
         if not place_view.exists():
@@ -892,7 +903,6 @@ class OpenedPostView(InstagramView):
             className=OpenedPostView.POST_VIEW_CLASSNAME
         )
         post_view.double_click()
-        sleeper.random_sleep()
         if not self.is_visible():
             print(COLOR_OKGREEN + "Accidentally went out of the post page, going back..." + COLOR_ENDC)
             self.device.back()
@@ -979,6 +989,8 @@ class ProfileView(InstagramView):
 
     FOLLOWERS_BUTTON_ID_REGEX = '{0}:id/row_profile_header_followers_container|{1}:id/row_profile_header_container_followers'
     FOLLOWING_BUTTON_ID_REGEX = '{0}:id/row_profile_header_following_container|{1}:id/row_profile_header_container_following'
+    PROFILE_IMAGE_ID_REGEX = '{0}:id/row_profile_header_imageview'
+    PROFILE_IMAGE_CLASS_NAME = 'android.widget.ImageView'
     MESSAGE_BUTTON_CLASS_NAME_REGEX = TEXTVIEW_OR_BUTTON_REGEX
 
     def __init__(self, device: DeviceFacade, is_own_profile=False):
@@ -986,8 +998,8 @@ class ProfileView(InstagramView):
         self.is_own_profile = is_own_profile
 
     def is_visible(self):
-        return self.device.find(resourceId=f"{self.device.app_id}:id/row_profile_header",
-                                classNameMatches=VIEW_OR_VIEWGROUP_REGEX).exists(quick=True)
+        return self.device.find(resourceId=self.PROFILE_IMAGE_ID_REGEX.format(self.device.app_id),
+                                className=self.PROFILE_IMAGE_CLASS_NAME).exists(quick=True)
 
     def refresh(self):
         re_case_insensitive = case_insensitive_re(
@@ -1285,14 +1297,25 @@ class ProfileView(InstagramView):
         return False
 
     def get_profile_image(self) -> Optional[Image]:
-        profile_image_view = self.device.find(
-            resourceId=f"{self.device.app_id}:id/row_profile_header_imageview",
-            className="android.widget.ImageView",
-        )
+        profile_image_view = self.device.find(resourceId=self.PROFILE_IMAGE_ID_REGEX.format(self.device.app_id),
+                                              className=self.PROFILE_IMAGE_CLASS_NAME)
         if profile_image_view.exists(quick=True):
             return profile_image_view.get_image()
         else:
             return None
+
+    def get_visible_posts_rows(self) -> int:
+        count = 0
+        posts_rows = self.device.find(resourceId=f"{self.device.app_id}:id/media_set_row_content_identifier",
+                                      className="android.widget.LinearLayout")
+        if posts_rows.exists(quick=True):
+            post_width = posts_rows.get_width() / 3
+            min_accepted_height = post_width / 3
+            for row in posts_rows:
+                row_height = row.get_height()
+                if row_height >= min_accepted_height:
+                    count += 1
+        return count
 
 
 class ProfileActionsView(InstagramView):
@@ -1309,6 +1332,11 @@ class ProfileActionsView(InstagramView):
 
 class FollowersFollowingListView(InstagramView):
 
+    SEARCH_EDIT_TEXT_ID_REGEX = '{0}:id/row_search_edit_text'
+    SEARCH_EDIT_TEXT_CLASS_NAME = 'android.widget.EditText'
+    FOLLOW_LIST_ITEM_ID_REGEX = '{0}:id/follow_list_username'
+    FOLLOW_LIST_ITEM_CLASS_NAME = 'android.widget.TextView'
+
     @unique
     class Tab(Enum):
         FOLLOWERS = 0
@@ -1318,7 +1346,6 @@ class FollowersFollowingListView(InstagramView):
         """
         :type tab: FollowersFollowingListView.Tab
         """
-        sleeper.random_sleep()
         following_tab = self.device.find(className="android.widget.TextView",
                                          clickable=True,
                                          textMatches="(?i).*?following")
@@ -1329,6 +1356,20 @@ class FollowersFollowingListView(InstagramView):
             followers_tab.click()
         else:
             following_tab.click()
+
+    def search_for_user(self, username) -> bool:
+        search_edit_text = self.device.find(resourceId=self.SEARCH_EDIT_TEXT_ID_REGEX.format(self.device.app_id),
+                                            className=self.SEARCH_EDIT_TEXT_CLASS_NAME)
+        search_edit_text.click()
+        search_edit_text.set_text(username)
+        sleeper.random_sleep()
+        follow_list_item = self.device.find(resourceId=self.FOLLOW_LIST_ITEM_ID_REGEX.format(self.device.app_id),
+                                            className=self.FOLLOW_LIST_ITEM_CLASS_NAME,
+                                            text=username)
+        if follow_list_item.exists(quick=True):
+            follow_list_item.click()
+            return True
+        return False
 
     def scroll_to_bottom(self):
         print("Scroll to the bottom of the list")
@@ -1527,6 +1568,8 @@ class DialogView(InstagramView):
     CLOSE_APP_ID = 'android:id/aerr_close'
     CLOSE_APP_CLASS_NAME = 'android.widget.Button'
     CLOSE_APP_TEXT_REGEX = case_insensitive_re("Close app")
+    HUAWEI_UPDATE_TITLE_REGEX = case_insensitive_re("Software update")
+    HUAWEI_UPDATE_BUTTON_REGEX = case_insensitive_re("Later")
 
     def is_visible(self) -> bool:
         dialog_v1 = self.device.find(resourceIdMatches=f'{self.device.app_id}:id/(bottom_sheet_container|dialog_root_view|content)',
@@ -1605,6 +1648,13 @@ class DialogView(InstagramView):
             continue_button.click()
             return True
         return False
+
+    def close_update_dialog_if_visible(self):
+        if self.device.get_brand() == 'HUAWEI':
+            if self.device.find(textMatches=self.HUAWEI_UPDATE_TITLE_REGEX).exists(quick=True):
+                print("Found update dialog for HUAWEI, closing")
+                self.device.find(textMatches=self.HUAWEI_UPDATE_BUTTON_REGEX).click(ignore_if_missing=True)
+                sleeper.random_sleep()
 
 
 class LanguageNotEnglishException(Exception):
