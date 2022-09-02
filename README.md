@@ -29,7 +29,9 @@
 3. **Scrape** your target audience from other accounts and use your main account only to interact. This reduces the app time-spent of your main account and makes the main account significantly less suspicious to Instagram. _You'll have to learn how to use Insomniac "configs" and combine them into an infinite loop – so that everything would work by itself._  
 
 <br />
-<img align="center" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/demo.gif">
+<p align="center">
+    <img src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/demo.gif">
+</p>
 
 ### Getting Started
 We have an awesome [documentation](https://insomniac-bot.com/docs/) where you will find installation instructions for Windows, macOS, Ubuntu and Raspberry Pi.
