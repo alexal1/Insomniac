@@ -1,7 +1,3 @@
-Switch language: [German](/docs/#/de/ ':ignore')
-\
-&nbsp;
-
 ## Installation
 See the [Installation](/installation) page.
 
@@ -322,8 +318,11 @@ be higher than the left value.
 if you use flow, you maybe don't want to wait for 
 working-hours on a specific session, because the 
 following session in the flow might be in the working 
-hours and you dont want to stop the flow. If that's the 
+hours and you don't want to stop the flow. If that's the 
 case, use this parameter
+
+#### --direct-messages-limit 10
+limit on total amount of DMs-actions during the current session, disabled by default. It can be a number (e.g. 10) or a range (e.g. 9-12)
 
 ### Unfollowing
 More unfollowing options will be unblocked.
@@ -339,6 +338,21 @@ By default "profile" is used
 #### --unfollow-older-than-days
 if using "--unfollow-source database", you can specify how long ago an account has to be followed, to unfollow it now. 
 Specify number of days. 7 days by default
+
+### Direct Messages
+Sending direct messages.
+
+#### --dm-list "Hey bro!" ["What's up bro" ...]
+List of messages to pick a random one to send. Spintax supported
+
+#### --dm-to-new-followers
+Send direct messages to the given amount of new followers
+
+#### --dm-to-followed-by-bot-only
+If true, messages will be sent only to users whom we are following
+
+#### --dm-max-old-followers-in-a-row 30
+Stop looking for new followers if seeing this amount of old followers in a row
 
 ### Advanced
 More options for savvy users!

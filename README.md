@@ -1,137 +1,51 @@
-<img align="left" width="80" height="80" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/icon.jpg" alt="Insomniac">
+<p align="center">
+    <img width="128" height="128" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/insomniac.png" alt="Insomniac"/>
+    <h1 align="center">Insomniac</h1>
+    <p align="center">Simple and friendly automation tool which brings more followers to your Instagram account and engages existing audience. Automatic liking, commenting, following/unfollowing, scraping and sending direct messages. Everything works from your own Android phone/tablet/emulator under your full control. <b>No root required.</b></p>
+    <p align="center">
+        <a href="https://github.com/alexal1/Insomniac/releases">
+            <img src="https://img.shields.io/pypi/v/insomniac?label=latest%20version"/>
+        </a>
+        <a href="https://www.python.org/downloads/release/python-3106/">
+            <img src="https://img.shields.io/pypi/pyversions/insomniac"/>
+        </a>
+        <a href="https://pypi.org/project/insomniac/">
+            <img src="https://img.shields.io/pypi/dm/insomniac"/>
+        </a>
+        <a href="https://insomniac-bot.com/get_latest_supported_ig_apk/">
+            <img src="https://img.shields.io/endpoint?url=https://insomniac-bot.com/get_latest_supported_ig_version/"/>
+        </a>
+    </p>
+</p>
 
-# Insomniac
-![PyPI](https://img.shields.io/pypi/v/insomniac?label=latest%20version)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/insomniac)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/insomniac)
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)
-<a href="https://insomniac-bot.com/get_latest_supported_ig_apk/">
- 	<img src="https://img.shields.io/endpoint?url=https://insomniac-bot.com/get_latest_supported_ig_version/">
-</a>
-
-[español](https://github.com/alexal1/Insomniac/blob/master/res/README_es.md) | [português](https://github.com/alexal1/Insomniac/blob/master/res/README_pt_BR.md)
-
-**Liking**, **following** and **watching stories** automatically on your Android phone/emulator. No root required: it works on [UI Automator](https://developer.android.com/training/testing/ui-automator), which is an official Android UI testing framework.
-
-**No Android device?** Follow instructions to setup Insomniac on a free emulator: [Windows](https://www.patreon.com/posts/how-to-install-43543116), [macOS](https://www.patreon.com/posts/how-to-install-43485861), [Linux](https://www.patreon.com/posts/how-to-install-43485861).
-
-<img src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/demo.gif">
-
-### Table of contents
-- [Why you should automate Instagram activity (liking, following, etc.)?](#why-you-should-automate-instagram-activity-liking-following-etc)
-- [How to install](#how-to-install)
-    * [How to install on Raspberry Pi OS](#how-to-install-on-raspberry-pi-os)
-- [Get started](#get-started)
-    * [Usage example](#usage-example)
-    * [Full list of command line arguments](#full-list-of-command-line-arguments)
-    * [FAQ](#faq)
-- [Extra features](#extra-features)
-- [Source code](#source-code)
-- [Filtering](#filtering)
-- [Whitelist and Blacklist](#whitelist-and-blacklist)
-- [Targets Interaction](#targets-interaction)
-- [Analytics](#analytics)
-- [Features in progress](#features-in-progress)
-- [Why Insomniac?](#why-insomniac)
-- [Community](#community)
-
-### Why you should automate Instagram activity (liking, following, etc.)?
-💸 If you want just to _increase_ your followers count or get more likes, there's a bunch of companies that will give you that immediately for a few $$$. But most likely your audience will be bots and mass-followers.
+### Why Automating Instagram Activity (Liking, Following, etc.)?
+💸 If you want just to _increase_ your followers count or get more likes, there's a bunch of companies that will give you that immediately for a few $$$. But most likely your audience will be merely bots and mass-followers.
 
 🌱 If you want to get engaged followers, that will be interested in your content and probably will pay you for your services, then _automation_ is the right way.
 
-🎯 This Instagram bot provides you methods to **target** on the audience that is most likely interested **in you**. These methods are:
-1. Interact with followers of **bloggers** with similar content
-2. Interact with likers of **hashtags** that you use
-3. **Filter** accounts to avoid bots and mass-followers
+📈 This Instagram bot provides you methods to **target** on the audience that is most likely interested **in you**. Generally these methods are (with growing complexity):
+1. Interact with users who follow specific **bloggers** or like posts by specific **hashtags**. _Easiest level, just one Insomniac command._
+2. Same, but from those users interact only with your **target audience**. Meaning that you can pick users by specific parameters: by gender, by language, by posts count, etc. _Still one Insomniac command, but you'll have to add a file with "filtering" parameters._
+3. **Scrape** your target audience from other accounts and use your main account only to interact. This reduces the app time-spent of your main account and makes the main account significantly less suspicious to Instagram. _You'll have to learn how to use Insomniac "configs" and combine them into an infinite loop – so that everything would work by itself._  
 
-📈 Using these methods altogether gives the best result.
+<br />
+<img align="center" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/demo.gif">
 
-### How to install
-1. Install **insomniac** package: run `python3 -m pip install insomniac` in Terminal / Command Prompt<br/><sub><sup>Provided **python** and **pip** are installed already. Learn <a href="https://github.com/alexal1/Insomniac/wiki/Install-Python">how to check it</a>.</sup></sub>
-2. Save launcher [start.py](https://raw.githubusercontent.com/alexal1/Insomniac/master/start.py) to a directory where you're going to launch the script from (right-click on the link, then Save As / Download Linked File As)
-2. Download and unzip [Android platform tools](https://developer.android.com/studio/releases/platform-tools), move them to a folder where you won't delete them accidentally. Standard place is `C:\android-sdk\` (Windows), `~/Library/Android/sdk/` (Linux/macOS)
-3. [Add platform-tools path to the PATH environment variable](https://github.com/alexal1/Insomniac/wiki/Adding-platform-tools-to-the-PATH-environment-variable). If you do it correctly, Terminal / Command Prompt command `adb devices` will print `List of devices attached`
+### Getting Started
+We have an awesome [documentation](https://insomniac-bot.com/docs/) where you will find installation instructions for Windows, macOS, Ubuntu and Raspberry Pi.
 
-_IMPORTANT: if you previously used v2.x.x, then insomniac.py file will conflict with insomniac package. So, save start.py in a separate folder_
+Basically all you need is a machine with Python 3 and a connected Android phone. In case you don't have a phone, we have posts explaining how to make it work with a free Android emulator: [Windows](https://www.patreon.com/posts/how-to-install-43543116), [macOS](https://www.patreon.com/posts/how-to-install-43485861), [Ubuntu](https://www.patreon.com/posts/how-to-install-43485861).
 
-### How to install on Raspberry Pi OS
-1. Update apt-get: `sudo apt-get update`
-2. Install ADB and Fastboot: `sudo apt-get install -y android-tools-adb android-tools-fastboot`
-3. Install insomniac: `python3 -m pip install insomniac`
-4. Save [start.py](https://raw.githubusercontent.com/alexal1/Insomniac/master/start.py) file
+Please use a specific Instagram app version which you can find in the header (click on the "IG version" badge). That's because Instagram UI gets changed pretty often, so we guarantee a stable work only on versions up to a specific number.
 
-### Get started
-1. Connect Android device to your computer with a USB cable
-2. Enable [Developer options](https://developer.android.com/studio/debug/dev-options#enable) on the device
->On Android 4.1 and lower, the Developer options screen is available by default. On Android 4.2 and higher, you must enable this screen. To enable developer options, tap the Build Number option 7 times. You can find this option in one of the following locations, depending on your Android version:
->
-> Android 9 (API level 28) and higher: Settings > About Phone > Build Number
->
-> Android 8.0.0 (API level 26) and Android 8.1.0 (API level 26): Settings > System > About Phone > Build Number
->
-> Android 7.1 (API level 25) and lower: Settings > About Phone > Build Number
-3. Switch on **USB debugging** (and also **Install apps via USB** and **Allow ADB debugging in charge only mode** if there are such options) on the Developer options screen.
-4. Device will ask you to allow computer connection. Press "Connect"
-5. Type `adb devices` in terminal. It will display attached devices. There should be exactly one device. Then run the script (it works on Python 3):
-6. Open Terminal / Command Prompt in the folder with downloaded [start.py](https://raw.githubusercontent.com/alexal1/Insomniac/master/start.py) (or type `cd <path-to-start.py>`) and run
+The simplest Insomniac command to start with would be something like this:
 ```
 python3 start.py --interact @natgeo-followers
 ```
-Make sure that the screen is turned on and device is unblocked. You don't have to open Instagram app, script opens it and closes when it's finished. Just make sure that Instagram app is installed. If everything's fine, script will open `@natgeo`'s followers and like their posts.
-
-### Usage example
-Say you have a travel blog. Then you may want to use such setup:
-```
-python3 start.py --interact @natgeo-followers amazingtrips-recent-likers --interactions-count 20-30 --likes-count 1-2 --follow-percentage 80 --repeat 160-220
-```
-Or just download a config file [interact.json](https://raw.githubusercontent.com/alexal1/Insomniac/master/config-examples/interact.json) and put it near `start.py`. Then run:
-```
-python3 start.py --config-file interact.json
-```
-The script will sequentially interact with 20-30 `@natgeo`'s followers and 20-30 `#amazingtrips` posts likers. During each interaction it will like 1-2 random posts and also follow 80% of interacted users. When finished it will close Instagram app and wait for 160-220 minutes. Then the script will repeat the same (and will repeat infinitely), but already interacted users will be ignored. The list of sources (`@natgeo` and `#amazingtrips`) will be shuffled each time.
-
-All this randomness makes it very hard for Instagram to detect that you're using a bot. However, be careful with number of interactions, because even a human can be banned for violating limits.
-
-### Full list of command line arguments
-All arguments are listed on our wiki pages:
-- [Full list of command line arguments](https://github.com/alexal1/Insomniac/wiki/Full-list-of-command-line-arguments) – arguments available for free
-- [Full list of command line arguments (including extra features)](https://github.com/alexal1/Insomniac/wiki/Full-list-of-command-line-arguments-(including-extra-features)) – arguments available after [activation](https://insomniac-bot.com/activate/)
-
-You can view the same list in Terminal / Command Prompt by running with no arguments: `python3 start.py`.
-
-### FAQ
-- How to stop the script?<br/>_Ctrl+C (control+C for Mac)_
-
-- Can I prevent my phone from falling asleep while the script is working?<br/>_Yes. Settings -> Developer Options -> Stay awake._
-
-- What to do if I got soft ban (cannot like/follow/comment)?<br/>_Clear Instagram application data. You'll have to login again and then it will work as usual. But it's **highly recommended** to lower your interactions count for the future and take a pause with the script._
-
-- [How to connect Android phone via WiFi?](https://www.patreon.com/posts/connect-android-43141956)
-
-- [How to run on 2 or more devices at once?](https://www.patreon.com/posts/running-script-43143021)
-
-- [Script crashes with **OSError: RPC server not started!** or **ReadTimeoutError**](https://www.patreon.com/posts/problems-with-to-43143682)
-
-### Extra features
-All core features in this project are free to use. But you may want to get more fine grained control over the bot via these features:
-- **Filtering** - skip unwanted accounts by various parameters, [read more](https://www.patreon.com/posts/43362005)
-- **Removing mass followers** - automate "cleaning" your account, [read more](https://www.patreon.com/posts/automate-mass-43899353)
-- **Scrapping** - technique that makes interactions significantly safer and faster, [read more](https://www.patreon.com/posts/scrapping-what-43902968)
-- **Analytics tool** - build presentation that shows your growth, [read more](https://www.patreon.com/posts/analytics-tool-43148835)
-
-Activate these features by supporting our small team on Patreon: [https://insomniac-bot.com/activate/](https://insomniac-bot.com/activate/).
-
-### Source code
-You can see contents of the `insomniac` PyPi package in the [insomniac](https://github.com/alexal1/Insomniac/tree/master/insomniac) folder. So, you can work with the source code directly.
-1. Clone the project: `git clone https://github.com/alexal1/Insomniac.git`
-2. Install required libraries: `python3 -m pip install -r requirements.txt`
-3. Launch the script the same way: `python3 start.py --interact @natgeo`
-
-Pull requests are welcome! Any feature you implement will be included in the Insomniac PyPi package after review. Features implemented by contributors are always free and available for everyone. Only _some_ of features implemented _exclusively_ by Insomniac Team are declared extra features and are stored on [our server](https://insomniac-bot.com/). This is our way to monetize the project in order to keep the code always clean and working.
+But better check the docs.
 
 ### Filtering
-You may want to ignore mass-followers (e.g. > 1000 followings) because they are most likely interested only in growing their audience. Or ignore too popular accounts (e.g. > 5000 followers) because they won't notice you. You can do this (and more) by using `filter.json` file. List of available parameters:
+Eventually you will come to the point where you want to avoid accounts with thousands of followings. Or with zero posts. Or with some other red flags which you will choose for yourself. Here's the full list:
 
 | Parameter                         | Value                                                       | Description                                                                                                  |
 | --------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------|
@@ -153,42 +67,40 @@ You may want to ignore mass-followers (e.g. > 1000 followings) because they are 
 | `skip_already_following_profiles` | `true/false`                                                | skip accounts that your profile already followed, even if not followed by the bot                            |
 | `only_profiles_with_faces`        | `"male"/"female"/"any"`                                     | analyze profile picture and leave only profiles with male/female/any face on the avatar                      |
 
+You can find how to use them in the [documentation](https://insomniac-bot.com/docs/#/?id=filters). But don't tense up, it's as easy as create a file called "filters.json" and put it into a folder.
 
-Please read detailed explanation and instructions how to use filter in [this Patreon post](https://www.patreon.com/posts/43362005).
+### Command-Line Arguments vs Configs
+At some point we realised that there appeared so many Insomniac command-line arguments that they became difficult to handle.
 
-_IMPORTANT: Please use_ `--total-get-profile-limit 500` _(or some other value) when using filter. You may get a soft ban because of opening and closing too large amount of Instagram profiles._
+_Tip: by the way, you can see all available commands by running `python3 start.py` with no arguments._
 
-### Whitelist and Blacklist
-**Whitelist** – affects `--remove-mass-followers`, `--unfollow` and all other unfollow actions. Users from this list will _never_ be removed from your followers or unfollowed.
+What we did is we introduced a concept of "configs". So instead of writing a veeeery long command like this:
+```
+python3 start.py --interact @natgeo-followers @natgeo-following amazingtrips-top-likers amazingtrips-recent-likers P-antartica-top-likers P-antartica-recent-likers amazingtrips-top-posts amazingtrips-recent-posts P-antartica-top-posts P-antartica-recent-posts --speed 4 --wait-for-device --likes-count "1-2" --likes-percentage "75" --interactions-limit-per-source "12-16" --successful-interactions-limit-per-source "6-8" --total-interactions-limit "100-200" --total-successful-interactions-limit "50-60" --total-likes-limit "50-60" --total-get-profile-limit "300-400" --session-length-in-mins-limit "50-60"
+```
+You can just write this:
+```
+python3 start.py --config-file interact-likes-only.json
+```
+Where [interact-likes-only.json](https://github.com/alexal1/Insomniac/blob/master/config-examples/interact/interact-likes-only.json) is a config file which you will just put in the folder where you run the command from.
 
-**Blacklist** - affects _all other actions_. Users from this list will be skipped immediately: no interactions and no following.
+The interesting thing about configs is that you can add a field `next_config_file` in any config. So a config will launch another config. You can also specify a sleeping time between them using the `repeat` field (in minutes). Using this technique you can create infinite loops of configs, see examples [here](https://github.com/alexal1/Insomniac/tree/master/config-examples/flow-of-actions). Such loops are called _flows_.
 
-Go to Insomniac folder and create a folder named as your Instagram nickname (or open an existing one, as Insomniac creates such folder when launched). Create there a file `whitelist.txt` or `blacklist.txt` (or both of them). Write usernames in these files, one username per line, no `@`'s, no commas. Don't forget to save. That's it! 
+### Scraping and Interacting with Targets
+Basically to interact with targets you can run
+```
+python3 start.py --interact-targets
+```
+This means that Insomniac will search for targets either in [targets.txt](https://github.com/alexal1/Insomniac/blob/master/targets.txt) file (if provided) or in the database. The only way for targets to appear in the database is to use [scraping](https://insomniac-bot.com/docs/#/?id=scraping). Scraping basically means searching for specific accounts to interact with _as the targets for the main account_. So when scraping you always have to specify this main account like this: `--scrape-for-account username`.
 
-### Targets Interaction
-Go to Insomniac folder and create a folder named as your Instagram nickname (or open an existing one, as Insomniac creates such folder when launched). Create there a file `targets.txt`. Write usernames in these files, one username per line, no `@`'s, no commas. Don't forget to save.
+See scraping config examples [here](https://github.com/alexal1/Insomniac/tree/master/config-examples-extra/scrape).
 
-Run Insomniac with --interact-targets parameter, and the session will be targeted on those specific profiles form the `targets.txt` file. 
+### Extra Features
+As you can imagine, this project's development and support takes a lot of energy, so in order to continue working we made part of the features paid. These features are called _extra features_, because they are not necessary to run the project. But most likely you'd like to have them.
 
-### Analytics
-There also is an analytics tool for this bot. It is a script that builds a report in PDF format. The report contains account's followers growth graphs for different periods. Liking, following and unfollowing actions' amounts are on the same axis to determine bot effectiveness. The report also contains stats of sessions length for different configurations that you've used. All data is taken from `sessions.json` file that's generated during bot's execution.
-<img src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/analytics_sample.png">
+You can find the full list of extra features in the [documentation](https://insomniac-bot.com/docs/#/?id=extra-features).
 
-To get access to the analytics tool you have to [join Patreon $10 tier](https://www.patreon.com/insomniac_bot).
-
-### Features in progress
-- [x] Follow given percentage of interacted users by `--follow-percentage 50`
-- [x] Unfollow given number of users (only those who were followed by the script) by `--unfollow 100`
-- [x] Unfollow given number of non-followers (only those who were followed by the script) by `--unfollow-non-followers 100`
-- [x] Support intervals for likes and interactions count like `--likes-count 2-3`
-- [x] Interaction by hashtags
-- [ ] Add random actions to behave more like a human (watch your own feed, stories, etc.)
-- [ ] Commenting during interaction
-
-### Why Insomniac?
-There already are Instagram automation tools that work either on Instagram web version or via Instagram private API. Unfortunately, both ways have become dangerous to use. Instagram bots detection system is very suspicious to browser actions now. And as for private API – you will be blocked forever if Instagram detects that you're using it.
-
-That's why need arised in a solution for mobile devices. Instagram can't distinguish bot from a human when it comes to your phone. However, even a human can reach limits when using the app, so don't fail to be careful. Always set `--total-likes-limit` to 300 or less. Also it's better to use `--repeat` to act periodically for 2-3 hours, because Instagram keeps track of how long the app works.
+As a free bonus you'll get a Telegram bot [@your_insomniac_bot](https://t.me/your_insomniac_bot) which can send you current stats. So you'll be able to monitor your setup health from anywhere. Read more in one of our [Patreon posts](https://www.patreon.com/posts/v3-8-0-update-63591855).
 
 ### Community
 We have a [Discord server](https://discord.gg/59pUYCw) which is the most convenient place to discuss all bugs, new features, Instagram limits, etc. If you're not familiar with Discord, you can also join our [Telegram chat](https://t.me/insomniac_chat). And finally, all useful info is posted on our [Patreon page](https://www.patreon.com/insomniac_bot).
