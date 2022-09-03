@@ -215,7 +215,7 @@ add this flag to run insomniac in debug mode (more verbose
 logs)
 
 ## Extra features
-Get "extra" features by supporting us via [Patreon $10 tier](https://www.patreon.com/join/insomniac_bot). You'll receive an email with activation code for your [start.py](https://raw.githubusercontent.com/alexal1/Insomniac/master/start.py).
+Get "extra" features by supporting us via [Patreon Tier](https://www.patreon.com/join/insomniac_bot). You'll receive an email with activation code for your [start.py](https://raw.githubusercontent.com/alexal1/Insomniac/master/start.py).
 
 Patreon is our way of monetizing the project. It gives us motivation to constantly improve both "core" and "extra" features.
 
@@ -277,7 +277,7 @@ the scraping-list (sources are randomized). It can be a
 number (e.g. 4) or a range (e.g. 3-8)
                         
 ### Special features
-Other features that are unblocked by [joining Patreon $10 tier](https://www.patreon.com/join/insomniac_bot):
+Other features that are unblocked by [joining Patreon Tier](https://www.patreon.com/join/insomniac_bot):
 
 #### --warmup-time-before-session 2-6
 Set warmup length in minutes, disabled by default. 

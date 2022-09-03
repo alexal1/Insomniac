@@ -1,3 +1,4 @@
+<br />
 <p align="center">
     <img width="128" height="128" src="https://raw.githubusercontent.com/alexal1/Insomniac/master/res/insomniac.png" alt="Insomniac"/>
     <h1 align="center">Insomniac</h1>
