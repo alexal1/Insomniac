@@ -19,6 +19,12 @@
     </p>
 </p>
 
+---
+#### IMPORTANT NOTICE:
+Insomniac is **completely free & opensource** as of **v3.9.0**. "Extra features" that used to be paid are now available in this repo for free. But the project is not being actively supported right now. I cannot guarantee its workability for all Instagram and Android versions, since fresh updates require Insomniac code modifications as well. However, the code is well-structured, which makes the repo a good base for adding your changes to adjust Insomniac for your setup.
+
+---
+
 ### Why Automating Instagram Activity (Liking, Following, etc.)?
 💸 If you want just to _increase_ your followers count or get more likes, there's a bunch of companies that will give you that immediately for a few $$$. But most likely your audience will be merely bots and mass-followers.
 

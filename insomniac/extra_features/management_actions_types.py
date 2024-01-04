@@ -1,3 +1,7 @@
-from insomniac import activation_controller
+from collections import namedtuple
 
-exec(activation_controller.get_extra_feature('management_actions_types'))
+CloneCreationAction = namedtuple('CloneCreationAction', 'user appcloner_host_device')
+CloneInstallationAction = namedtuple('CloneCreationAction', 'user target_device profile_status')
+CloneRemovalAction = namedtuple('CloneCreationAction', 'user target_device')
+AppDataCleanupAction = namedtuple('CloneCreationAction', 'user target_device')
+ProfileRegistrationAction = namedtuple('CloneCreationAction', 'user target_device')

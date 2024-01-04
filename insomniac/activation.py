@@ -19,8 +19,10 @@ class ActivationController:
 
     def validate(self, activation_code, ui=False):
         self.activation_code = activation_code
-        if not activation_code == "" and _validate(activation_code, ui):
-            self.is_activated = True
+        # GIVEAWAY: making the whole codebase free!
+        # if not activation_code == "" and _validate(activation_code, ui):
+        #     self.is_activated = True
+        self.is_activated = True
 
         if not self.is_activated:
             dot = '\n    - '
